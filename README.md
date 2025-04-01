@@ -36,8 +36,12 @@ and let it hang. This runs a server process that listens for API requests.
 
 5) Now open another terminal, change the model choice in Tether/run.py to the llama model you pulled, and run.
 
+# Licenses
+This project is licensed under the [MIT License](LICENSE.md).
 
+# Copyright
+LANL O4894
 
+© 2025. Triad National Security, LLC. All rights reserved.
 
-
-
+This program was produced under U.S. Government contract 89233218CNA000001 for Los Alamos National Laboratory (LANL), which is operated by Triad National Security, LLC for the U.S. Department of Energy/National Nuclear Security Administration. All rights in the program are reserved by Triad National Security, LLC, and the U.S. Department of Energy/National Nuclear Security Administration. The Government is granted for itself and others acting on its behalf a nonexclusive, paid-up, irrevocable worldwide license in this material to reproduce, prepare derivative works, distribute copies to the public, perform publicly and display publicly, and to permit others to do so.
