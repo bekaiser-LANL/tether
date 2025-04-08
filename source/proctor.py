@@ -10,7 +10,7 @@ class proctor():
     def __init__(self, settings, exam_name, **kwargs):
 
         self.exam_name = exam_name
-        
+
         # default settings:
         self.checkpoints = kwargs.get('checkpoints', np.nan) # Checkpoint frequency if an integer, no checkpoint .npz output if a NaN
         self.restart = kwargs.get('restart', np.nan) # Restart question number if an integer, start at question 1 if a NaN
@@ -278,8 +278,6 @@ class proctor():
         print(' question: ',report['questions'][report['question_idx']])
         print(' response: ',report['response'])   
         print(' correct: ',report['solutions'][report['question_idx']])     
-
-    #def verify      
 
     def ask_openai(self, question, model_choice, reasoning_effort='medium'):
 
