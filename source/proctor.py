@@ -7,7 +7,18 @@ import os
 
 class proctor():
 
-    def __init__(self, settings, exam_name, checkpoints=np.nan, restart=np.nan):
+    def __init__(self, settings, exam_name, **kwargs):
+
+        self.exam_name = exam_name
+        
+        # default settings:
+        self.checkpoints = kwargs.get('checkpoints', np.nan) # Checkpoint frequency if an integer, no checkpoint .npz output if a NaN
+        self.restart = kwargs.get('restart', np.nan) # Restart question number if an integer, start at question 1 if a NaN
+        self.reasoning_effort = kwargs.get('reasoning_effort', 'high') # for OpenAI reasoning models only
+        self.temperature  = kwargs.get('temperature', 0.0) # for OpenAI non-reasoning models only
+        self.record_txt = kwargs.get('record_txt', False) # save blank benchmark as .txt  
+        self.n_numbers = kwargs.get('n_numbers',20) # number of numbers for standardDeviation benchmark
+      
         self.path       = settings['path'] + '/benchmarks/completed/' # path to benchmark reports
         self.reuse      = settings['path'] + '/benchmarks/saved/' # path to saved benchmark
         self.figures    = settings['path'] + '/benchmarks/figures/'
@@ -16,13 +27,7 @@ class proctor():
         self.grader     = grader()
         self.generate   = settings['generate']
         self.exam_idx   = settings['exam_idx']
-        self.record_txt = settings['record_txt']   
-        self.temperature  = settings['temperature'] # for OpenAI non-reasoning models only
-        self.reasoning_effort = settings['reasoning_effort'] # for OpenAI reasoning models only
-        self.n_numbers = settings['n_numbers'] # for standardDeviation benchmark only 
-        self.checkpoints = checkpoints # Checkpoint frequency if an integer, no checkpoint .npz output if a NaN
-        self.restart = restart # Restart question number if an integer, start at question 1 if a NaN
-
+            
         self.create_missing_directory(self.path)
         self.create_missing_directory(self.reuse)
         self.create_missing_directory(self.figures)

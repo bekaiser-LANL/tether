@@ -1,9 +1,7 @@
 import numpy as np
 
-def get_95_CI(P,N): # <--- change name to reflect that this is for the t-distribution
-    # MOVE TO GENERAL UQ FILE.
-    # t distribution with standard error
-    # (as opposed to using 2*SD)
+def get_95_CI_tdist(P,N):
+    # t distribution to estimate standard error
     se = standard_error_for_proportion(P,N) 
     return P+1.96*se,P-1.96*se
 

@@ -1,15 +1,23 @@
 """ Tether """
 
 # To do: 
-#        - measure the l1 error of significantFigures and standardDeviation solutions (in analysis)
-#        - add saves along the way and ability to restart 
+#   - CHANGE: a script for generating an exam, and a separate script for giving the exam
+#   - measure the l1 error of significantFigures and standardDeviation solutions (in analysis)
+#   - add saves along the way and ability to restart 
 
 # Model choices for benchmarking:
 # OpenAI APIs: 'o1' 'gpt-4o' 'o3-mini' 'gpt-4.5-preview' 
 # Meta / Ollama APIs: 'llama3.2' 'llama3' 
 
 # Benchmark choices
-# 'mediatedCausalitySmoking'
+# 'mediatedCausality_tdist' (~360)
+# 'mediatedCausalitySmoking_tdist' (~360)
+# 'mediatedCausalityWithMethod_tdist' (~360)
+# 'mediatedCausality_bootstrap' (~360)
+# 'mediatedCausalitySmoking_bootstrap' (~360)
+# 'mediatedCausalityWithMethod_bootstrap' (~360)
+# 'mediatedCausalityArithmetic' (100)
+
 # 'standardDeviation'
 # 'significantFigures'
 
@@ -25,18 +33,14 @@ from source import *
 benchmark = 'mediatedCausalitySmoking'
 model = 'llama3'
 generate = False # True = generate a new benchmark, False = load a saved benchmark .npz
-n_problems = 1800 # number of problems in the exam
+n_problems = 180 # number of problems in the exam
 
 settings = {
     "model": model,
     "generate": generate, 
     "exam_idx": 1, # leave 1 unless you need to make multiples of the same exam
-    "path": '/Users/l281800/Desktop/', # path for the benchmark reports (i.e., results)
-    "record_txt": False, # save blank benchmark as .txt        
+    "path": '/Users/l281800/Desktop/', # path for the benchmark reports (i.e., results)  
     "n_problems": n_problems, # number of problems in the benchmark
-    "temperature": 0.0, # OpenAI non-reasoning model temperature
-    "reasoning_effort": 'high', # OpenAI reasoning model effort 
-    "n_numbers": 2 # number of numbers for standardDeviation benchmark
 }
 
 proctor(settings, benchmark) #, checkpoints=2, restart=4) 
