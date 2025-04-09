@@ -22,18 +22,18 @@ class mediatedCausality():
             x_name_verb = 'doing X'
             y_name_noun = 'Y'            
         name_list=[x_name,z_name,y_name,x_name_verb,y_name_noun]
-
-        if not is_divisible_by_9(n_problems):
-            raise ValueError("\n The number of problems specified is not divisible by 9. Benchmark not created.")
-
-        self.n_problems = n_problems 
+   
         self.plot_flag = plot_flag
         self.plot_path = plot_path
         self.exam_name = exam_name 
         if not self.exam_name == 'mediatedCausalityArithmetic':
             self.CI_method = (exam_name).split('_')[1]
             self.exam_name_wo_CI_method = (exam_name).split('_')[0]
-        else:
+            self.n_problems = n_problems 
+            if not is_divisible_by_9(self.n_problems):
+                raise ValueError("\n The number of problems specified is not divisible by 9. Benchmark not created.")
+        else: 
+            self.n_problems = 100 
             self.CI_method = 'N/A'
             self.exam_name_wo_CI_method = 'N/A'
 
@@ -729,15 +729,13 @@ class mediatedCausality():
 # exam_name = 'mediatedCausalityWithMethod_tdist' 
 # exam_name = 'mediatedCausality_tdist' 
 # exam_name = 'mediatedCausalitySmoking_tdist' 
-
 # exam_name = 'mediatedCausalityArithmetic'  
-
-exam_name = 'mediatedCausality_bootstrap' 
+# exam_name = 'mediatedCausality_bootstrap' 
 # exam_name = 'mediatedCausalitySmoking_bootstrap' 
 # exam_name = 'mediatedCausalityWithMethod_bootstrap' 
 
-plot_path = './figures/'
+# plot_path = './figures/'
 
-if __name__ == "__main__":
-    exam = mediatedCausality(plot_path, exam_name, plot_flag=True, n_problems=18)
-    exam.print_problems()
+# if __name__ == "__main__":
+#     exam = mediatedCausality(plot_path, exam_name, plot_flag=True, n_problems=18)
+#     exam.print_problems()

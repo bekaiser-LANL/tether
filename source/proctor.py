@@ -5,6 +5,8 @@ import subprocess
 import requests
 import os
 
+# remove generation from this
+
 class proctor():
 
     def __init__(self, settings, exam_name, **kwargs):

@@ -1,7 +1,8 @@
 """ Tether """
 
+# change this to remove generation: run benchmarks on models only
+
 # To do: 
-#   - CHANGE: a script for generating an exam, and a separate script for giving the exam
 #   - measure the l1 error of significantFigures and standardDeviation solutions (in analysis)
 #   - add saves along the way and ability to restart 
 
@@ -9,19 +10,16 @@
 # OpenAI APIs: 'o1' 'gpt-4o' 'o3-mini' 'gpt-4.5-preview' 
 # Meta / Ollama APIs: 'llama3.2' 'llama3' 
 
-# Benchmark choices
-# 'mediatedCausality_tdist' (~360)
-# 'mediatedCausalitySmoking_tdist' (~360)
-# 'mediatedCausalityWithMethod_tdist' (~360)
-# 'mediatedCausality_bootstrap' (~360)
-# 'mediatedCausalitySmoking_bootstrap' (~360)
-# 'mediatedCausalityWithMethod_bootstrap' (~360)
-# 'mediatedCausalityArithmetic' (100)
-
+# Benchmark choices:
+# 'mediatedCausalityArithmetic'  
+# 'mediatedCausality_bootstrap' 
+# 'mediatedCausalitySmoking_bootstrap' 
+# 'mediatedCausalityWithMethod_bootstrap' 
+# 'mediatedCausalityWithMethod_tdist' 
+# 'mediatedCausality_tdist' 
+# 'mediatedCausalitySmoking_tdist' 
 # 'standardDeviation'
 # 'significantFigures'
-
-
 
 import subprocess
 import requests

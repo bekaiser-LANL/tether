@@ -1,6 +1,8 @@
 import numpy as np
 import os
 
+# change this file & class to be: record_results()
+
 class benchmark():
 
     def __init__(self, path, model, exam):
