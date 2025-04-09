@@ -1,11 +1,11 @@
 # tests/test_mediated_causality.py
 
 import numpy as np
-from source.benchmarks.mediatedCausality import mediatedCausality
+from source.benchmarks.mediated_causality import mediated_causality
 
 def test_causality_from_table_tdist():
     # Verifies the front-door criterion calculation
-    exam = mediatedCausality(
+    exam = mediated_causality(
         './',
         'mediatedCausalitySmoking_tdist',
         generate_flag=False
@@ -19,14 +19,14 @@ def test_causality_from_table_tdist():
                             [1,0,1, 71.25],
                             [1,1,0, 22.50],
                             [1,1,1,403.75]])
-    p_diff,p_diff_ci_lower,p_diff_ci_upper = exam.causality_from_table(pearl_table, 'tdist')
+    p_diff,p_diff_ci_lower,p_diff_ci_upper,_n = exam.causality_from_table(pearl_table, 'tdist')
     assert p_diff == (0.4525 - 0.4975)
     assert np.round(p_diff_ci_lower,3) == np.round(-0.08872766149704325,3)
     assert np.round(p_diff_ci_upper,3) == np.round(-0.00127233850295672,3)
 
 def test_causality_from_table_bootstrap():
     # Verifies the front-door criterion calculation
-    exam = mediatedCausality(
+    exam = mediated_causality(
         './',
         'mediatedCausalitySmoking_bootstrap',
         generate_flag=False,
@@ -41,7 +41,7 @@ def test_causality_from_table_bootstrap():
                             [1,0,1, 7125],
                             [1,1,0, 2250],
                             [1,1,1,40375]])
-    p_diff,p_diff_ci_lower,p_diff_ci_upper = exam.causality_from_table(pearl_table, 'bootstrap')
+    p_diff,p_diff_ci_lower,p_diff_ci_upper,_n = exam.causality_from_table(pearl_table, 'bootstrap')
     assert np.round(p_diff,3) == np.round(0.4525 - 0.4975,3)
     assert np.round(p_diff_ci_lower,3) == np.round(-0.05151729437221199,3)
     assert np.round(p_diff_ci_upper,3) == np.round(-0.03808042079620048,3)
@@ -51,7 +51,7 @@ def test_output_dims():
     n_problems = 9
     exam_name = 'mediatedCausalitySmoking_tdist'
     plot_path = './figures/'
-    exam = mediatedCausality(plot_path, exam_name, n_problems=n_problems)
+    exam = mediated_causality(plot_path, exam_name, n_problems=n_problems)
     metadata = exam.get_metadata()
     solutions = exam.get_solutions()
     questions = exam.get_questions()

@@ -4,10 +4,11 @@ from . import analyses
 from . import grader
 from . import benchmark
 from . import utils
-from . import uncertainty_quantification
+from . import uncertainty_quantification 
+from . import sort_by_answer
 from .benchmarks import significantFigures
 from .benchmarks import standardDeviation
-from .benchmarks import mediatedCausality
+from .benchmarks import mediated_causality
 from . import proctor
 
 __all__ = [
@@ -15,22 +16,10 @@ __all__ = [
     "grader",
     "proctor",
     "benchmark",
+    "sort_by_answer",
     "significantFigures",
     "standardDeviation",
-    "mediatedCausality",
+    "mediated_causality",
     "uncertainty_quantification",
     "utils"
 ]
-
-
-# from .analyses import analyses
-# from .grader import grader
-# from .benchmark import benchmark
-# from . import utils
-# from .benchmarks.significantFigures import significantFigures
-# from .benchmarks.standardDeviation import standardDeviation
-# from .proctor import proctor
-# from .benchmarks.mediatedCausality import mediatedCausality
-
-# # Define what gets imported when using `from my_library import *`
-# __all__ = ["analyses","grader","proctor","benchmark","significantFigures","standardDeviation","mediatedCausality","utils"]
