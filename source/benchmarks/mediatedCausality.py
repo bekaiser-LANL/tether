@@ -6,30 +6,38 @@ from source.uncertainty_quantification import *
 
 class mediatedCausality():
 
-    def __init__(self, plot_path, exam_name, plot_flag=False, 
-                 generate_flag=True, n_problems=360):
+    def __init__(self, plot_path, exam_name, **kwargs):
 
-        if exam_name == 'mediatedCausalitySmoking_tdist' or exam_name == 'mediatedCausalitySmoking_bootstrap':
-            x_name = 'smoke'
-            z_name = 'have tar deposits in lungs'
-            y_name = 'have lung cancer'
-            x_name_verb = 'smoking'
-            y_name_noun = 'lung cancer'
-        else:
-            x_name = 'X'
-            z_name = 'Z'
-            y_name = 'Y'
-            x_name_verb = 'doing X'
-            y_name_noun = 'Y'            
-        name_list=[x_name,z_name,y_name,x_name_verb,y_name_noun]
-   
-        self.plot_flag = plot_flag
         self.plot_path = plot_path
-        self.exam_name = exam_name 
+        self.exam_name = exam_name  
+
+        # generation parameters:
+        self.plot_flag = kwargs.get('plot_flag', False)   
+        self.generate_flag = kwargs.get('generate_flag', True)        
+        self.answer_proportions = kwargs.get('answer_proportions', [0.333,0.333,0.333]) # ratios of A,B,C correct answers
+        self.n_samples = kwargs.get('n_samples', 50) # number of possible sample sizes per generated causal scenario 
+        self.min_power10_sample_size = kwargs.get('min_power10_sample_size', 1)
+        self.max_power10_sample_size = kwargs.get('max_power10_sample_size', 4)       
+        self.difficulty_thresholds = kwargs.get('difficulty_thresholds', np.array([0.05,0.25]))     
+
+        if self.exam_name == 'mediatedCausalitySmoking_tdist' or self.exam_name == 'mediatedCausalitySmoking_bootstrap':
+            self.x_name = 'smoke'
+            self.z_name = 'have tar deposits in lungs'
+            self.y_name = 'have lung cancer'
+            self.x_name_verb = 'smoking'
+            self.y_name_noun = 'lung cancer'
+        else:
+            self.x_name = 'X'
+            self.z_name = 'Z'
+            self.y_name = 'Y'
+            self.x_name_verb = 'doing X'
+            self.y_name_noun = 'Y'    
+
         if not self.exam_name == 'mediatedCausalityArithmetic':
             self.CI_method = (exam_name).split('_')[1]
             self.exam_name_wo_CI_method = (exam_name).split('_')[0]
-            self.n_problems = n_problems 
+            self.n_problems = kwargs.get('n_problems', 360)  
+            self.n_bootstrap = kwargs.get('n_bootstrap', 1000) 
             if not is_divisible_by_9(self.n_problems):
                 raise ValueError("\n The number of problems specified is not divisible by 9. Benchmark not created.")
         else: 
@@ -37,19 +45,7 @@ class mediatedCausality():
             self.CI_method = 'N/A'
             self.exam_name_wo_CI_method = 'N/A'
 
-        self.answer_proportions = [0.333,0.333,0.333] # ratios of A,B,C correct answers
-        self.n_samples = 50 # 1000 # number of possible sample sizes for each generated causal scenario 
-        self.min_power10_sample_size = 1 #1
-        self.max_power10_sample_size = 2 #5       
-        self.difficulty_thresholds = np.array([0.05,0.25])     
-    
-        self.x_name = name_list[0] # 'smoke'
-        self.z_name =  name_list[1] # 'have tar deposits in lungs'
-        self.y_name =  name_list[2] # 'have lung cancer'
-        self.x_name_verb =  name_list[3] # 'smoking'
-        self.y_name_noun =  name_list[4] #'lung cancer'
-
-        if generate_flag: 
+        if self.generate_flag: 
             self.make_problems() 
 
     def make_problems(self): 
@@ -614,7 +610,7 @@ class mediatedCausality():
             df_counts = pd.DataFrame(boot_data)
             df_full = df_counts.loc[df_counts.index.repeat(df_counts['count'])].drop(columns='count').reset_index(drop=True)
 
-            boot_diffs = self.bootstrap_p_y1_do_diff(df_full, n_boot=500) #1000)
+            boot_diffs = self.bootstrap_p_y1_do_diff(df_full, n_boot=self.n_bootstrap) 
 
             # Point estimate
             P_diff = np.mean(boot_diffs)
@@ -624,7 +620,6 @@ class mediatedCausality():
 
             # 95% confidence interval
             P_diff_CIl, P_diff_CIu = np.percentile(boot_diffs, [2.5, 97.5])
-
             return P_diff,P_diff_CIl,P_diff_CIu,N
 
     def bootstrap_p_y1_do_diff(self, df, n_boot=1000, seed=42):
