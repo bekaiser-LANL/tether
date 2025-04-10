@@ -9,7 +9,7 @@ import pandas as pd
 # add bootstrapped confidence
 # add l1 norm error for standard deviation
 
-class analyses():
+class analyzer():
 
     def __init__(self, path, model, benchmark, exam_idx):
         self.path      = path

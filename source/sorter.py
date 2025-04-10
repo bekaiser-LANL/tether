@@ -1,4 +1,4 @@
-class SortByAnswer():
+class Sorter():
 
     def __init__(self, difficulty_thresholds, n_problems):
 
@@ -10,6 +10,15 @@ class SortByAnswer():
     def initialize(self):
         # difference, difficulty flag, continue flag (True=continue on to next example)
         return [], self.diff_flag, self.continue_flag
+
+    # def update_dictionaries(self, easy, medm, hard, variables, select_idx, valid_idx):
+    #     if self.diff_flag == 'hard':
+    #         valid_idx = self.update_dict(hard, variables, select_idx, valid_idx) 
+    #     elif self.diff_flag == 'medm':                
+    #         valid_idx = self.update_dict(medm, variables, select_idx, valid_idx) 
+    #     elif self.diff_flag == 'easy':             
+    #         valid_idx = self.update_dict(easy, variables, select_idx, valid_idx) 
+    #     return valid_idx
 
     def update_difficulty(self,diff_value):
         if diff_value <= self.difficulty_thresholds[0]:

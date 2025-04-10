@@ -1,22 +1,22 @@
-"""This folder contains the LLM benchmarks"""
-
-from . import analyses
+from . import analyzer
 from . import grader
-from . import benchmark
+from . import recorder
+from . import generator
 from . import utils
 from . import uncertainty_quantification 
-from . import sort_by_answer
+from . import sorter
 from .benchmarks import significantFigures
 from .benchmarks import standardDeviation
 from .benchmarks import mediated_causality
 from . import proctor
 
 __all__ = [
-    "analyses",
+    "analyzer",
     "grader",
     "proctor",
-    "benchmark",
-    "sort_by_answer",
+    "generator",    
+    "recorder",
+    "sorter",
     "significantFigures",
     "standardDeviation",
     "mediated_causality",

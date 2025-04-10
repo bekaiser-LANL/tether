@@ -1,15 +1,13 @@
 import numpy as np
 import os
 
-# change this file & class to be: record_results()
-
-class benchmark():
+class RecordBenchmark():
 
     def __init__(self, path, model, exam):
         self.path = path
         self.model = model
         self.exam = exam
-        self.exam_name = self.exam.metadata["Name"]
+        self.exam_name = self.exam.metadata["name"]
 
     def create_missing_directory(self,directory_path):
         if not os.path.exists(directory_path):
@@ -18,7 +16,8 @@ class benchmark():
     def write_header(self,file):
         #print(self.exam.metadata["Name"])
         file.write(str(self.exam.metadata["Name"]) + '\n')
-        if self.exam.metadata["Name"] == 'mediatedCausalitySmoking' or self.exam.metadata["Name"] == 'mediatedCausalitySmokingWithMethod':
+        #if self.exam.metadata["Name"] == 'mediatedCausalitySmoking' or self.exam.metadata["Name"] == 'mediatedCausalitySmokingWithMethod':
+        if self.exam.metadata["Name"].startswith("mediatedCausality"):
             file.write("=" * 40 + "\n")
             file.write("- %.1f percent X causes Y \n" %(100.*self.exam.metadata["A_count"]/self.exam.metadata["n_problems"]))
             file.write("- %.1f percent not X causes Y \n" %(100.*self.exam.metadata["B_count"]/self.exam.metadata["n_problems"]))
@@ -186,12 +185,12 @@ class benchmark():
             file.close()
 
     def save_blank_exam_npz(self, report): 
-        # saves blank exam as an npz
+        """ saves blank exam as an npz """
 
         self.filename = report['reuse'] + '/' + self.exam_name + '_' + str(report['exam_idx']) + '.npz'
         self.create_missing_directory( self.path + '/')
   
-        if self.exam_name == 'significantFigures' or self.exam_name == 'standardDeviation':
+        if self.exam_name.startswith('significantFigures') or self.exam_name.startswith('standardDeviation'):
             np.savez(self.filename, 
                     exam_name = self.exam_name,
                     questions = report['questions'],
@@ -201,8 +200,8 @@ class benchmark():
                     temp_str = report['temp_str'],
                     effort_str = report['effort_str'],
                     n_problems = self.exam.metadata['n_problems']
-            )        
-        elif self.exam_name == 'mediatedCausalitySmoking' or self.exam_name == 'mediatedCausalitySmokingWithMethod':
+            )    
+        elif self.exam_name.startswith("mediatedCausality"):        
                np.savez(self.filename, 
                     exam_name = self.exam_name,
                     questions = report['questions'],
@@ -211,16 +210,16 @@ class benchmark():
                     exam_str = report['exam_str'],                 
                     temp_str = report['temp_str'],
                     effort_str = report['effort_str'],
-                    n_problems = self.exam.metadata['n_problems'],                    
-                    dP = self.exam.metadata["dP"],
-                    P_Y1doX1 = self.exam.metadata["P_Y1doX1"],
-                    P_Y1doX0 = self.exam.metadata["P_Y1doX0"],
-                    P_Y1doX1_CI = self.exam.metadata["P_Y1doX1_CI"],
-                    P_Y1doX0_CI = self.exam.metadata["P_Y1doX0_CI"],
-                    A_count = self.exam.metadata["A_count"],   
-                    B_count = self.exam.metadata["B_count"],   
-                    C_count = self.exam.metadata["C_count"]                                                                          
-            )           
+                    n_problems = self.exam.metadata['n_problems'],   
+                    ci_method = self.exam.metadata['ci_method'],                   
+                    p_diff = self.exam.metadata["p_diff"],
+                    p_diff_ci_upper = self.exam.metadata["p_diff_ci_upper"],
+                    p_diff_ci_lower = self.exam.metadata["p_diff_ci_lower"],
+                    difficulty = self.exam.metadata["difficulty"],
+                    A_count = self.exam.metadata["a_count"],   
+                    B_count = self.exam.metadata["b_count"],   
+                    C_count = self.exam.metadata["c_count"]                                                                          
+            )       
 
     def save_blank_exam_txt(self, report): 
         # saves the blank exam as a .txt

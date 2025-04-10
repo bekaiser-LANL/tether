@@ -1,5 +1,5 @@
 from .grader import grader
-from .benchmark import benchmark
+from .recorder import RecordBenchmark
 import numpy as np
 import subprocess
 import requests
@@ -87,7 +87,7 @@ class proctor():
         exam_str = '\n Exam: ' + exam_name
         temp_str = '\n Temperature: ' + str(self.temperature)
         effort_str = '\n Reasoning effort: ' + self.reasoning_effort
-        self.benchmark = benchmark(self.path,self.model,self.exam)
+        self.benchmark = recordBenchmark(self.path,self.model,self.exam)
 
         report = {
             "exam_name": exam_name,
