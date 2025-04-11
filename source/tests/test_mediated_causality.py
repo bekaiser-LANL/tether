@@ -5,6 +5,7 @@ import numpy as np
 from source.benchmarks.mediated_causality import MediatedCausality
 from source.benchmarks.mediated_causality import causality_from_table
 from source.benchmarks.mediated_causality import MediatedCausalityArithmetic
+from source.benchmarks.mediated_causality import get_table
 
 def test_causality_from_table_tdist():
     # Verifies the front-door criterion calculation
@@ -91,53 +92,61 @@ def test_arithmetic():
         str = questions[i]
         assert len(str) == 211, f"String length is {len(str)}, expected 211 for non-unicode x's"
     
+@pytest.mark.parametrize("exam_name", [
+    #"mediatedCausalitySmoking_tdist",
+    #"mediatedCausality_tdist",
+    "mediatedCausalityWithMethod_tdist",
+    # "mediatedCausalitySmoking_bootstrap",
+    # "mediatedCausalityWithMethod_bootstrap",
+    # "mediatedCausality_bootstrap",
+])
+def test_prompts_nans_and_output_dims(exam_name):
+    """
+    Parametrized test for various mediatedCausality exam variants:
+    - No NaNs in p_diff
+    - Correct output shapes
+    - Even distribution of answers and difficulties
+    - Verify the prompt & answer match
+    """
+    n_problems = 9
+    plot_path = "./figures/"
 
+    exam = MediatedCausality(plot_path, exam_name, n_problems=n_problems, n_bootstrap=200)
+    metadata = exam.get_metadata()
+    solutions = exam.get_solutions()
+    questions = exam.get_questions()
 
-# @pytest.mark.parametrize("exam_name", [
-#     "mediatedCausalitySmoking_tdist",
-#     "mediatedCausalitySmoking_bootstrap",
-#     "mediatedCausality_tdist",
-#     "mediatedCausalityWithMethod_tdist",
-#     "mediatedCausalityWithMethod_bootstrap",
-#     "mediatedCausality_bootstrap",
-#     "mediatedCausalityArithmetic",
-# ])
-# def test_nans_and_output_dims(exam_name):
-#     """
-#     Parametrized test for various mediatedCausality exam variants:
-#     - No NaNs in p_diff
-#     - Correct output shapes
-#     - Even distribution of answers and difficulties
-#     """
-#     n_problems = 9
-#     plot_path = "./figures/"
+    # Verify the prompt & answer match
+    xyz = get_table()
+    for i in range(len(questions)):
+        numbers = [int(num) for num in re.findall(r"\d+", questions[i])]
+        if len(numbers) > 8:
+            numbers = numbers[0:8]
+        table = np.hstack((xyz,np.transpose(np.array([numbers]))))
+        p_diff,p_diff_ci_lower,p_diff_ci_upper,_n = causality_from_table(table, 'tdist')
+        assert np.round(p_diff,4) == np.round(metadata["p_diff"][i],4)
 
-#     exam = MediatedCausality(plot_path, exam_name, n_problems=n_problems, n_bootstrap=200)
-#     metadata = exam.get_metadata()
-#     solutions = exam.get_solutions()
-#     questions = exam.get_questions()
+    # Check for NaNs in p_diff
+    p_diff = np.array(metadata["p_diff"], dtype=float)
+    assert not np.any(np.isnan(p_diff)), f"{exam_name}: p_diff contains NaNs"
 
-#     # Check for NaNs in p_diff
-#     p_diff = np.array(metadata["p_diff"], dtype=float)
-#     assert not np.any(np.isnan(p_diff)), f"{exam_name}: p_diff contains NaNs"
+    # Check output dimensions
+    assert len(solutions) == n_problems
+    assert len(questions) == n_problems
+    assert len(metadata["p_diff"]) == n_problems
+    assert len(metadata["p_diff_ci_upper"]) == n_problems
+    assert len(metadata["p_diff_ci_lower"]) == n_problems
+    assert len(metadata["n_samples"]) == n_problems
+    assert len(metadata["difficulty"]) == n_problems
 
-#     # Check output dimensions
-#     assert len(solutions) == n_problems
-#     assert len(questions) == n_problems
-#     assert len(metadata["p_diff"]) == n_problems
-#     assert len(metadata["p_diff_ci_upper"]) == n_problems
-#     assert len(metadata["p_diff_ci_lower"]) == n_problems
-#     assert len(metadata["n_samples"]) == n_problems
-#     assert len(metadata["difficulty"]) == n_problems
+    # Check answer (A,B,C) and difficulty level counts
+    for label in ["A", "B", "C"]:
+        count = np.count_nonzero(solutions == label)
+        assert count == n_problems // 3, f"{exam_name}: {label} count incorrect ({count})"
 
-#     # Check answer (A,B,C) and difficulty level counts
-#     for label in ["A", "B", "C"]:
-#         count = np.count_nonzero(solutions == label)
-#         assert count == n_problems // 3, f"{exam_name}: {label} count incorrect ({count})"
-
-#     for level in ["easy", "intermediate", "difficult"]:
-#         count = np.count_nonzero(metadata["difficulty"] == level)
-#         assert count == n_problems // 3, f"{exam_name}: {level} count incorrect ({count})"
+    for level in ["easy", "intermediate", "difficult"]:
+        count = np.count_nonzero(metadata["difficulty"] == level)
+        assert count == n_problems // 3, f"{exam_name}: {level} count incorrect ({count})"
 
 
 

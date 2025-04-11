@@ -1051,18 +1051,18 @@ class MediatedCausality():
 
 # python3 -m source.benchmarks.mediated_causality
 
-# # exam_name = 'mediatedCausalityWithMethod_tdist'
-#exam_name = 'mediatedCausality_tdist'
-# # exam_name = 'mediatedCausalitySmoking_tdist'
-# # exam_name = 'mediatedCausalityArithmetic'
-# # exam_name = 'mediatedCausality_bootstrap'
-# # exam_name = 'mediatedCausalitySmoking_bootstrap'
-# # exam_name = 'mediatedCausalityWithMethod_bootstrap'
+# # # exam_name = 'mediatedCausalityWithMethod_tdist'
+# #exam_name = 'mediatedCausality_tdist'
+# exam_name = 'mediatedCausalitySmoking_tdist'
+# # # exam_name = 'mediatedCausalityArithmetic'
+# # # exam_name = 'mediatedCausality_bootstrap'
+# # # exam_name = 'mediatedCausalitySmoking_bootstrap'
+# # # exam_name = 'mediatedCausalityWithMethod_bootstrap'
 
-# exam_name = 'mediatedCausalityArithmetic'
+# #exam_name = 'mediatedCausalityArithmetic'
 # plot_path = './figures/'
 
 # if __name__ == "__main__":
-#     #exam = MediatedCausality(plot_path, exam_name, plot_flag=True, n_problems=18)
-#     exam = MediatedCausalityArithmetic(n_problems=9)
+#     exam = MediatedCausality(plot_path, exam_name, plot_flag=False, n_problems=9)
+#     #exam = MediatedCausalityArithmetic(n_problems=9)
 #     exam.print_problems()
