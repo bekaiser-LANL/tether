@@ -590,37 +590,55 @@ class MediatedCausality():
 
             # Randomly select a total sample size for the generated causal example
             random_choice_of_n_samples = np.random.randint(0, high=self.n_samples,size=self.n_samples)
-            valid_idx = False 
-            k=0 # loop over sample sizes   
-            while not valid_idx:   
+            valid_idx = False
+            k=0 # loop over sample sizes
+            while not valid_idx:
 
                 select_idx = random_choice_of_n_samples[k]
 
-                variables = {"p_diff_tmp": p_diff_tmp, 
+                variables = {"p_diff_tmp": p_diff_tmp,
                         "p_diff_ci_lower_tmp": p_diff_ci_lower_tmp,
                         "p_diff_ci_upper_tmp": p_diff_ci_upper_tmp,
                         "answers_tmp": answers_tmp,
                         "questions_tmp": questions_tmp,
                         "n_samples_tmp": n_samples_tmp,
                         "table_tmp": table_tmp
-                }     
+                }
 
                 if sorter.get_diff_flag() == 'hard':
-                    valid_idx = self.update_dict(hard, variables, select_idx, valid_idx) 
-                elif sorter.get_diff_flag() == 'medm':                
-                    valid_idx = self.update_dict(medm, variables, select_idx, valid_idx) 
-                elif sorter.get_diff_flag() == 'easy':             
-                    valid_idx = self.update_dict(easy, variables, select_idx, valid_idx) 
+                    valid_idx = self.update_dict(
+                        hard, 
+                        variables, 
+                        select_idx, 
+                        valid_idx
+                    )
+                elif sorter.get_diff_flag() == 'medm':
+                    valid_idx = self.update_dict(
+                        medm, 
+                        variables, 
+                        select_idx, 
+                        valid_idx
+                    )
+                elif sorter.get_diff_flag() == 'easy':
+                    valid_idx = self.update_dict(
+                        easy, 
+                        variables, 
+                        select_idx, 
+                        valid_idx
+                    )
 
-                k += 1 # loop over sample sizes 
+                k += 1 # loop over sample sizes
 
                 if k == int(self.n_samples):
                     # no data available for this causal scenario
-                    continue_flag = True # continue causal scenario while loop
-                    valid_idx = True # break the sample size selection while loop
+                    continue_flag = True
+                    # continue causal scenario while loop
+                    valid_idx = True 
+                    # break the sample size selection while loop
 
             if continue_flag:
-                # generate another causal scenario; no data available for this causal scenario 
+                # generate another causal scenario; no data available for 
+                # this causal scenario
                 continue
 
             self.make_plot(
@@ -633,7 +651,7 @@ class MediatedCausality():
                 causality_tmp,
                 diff_flag,
             )
-       
+
             total = int(
                 easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
             )
@@ -645,19 +663,48 @@ class MediatedCausality():
             )
             print("\n sum of easy, intermediate, difficult problems =", total)
             print(' target total number of problems = ',  int(self.n_problems))
-            
+
             j += 1 # loop over examples
 
         # remove nones, add hard/medium/easy difficulty labels, combine all
-        questions = np.concatenate([easy["questions"][1:],medm["questions"][1:],hard["questions"][1:]])
-        answers = np.concatenate([easy["answers"][1:],medm["answers"][1:],hard["answers"][1:]])
-        p_diff = np.concatenate([easy["p_diff"][1:],medm["p_diff"][1:],hard["p_diff"][1:]])
-        p_diff_ci_upper = np.concatenate([easy["p_diff_ci_upper"][1:],medm["p_diff_ci_upper"][1:],hard["p_diff_ci_upper"][1:]])
-        p_diff_ci_lower = np.concatenate([easy["p_diff_ci_lower"][1:],medm["p_diff_ci_lower"][1:],hard["p_diff_ci_lower"][1:]])
-        n_samples = np.concatenate([easy["n_samples"][1:],medm["n_samples"][1:],hard["n_samples"][1:]])
-        difficulty = np.empty(easy["n_problems"] + medm["n_problems"] + hard["n_problems"], dtype=object)
+        questions = np.concatenate([
+            easy["questions"][1:],
+            medm["questions"][1:],
+            hard["questions"][1:],
+        ])
+        answers = np.concatenate([
+            easy["answers"][1:],
+            medm["answers"][1:],
+            hard["answers"][1:]
+        ])
+        p_diff = np.concatenate([
+            easy["p_diff"][1:],
+            medm["p_diff"][1:],
+            hard["p_diff"][1:]
+        ])
+        p_diff_ci_upper = np.concatenate([
+            easy["p_diff_ci_upper"][1:],
+            medm["p_diff_ci_upper"][1:],
+            hard["p_diff_ci_upper"][1:]
+        ])
+        p_diff_ci_lower = np.concatenate([
+            easy["p_diff_ci_lower"][1:],
+            medm["p_diff_ci_lower"][1:],
+            hard["p_diff_ci_lower"][1:]
+        ])
+        n_samples = np.concatenate([
+            easy["n_samples"][1:],
+            medm["n_samples"][1:],
+            hard["n_samples"][1:]
+        ])
+        difficulty = np.empty(
+            easy["n_problems"] + medm["n_problems"] + hard["n_problems"], 
+            dtype=object
+        )
         difficulty[:easy["n_problems"]] = 'easy'
-        difficulty[easy["n_problems"]:easy["n_problems"] + medm["n_problems"]] = 'intermediate'
+        difficulty[
+            easy["n_problems"] : easy["n_problems"] + medm["n_problems"]
+        ] = "intermediate"
         difficulty[-hard["n_problems"]:] = 'difficult'
 
         # randomly shuffle the problem order
@@ -698,7 +745,7 @@ class MediatedCausality():
         if self.exam_name_wo_ci_method in (
             "mediatedCausalitySmoking",
             "mediatedCausality",
-        ):    
+        ):
             q = (
             f"The number of samples that do not {self.x_name}, do not "
             f"{self.y_name}, and do not {self.z_name} is {int(table[0,3]):d}. "
@@ -743,7 +790,7 @@ class MediatedCausality():
             f" difference to calculate the 95% confidence level intervals. "
             f"Use the the 95% confidence levels to answer 'A' for yes, "
             f"'B' for no, or 'C' for uncertain."
-            )    
+            )
         elif self.exam_name == 'mediatedCausalityWithMethod_bootstrap':
             q = (f"Please answer only with 'A', 'B', or 'C'. "
             f"The number of samples that do not {self.x_name}, do not "
