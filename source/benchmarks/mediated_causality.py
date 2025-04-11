@@ -318,11 +318,18 @@ class MediatedCausalityArithmetic():
 
         # generation parameters:
         self.generate_flag = kwargs.get('generate_flag', True)
-        self.answer_proportions = kwargs.get('answer_proportions', [0.333,0.333,0.333]) # ratios of A,B,C correct answers
-        self.n_samples = kwargs.get('n_samples', 50) # number of possible sample sizes per generated causal scenario
+        self.answer_proportions = kwargs.get(
+            'answer_proportions', 
+            [0.333,0.333,0.333]
+        ) # ratios of A,B,C correct answers
+        self.n_samples = kwargs.get('n_samples', 50) 
+        # n_samples = number of possible sample sizes per causal example
         self.min_power10_sample_size = kwargs.get('min_power10_sample_size', 1)
         self.max_power10_sample_size = kwargs.get('max_power10_sample_size', 4)  
-        self.difficulty_thresholds = kwargs.get('difficulty_thresholds', np.array([0.05,0.25]))  
+        self.difficulty_thresholds = kwargs.get(
+            'difficulty_thresholds',
+            np.array([0.05,0.25])
+        )
         self.n_problems = kwargs.get('n_problems', 120)
         if not is_divisible_by_3(self.n_problems):
             raise ValueError(
@@ -355,7 +362,7 @@ class MediatedCausalityArithmetic():
         j = 0
         while int(
             easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
-        ) < int(self.n_problems):    
+        ) < int(self.n_problems):
      
             sorter = Sorter(self.difficulty_thresholds,self.n_problems)
             abs_p_diff, diff_flag, continue_flag = sorter.initialize()
@@ -379,7 +386,7 @@ class MediatedCausalityArithmetic():
                     equiv_str,
                     equiv_ans
                 ) = causality_from_table(table, 'arithmetic')
-                
+           
                 # Calculate the difficulty level
                 abs_p_diff = np.abs(p_diff_tmp)
                 if np.isnan(p_diff_tmp):
@@ -387,8 +394,8 @@ class MediatedCausalityArithmetic():
                     continue
                 diff_flag = sorter.update_difficulty(abs_p_diff)
 
-                # Check if there are already enough problems 
-                # generated for that difficulty level 
+                # Check if there are already enough problems
+                # generated for that difficulty level
                 if sorter.no_more_hard_problems_needed(hard):
                     continue
                 if sorter.no_more_medm_problems_needed(medm):
@@ -405,9 +412,9 @@ class MediatedCausalityArithmetic():
                 elif sorter.get_diff_flag() == 'medm':
                     medm["n_problems"] += 1
                 elif sorter.get_diff_flag() == 'easy':
-                    easy["n_problems"] += 1                            
+                    easy["n_problems"] += 1                         
                 # move on to the next example:
-                break 
+                break
 
             total = int(
                 easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
@@ -489,7 +496,7 @@ class MediatedCausality():
             [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
         )
         # n_samples = number of sample sizes generated per causal example
-        self.n_samples = kwargs.get('n_samples', 50) 
+        self.n_samples = kwargs.get('n_samples', 50)
         self.min_power10_sample_size = kwargs.get(
             'min_power10_sample_size', 
             1
@@ -501,7 +508,7 @@ class MediatedCausality():
         self.difficulty_thresholds = kwargs.get(
             'difficulty_thresholds', 
             np.array([0.05,0.25])
-        )  
+        )
         self.ci_method = (exam_name).split('_')[1]
         self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_problems = kwargs.get('n_problems', 360)
@@ -532,7 +539,7 @@ class MediatedCausality():
         while int(
             easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
         ) < int(self.n_problems):
-    
+  
             sorter = Sorter(self.difficulty_thresholds,self.n_problems)
             abs_p_diff, diff_flag, continue_flag = sorter.initialize()
             
@@ -589,7 +596,11 @@ class MediatedCausality():
                 )
 
             # Randomly select a total sample size for the generated causal example
-            random_choice_of_n_samples = np.random.randint(0, high=self.n_samples,size=self.n_samples)
+            random_choice_of_n_samples = np.random.randint(
+                0,
+                high=self.n_samples,
+                size=self.n_samples
+            )
             valid_idx = False
             k=0 # loop over sample sizes
             while not valid_idx:
@@ -607,23 +618,23 @@ class MediatedCausality():
 
                 if sorter.get_diff_flag() == 'hard':
                     valid_idx = self.update_dict(
-                        hard, 
-                        variables, 
-                        select_idx, 
+                        hard,
+                        variables,
+                        select_idx,
                         valid_idx
                     )
                 elif sorter.get_diff_flag() == 'medm':
                     valid_idx = self.update_dict(
-                        medm, 
-                        variables, 
-                        select_idx, 
+                        medm,
+                        variables,
+                        select_idx,
                         valid_idx
                     )
                 elif sorter.get_diff_flag() == 'easy':
                     valid_idx = self.update_dict(
-                        easy, 
-                        variables, 
-                        select_idx, 
+                        easy,
+                        variables,
+                        select_idx,
                         valid_idx
                     )
 
@@ -633,11 +644,11 @@ class MediatedCausality():
                     # no data available for this causal scenario
                     continue_flag = True
                     # continue causal scenario while loop
-                    valid_idx = True 
+                    valid_idx = True
                     # break the sample size selection while loop
 
             if continue_flag:
-                # generate another causal scenario; no data available for 
+                # generate another causal scenario; no data available for
                 # this causal scenario
                 continue
 
@@ -698,7 +709,7 @@ class MediatedCausality():
             hard["n_samples"][1:]
         ])
         difficulty = np.empty(
-            easy["n_problems"] + medm["n_problems"] + hard["n_problems"], 
+            easy["n_problems"] + medm["n_problems"] + hard["n_problems"],
             dtype=object
         )
         difficulty[:easy["n_problems"]] = 'easy'
