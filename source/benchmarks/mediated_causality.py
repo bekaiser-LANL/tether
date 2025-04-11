@@ -18,7 +18,8 @@ def probability_x(arr,var_idx,outcome_idx):
 def probability_z_given_x(data, x, z):
     """ Compute P(z|x) """
 
-    # Step 1: Get the values from the fourth column where rows match [x,0,z] and [x,1,z], then sum them
+    # Step 1: Get the values from the fourth column where
+    # rows match [x,0,z] and [x,1,z], then sum them
     mask1 = (data[:, 0] == x) & (data[:, 1] == 0) & (data[:, 2] == z)
     mask2 = (data[:, 0] == x) & (data[:, 1] == 1) & (data[:, 2] == z)
     sum_step1 = np.sum(data[mask1, 3]) + np.sum(data[mask2, 3])
@@ -48,7 +49,7 @@ def causality_from_table(data, test, n_bootstrap=1000):
     if test in ("tdist", "arithmetic"):
 
         # Calc P(x), P(z|x), P(Y=1|x,z) to get  P(Y=1|do(X=1))
-    
+
         # P(x)
         p_x0 = probability_x(data,0,0)
         p_x1 = probability_x(data,0,1)
@@ -90,10 +91,18 @@ def causality_from_table(data, test, n_bootstrap=1000):
         check_probability(p_y1_do_x0)
 
         if test == 'arithmetic':
-            equiv_str = (f"Please perform the following calculation and provide the answer: "
-                        f"{p_z0_given_x1:.2f} × ({p_y1_given_x0_z0:.2f} × {p_x0:.2f} + {p_y1_given_x1_z0:.2f} × {p_x1:.2f}) + {p_z1_given_x1:.2f} × ({p_y1_given_x0_z1:.2f} × {p_x0:.2f} + {p_y1_given_x1_z1:.2f} × {p_x1:.2f}) - "
-                        f"{p_z0_given_x0:.2f} × ({p_y1_given_x0_z0:.2f} × {p_x0:.2f} + {p_y1_given_x1_z0:.2f} × {p_x1:.2f}) + {p_z1_given_x0:.2f} × ({p_y1_given_x0_z1:.2f} × {p_x0:.2f} + {p_y1_given_x1_z1:.2f} × {p_x1:.2f})."
-                        )         
+            equiv_str = (
+                "Please perform the following calculation and provide the answer: "
+                f"{p_z0_given_x1:.2f} × ({p_y1_given_x0_z0:.2f} × {p_x0:.2f} "
+                f"+ {p_y1_given_x1_z0:.2f} × {p_x1:.2f}) + "
+                f"{p_z1_given_x1:.2f} × ({p_y1_given_x0_z1:.2f} × {p_x0:.2f} "
+                f"+ {p_y1_given_x1_z1:.2f} × {p_x1:.2f}) - "
+                f"{p_z0_given_x0:.2f} × ({p_y1_given_x0_z0:.2f} × {p_x0:.2f} "
+                f"+ {p_y1_given_x1_z0:.2f} × {p_x1:.2f}) + "
+                f"{p_z1_given_x0:.2f} × ({p_y1_given_x0_z1:.2f} × {p_x0:.2f} "
+                f"+ {p_y1_given_x1_z1:.2f} × {p_x1:.2f})."
+            )
+
             term1 = np.round(p_z0_given_x1, 2) * (
                 np.round(p_y1_given_x0_z0, 2) * np.round(p_x0, 2)
                 + np.round(p_y1_given_x1_z0, 2) * np.round(p_x1, 2)
@@ -113,13 +122,13 @@ def causality_from_table(data, test, n_bootstrap=1000):
             equiv_ans = str(term1 + term2 - (term3 + term4))
             return float(equiv_ans), equiv_str, equiv_ans
 
-        p_diff = p_y1_do_x1 - p_y1_do_x0 
+        p_diff = p_y1_do_x1 - p_y1_do_x0
         se_p = np.sqrt( p_y1_do_x1*(1-p_y1_do_x1)/n + p_y1_do_x0*(1-p_y1_do_x0)/n )
         p_diff_ci_upper = p_diff + 1.96*se_p
         p_diff_ci_lower = p_diff - 1.96*se_p
 
         return p_diff,p_diff_ci_lower,p_diff_ci_upper,n
-            
+
     # if test == 'bootstrap'
     boot_data = [
         {'X': 0, 'Y': 0, 'Z': 0, 'count': data[:,3][0]},
@@ -129,7 +138,7 @@ def causality_from_table(data, test, n_bootstrap=1000):
         {'X': 1, 'Y': 0, 'Z': 0, 'count': data[:,3][4]},
         {'X': 1, 'Y': 0, 'Z': 1, 'count': data[:,3][5]},
         {'X': 1, 'Y': 1, 'Z': 0, 'count': data[:,3][6]},
-        {'X': 1, 'Y': 1, 'Z': 1, 'count': data[:,3][7]},        
+        {'X': 1, 'Y': 1, 'Z': 1, 'count': data[:,3][7]},
         ]
     df_counts = pd.DataFrame(boot_data)
     df_full = (
@@ -214,7 +223,7 @@ def estimate_p_y1_do_x1_dataframe(df):
                 inner_sum += p_y1 * p_x[x]
         p += p_z_given_x1[z] * inner_sum
 
-    return p  
+    return p
 
 def generate_dataset(
     size=8,
@@ -258,7 +267,7 @@ def generate_table(xyz, generated_array, factor, number_type):
             "not rational nor integer."
         )
     return np.hstack((xyz,samples))
-    
+
 def get_table():
     """ table of binary variables """
     xyz = np.array([[0,0,0],
@@ -313,7 +322,7 @@ class MediatedCausalityArithmetic():
 
     def __init__(self, **kwargs):
 
-        self.exam_name = 'mediatedCausalityArithmetic' 
+        self.exam_name = 'mediatedCausalityArithmetic'
         self.n_problems = kwargs.get('n_problems', 120)
 
         # generation parameters:
@@ -322,10 +331,10 @@ class MediatedCausalityArithmetic():
             'answer_proportions', 
             [0.333,0.333,0.333]
         ) # ratios of A,B,C correct answers
-        self.n_samples = kwargs.get('n_samples', 50) 
+        self.n_samples = kwargs.get('n_samples', 50)
         # n_samples = number of possible sample sizes per causal example
         self.min_power10_sample_size = kwargs.get('min_power10_sample_size', 1)
-        self.max_power10_sample_size = kwargs.get('max_power10_sample_size', 4)  
+        self.max_power10_sample_size = kwargs.get('max_power10_sample_size', 4)
         self.difficulty_thresholds = kwargs.get(
             'difficulty_thresholds',
             np.array([0.05,0.25])
@@ -363,7 +372,7 @@ class MediatedCausalityArithmetic():
         while int(
             easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
         ) < int(self.n_problems):
-     
+
             sorter = Sorter(self.difficulty_thresholds,self.n_problems)
             abs_p_diff, diff_flag, continue_flag = sorter.initialize()
 
@@ -376,7 +385,7 @@ class MediatedCausalityArithmetic():
             )
             generated_array = generate_dataset()
 
-            for i in reversed(range(self.n_samples)): 
+            for i in reversed(range(self.n_samples)):
 
                 table = generate_table(xyz, generated_array, factor[i], 'integers')
                 table_tmp[i,:,:] = table
@@ -386,7 +395,7 @@ class MediatedCausalityArithmetic():
                     equiv_str,
                     equiv_ans
                 ) = causality_from_table(table, 'arithmetic')
-           
+
                 # Calculate the difficulty level
                 abs_p_diff = np.abs(p_diff_tmp)
                 if np.isnan(p_diff_tmp):
@@ -412,7 +421,7 @@ class MediatedCausalityArithmetic():
                 elif sorter.get_diff_flag() == 'medm':
                     medm["n_problems"] += 1
                 elif sorter.get_diff_flag() == 'easy':
-                    easy["n_problems"] += 1                         
+                    easy["n_problems"] += 1
                 # move on to the next example:
                 break
 
@@ -427,7 +436,7 @@ class MediatedCausalityArithmetic():
             )
             print("\n sum of easy, intermediate, difficult problems =", total)
             print(' target total number of problems = ',  int(self.n_problems))
-            
+
             j += 1 # loop over examples
 
         self.questions = questions
@@ -504,7 +513,7 @@ class MediatedCausality():
         self.max_power10_sample_size = kwargs.get(
             'max_power10_sample_size', 
             4
-        )  
+        )
         self.difficulty_thresholds = kwargs.get(
             'difficulty_thresholds', 
             np.array([0.05,0.25])
@@ -539,10 +548,10 @@ class MediatedCausality():
         while int(
             easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
         ) < int(self.n_problems):
-  
+
             sorter = Sorter(self.difficulty_thresholds,self.n_problems)
             abs_p_diff, diff_flag, continue_flag = sorter.initialize()
-            
+
             # generate a causal scenario:
             factor = np.logspace(
                 self.min_power10_sample_size,
