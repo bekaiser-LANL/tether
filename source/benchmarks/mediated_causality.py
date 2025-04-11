@@ -1,7 +1,9 @@
-import random
+""" Mediated causality (front-door criterion) benchmarks """
 import numpy as np
 import pandas as pd
-from source.utils import *
+from source.utils import create_missing_directory
+from source.utils import is_divisible_by_9
+from source.utils import is_divisible_by_3
 from source.uncertainty_quantification import check_probability
 from source.sorter import Sorter
 
@@ -43,7 +45,8 @@ def causality_from_table(data, test, n_bootstrap=1000):
 
     n = np.sum(data[:,3])
 
-    if test == 'tdist' or test == 'arithmetic':
+    if test in ("tdist", "arithmetic"):
+
         # Calc P(x), P(z|x), P(Y=1|x,z) to get  P(Y=1|do(X=1))
     
         # P(x)
@@ -90,14 +93,25 @@ def causality_from_table(data, test, n_bootstrap=1000):
             equiv_str = (f"Please perform the following calculation and provide the answer: "
                         f"{p_z0_given_x1:.2f} × ({p_y1_given_x0_z0:.2f} × {p_x0:.2f} + {p_y1_given_x1_z0:.2f} × {p_x1:.2f}) + {p_z1_given_x1:.2f} × ({p_y1_given_x0_z1:.2f} × {p_x0:.2f} + {p_y1_given_x1_z1:.2f} × {p_x1:.2f}) - "
                         f"{p_z0_given_x0:.2f} × ({p_y1_given_x0_z0:.2f} × {p_x0:.2f} + {p_y1_given_x1_z0:.2f} × {p_x1:.2f}) + {p_z1_given_x0:.2f} × ({p_y1_given_x0_z1:.2f} × {p_x0:.2f} + {p_y1_given_x1_z1:.2f} × {p_x1:.2f})."
-                        )
-            equiv_ans = (str(
-                    np.round(p_z0_given_x1, 2) * (np.round(p_y1_given_x0_z0, 2) * np.round(p_x0, 2) + np.round(p_y1_given_x1_z0, 2) * np.round(p_x1, 2)) +
-                    np.round(p_z1_given_x1, 2) * (np.round(p_y1_given_x0_z1, 2) * np.round(p_x0, 2) + np.round(p_y1_given_x1_z1, 2) * np.round(p_x1, 2)) - (
-                    np.round(p_z0_given_x0, 2) * (np.round(p_y1_given_x0_z0, 2) * np.round(p_x0, 2) + np.round(p_y1_given_x1_z0, 2) * np.round(p_x1, 2)) + 
-                    np.round(p_z1_given_x0, 2) * (np.round(p_y1_given_x0_z1, 2) * np.round(p_x0, 2) + np.round(p_y1_given_x1_z1, 2) * np.round(p_x1, 2)) )               
-            ))
-            return float(equiv_ans), equiv_str, equiv_ans 
+                        )         
+            term1 = np.round(p_z0_given_x1, 2) * (
+                np.round(p_y1_given_x0_z0, 2) * np.round(p_x0, 2)
+                + np.round(p_y1_given_x1_z0, 2) * np.round(p_x1, 2)
+            )
+            term2 = np.round(p_z1_given_x1, 2) * (
+                np.round(p_y1_given_x0_z1, 2) * np.round(p_x0, 2)
+                + np.round(p_y1_given_x1_z1, 2) * np.round(p_x1, 2)
+            )
+            term3 = np.round(p_z0_given_x0, 2) * (
+                np.round(p_y1_given_x0_z0, 2) * np.round(p_x0, 2)
+                + np.round(p_y1_given_x1_z0, 2) * np.round(p_x1, 2)
+            )
+            term4 = np.round(p_z1_given_x0, 2) * (
+                np.round(p_y1_given_x0_z1, 2) * np.round(p_x0, 2)
+                + np.round(p_y1_given_x1_z1, 2) * np.round(p_x1, 2)
+            )
+            equiv_ans = str(term1 + term2 - (term3 + term4))
+            return float(equiv_ans), equiv_str, equiv_ans
 
         p_diff = p_y1_do_x1 - p_y1_do_x0 
         se_p = np.sqrt( p_y1_do_x1*(1-p_y1_do_x1)/n + p_y1_do_x0*(1-p_y1_do_x0)/n )
@@ -227,6 +241,7 @@ def generate_dataset(
     return array
 
 def generate_table(xyz, generated_array, factor, number_type):
+    """ Generate the frequency table """
     if number_type == 'integers':
         samples = np.round(
             np.transpose(
@@ -275,9 +290,9 @@ def get_dictionaries():
     hard = easy.copy()
     return easy, medm, hard
 
-def get_names(EXAM_NAME):
+def get_names(exam_name):
     """ Variable names for prompt"""
-    if EXAM_NAME.startswith("mediatedCausalitySmoking"):
+    if exam_name.startswith("mediatedCausalitySmoking"):
         return (
             "smoke", # x_name
             "have lung cancer",  # y_name
@@ -294,10 +309,11 @@ def get_names(EXAM_NAME):
         )
 
 class MediatedCausalityArithmetic():
+    """ Prompts for the equivalent arithmetic """
 
     def __init__(self, **kwargs):
 
-        self.EXAM_NAME = 'mediatedCausalityArithmetic' 
+        self.exam_name = 'mediatedCausalityArithmetic' 
         self.n_problems = kwargs.get('n_problems', 120)
 
         # generation parameters:
@@ -319,12 +335,13 @@ class MediatedCausalityArithmetic():
             self.z_name,
             self.x_name_verb,
             self.y_name_noun,
-        ) = get_names(self.EXAM_NAME)
+        ) = get_names(self.exam_name)
 
         if self.generate_flag: # necessary for testing
             self.make_problems()
 
     def make_problems(self):
+        """ Generate mediated causality problems """
 
         easy, medm, hard = get_dictionaries()
         xyz = get_table()
@@ -360,9 +377,9 @@ class MediatedCausalityArithmetic():
                 (
                     p_diff_tmp,
                     equiv_str,
-                    equiv_ans,
+                    equiv_ans
                 ) = causality_from_table(table, 'arithmetic')
-
+                
                 # Calculate the difficulty level
                 abs_p_diff = np.abs(p_diff_tmp)
                 if np.isnan(p_diff_tmp):
@@ -374,23 +391,23 @@ class MediatedCausalityArithmetic():
                 # generated for that difficulty level 
                 if sorter.no_more_hard_problems_needed(hard):
                     continue
-                elif sorter.no_more_medm_problems_needed(medm):
+                if sorter.no_more_medm_problems_needed(medm):
                     continue
-                elif sorter.no_more_easy_problems_needed(easy):
+                if sorter.no_more_easy_problems_needed(easy):
                     continue
-                else:
-                    p_diff = np.append(p_diff,p_diff_tmp)
-                    difficulty = np.append(difficulty,diff_flag)
-                    questions = np.append(questions,equiv_str)
-                    answers = np.append(answers,equiv_ans)
-                    if sorter.get_diff_flag() == 'hard':
-                        hard["n_problems"] += 1
-                    elif sorter.get_diff_flag() == 'medm':
-                        medm["n_problems"] += 1
-                    elif sorter.get_diff_flag() == 'easy':
-                        easy["n_problems"] += 1                            
-                    # move on to the next example:
-                    break 
+
+                p_diff = np.append(p_diff,p_diff_tmp)
+                difficulty = np.append(difficulty,diff_flag)
+                questions = np.append(questions,equiv_str)
+                answers = np.append(answers,equiv_ans)
+                if sorter.get_diff_flag() == 'hard':
+                    hard["n_problems"] += 1
+                elif sorter.get_diff_flag() == 'medm':
+                    medm["n_problems"] += 1
+                elif sorter.get_diff_flag() == 'easy':
+                    easy["n_problems"] += 1                            
+                # move on to the next example:
+                break 
 
             total = int(
                 easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
@@ -412,7 +429,7 @@ class MediatedCausalityArithmetic():
         self.solutions  = answers
 
         self.metadata = {
-            "name": self.EXAM_NAME,
+            "name": self.exam_name,
             "p_diff": self.p_diff,
             "difficulty": self.difficulty,
             "a_count": np.count_nonzero(self.solutions == 'A'),
@@ -429,20 +446,15 @@ class MediatedCausalityArithmetic():
     def print_problems(self):
         """Print to terminal information on all n_problems"""
         nan_flag = 'No NaNs!'
-        if not self.EXAM_NAME == 'mediatedCausalityArithmetic':
-            idx_list = self.reverse_idx
         for i in range(0,self.n_problems):
-            if not self.EXAM_NAME == 'mediatedCausalityArithmetic':
-                idx = idx_list[i]
-            else:
-                idx = i
             print('\n')
             print(' Problem ',i)
-            print(' Question = ',self.questions[idx])
-            print(' Answer = ',self.solutions[idx])
-            print(' difficulty = ',self.difficulty[idx])
+            print(' Question = ',self.questions[i])
+            print(' Answer = ',self.solutions[i])
+            print(' p_diff  = ',self.p_diff[i])
+            print(' difficulty = ',self.difficulty[i])
             #print(" p_diff = ",self.p_diff[idx])
-            if np.isnan(self.p_diff[idx]):
+            if np.isnan(self.p_diff[i]):
                 nan_flag = 'NaNs!'
         print('\n ',nan_flag)
 
@@ -464,21 +476,34 @@ class MediatedCausalityArithmetic():
 
 class MediatedCausality():
 
-    def __init__(self, PLOT_PATH, EXAM_NAME, **kwargs):
+    def __init__(self, plot_path, exam_name, **kwargs):
 
-        self.PLOT_PATH = PLOT_PATH
-        self.EXAM_NAME = EXAM_NAME  
+        self.plot_path = plot_path
+        self.exam_name = exam_name
 
         # generation parameters:
         self.plot_flag = kwargs.get('plot_flag', False)
         self.generate_flag = kwargs.get('generate_flag', True)
-        self.answer_proportions = kwargs.get('answer_proportions', [0.333,0.333,0.333]) # ratios of A,B,C correct answers
-        self.n_samples = kwargs.get('n_samples', 50) # number of possible sample sizes per generated causal scenario
-        self.min_power10_sample_size = kwargs.get('min_power10_sample_size', 1)
-        self.max_power10_sample_size = kwargs.get('max_power10_sample_size', 4)  
-        self.difficulty_thresholds = kwargs.get('difficulty_thresholds', np.array([0.05,0.25]))  
-        self.ci_method = (EXAM_NAME).split('_')[1]
-        self.EXAM_NAME_wo_ci_method = (EXAM_NAME).split('_')[0]
+        self.answer_proportions = kwargs.get(
+            "answer_proportions",
+            [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
+        )
+        # n_samples = number of sample sizes generated per causal example
+        self.n_samples = kwargs.get('n_samples', 50) 
+        self.min_power10_sample_size = kwargs.get(
+            'min_power10_sample_size', 
+            1
+        )
+        self.max_power10_sample_size = kwargs.get(
+            'max_power10_sample_size', 
+            4
+        )  
+        self.difficulty_thresholds = kwargs.get(
+            'difficulty_thresholds', 
+            np.array([0.05,0.25])
+        )  
+        self.ci_method = (exam_name).split('_')[1]
+        self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_problems = kwargs.get('n_problems', 360)
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
         if not is_divisible_by_9(self.n_problems):
@@ -492,12 +517,13 @@ class MediatedCausality():
             self.z_name,
             self.x_name_verb,
             self.y_name_noun,
-        ) = get_names(self.EXAM_NAME)
+        ) = get_names(self.exam_name)
 
         if self.generate_flag: # necessary for testing
             self.make_problems()
 
     def make_problems(self):
+        """ Generate mediated causality problems """
 
         easy, medm, hard = get_dictionaries()
         xyz = get_table()
@@ -552,16 +578,15 @@ class MediatedCausality():
                     continue
                 elif sorter.no_more_easy_problems_needed(easy):
                     continue
-                else:
-                   
-                    # Get questions:
-                    questions_tmp[i] = self.get_prompts(table)
+               
+                # Get questions:
+                questions_tmp[i] = self.get_prompts(table)
 
-                    # Record the solutions:
-                    causality_tmp[i], answers_tmp[i] = self.record_solutions(
-                        p_diff_ci_lower_tmp[i],
-                        p_diff_ci_upper_tmp[i],
-                    )
+                # Record the solutions:
+                causality_tmp[i], answers_tmp[i] = self.record_solutions(
+                    p_diff_ci_lower_tmp[i],
+                    p_diff_ci_upper_tmp[i],
+                )
 
             # Randomly select a total sample size for the generated causal example
             random_choice_of_n_samples = np.random.randint(0, high=self.n_samples,size=self.n_samples)
@@ -608,79 +633,7 @@ class MediatedCausality():
                 causality_tmp,
                 diff_flag,
             )
-            # if self.plot_flag: # make a plot of the 95% confidence interval 
-            #     create_missing_directory(self.PLOT_PATH) 
-            #     import matplotlib # pylint: disable=import-outside-toplevel
-            #     matplotlib.use('Agg') # pylint: disable=import-outside-toplevel
-            #     import matplotlib.pyplot as plt # pylint: disable=import-outside-toplevel
-            #     low_n = np.power(10.,self.min_power10_sample_size)
-            #     high_n = np.power(10.,self.max_power10_sample_size)
-            #     figname = f"{self.PLOT_PATH}{self.ci_method}_example_{j}.png"
-            #     fig = plt.figure(figsize=(12, 5))
-            #     ax1=plt.subplot(1,2,1)
-            #     plt.fill_between(
-            #         n_samples_tmp,
-            #         p_diff_ci_lower_tmp,
-            #         p_diff_ci_upper_tmp,
-            #         color="royalblue",
-            #         alpha=0.2,
-            #         label="95% CI"
-            #     )
-            #     plt.plot(n_samples_tmp,p_diff_tmp,color='royalblue',linewidth=1)
-            #     plt.plot(
-            #         n_samples_tmp[select_idx],
-            #         p_diff_tmp[select_idx],
-            #         color='royalblue',
-            #         linestyle='None',
-            #         marker='*',
-            #         markersize=20,
-            #         linewidth=2
-            #     )
-            #     plt.legend(loc=1,fontsize=13,framealpha=1.)
-            #     plt.xlabel(r'$N_{samples}$',fontsize=18)
-            #     plt.ylabel(r'Probability',fontsize=16)
-            #     ax1.set_xscale("log")
-            #     plt.axis([low_n,high_n,-1.,1.])
-            #     ax1=plt.subplot(1,2,2)
-            #     plt.plot(
-            #         n_samples_tmp,
-            #         causality_tmp,
-            #         color='black',
-            #         linestyle='None',
-            #         marker='o',
-            #         markersize=10,
-            #         linewidth=2
-            #     )
-            #     plt.plot(
-            #         n_samples_tmp[select_idx],
-            #         causality_tmp[select_idx],
-            #         color='red',
-            #         linestyle='None',
-            #         marker='*',
-            #         markersize=20,
-            #         linewidth=2
-            #     )
-            #     plt.xlabel(r'$N_{samples}$',fontsize=18)
-            #     ax1.set_xscale("log")
-            #     plt.grid()
-            #     plt.axis([low_n,high_n,-0.5,2.5])
-            #     plt.title(diff_flag)
-            #     plt.yticks(
-            #         [0.,1.,2.],
-            #         [r'Uncertain (C)',r'$\neg X$ causes $Y$ (B)',r'$X$ causes $Y$ (A)'],
-            #         fontsize=14
-            #     )
-            #     plt.subplots_adjust(
-            #         top=0.95,
-            #         bottom=0.14,
-            #         left=0.07,
-            #         right=0.985,
-            #         hspace=0.4,
-            #         wspace=0.35
-            #     )
-            #     plt.savefig(figname,format="png")
-            #     plt.close(fig)         
- 
+       
             total = int(
                 easy["n_problems"] + medm["n_problems"] + hard["n_problems"]
             )
@@ -720,18 +673,8 @@ class MediatedCausality():
         # Ensures order of printed problems match the plot order
         self.reverse_idx = np.argsort(idx)
 
-        # elif self.EXAM_NAME == 'mediatedCausalityArithmetic':
-            
-        #     self.questions = questions
-        #     self.p_diff = p_diff
-        #     self.difficulty = difficulty
-        #     self.solutions  = answers
-        #     self.p_diff_ci_upper = np.zeros(len(difficulty))*np.nan
-        #     self.p_diff_ci_lower = np.zeros(len(difficulty))*np.nan
-        #     self.n_samples = np.zeros(len(difficulty))*np.nan
-
         self.metadata = {
-            "name": self.EXAM_NAME,
+            "name": self.exam_name,
             "p_diff": self.p_diff,
             "p_diff_ci_upper": self.p_diff_ci_upper,
             "p_diff_ci_lower": self.p_diff_ci_lower,
@@ -752,7 +695,7 @@ class MediatedCausality():
     def get_prompts(self, table):
         """ Get questions for different tests """
         q = []
-        if self.EXAM_NAME_wo_ci_method == 'mediatedCausalitySmoking' or self.EXAM_NAME_wo_ci_method == 'mediatedCausality':
+        if self.exam_name_wo_ci_method in ("mediatedCausalitySmoking", "mediatedCausality"):
             q = (f"Please answer only with 'A', 'B', or 'C'. "
             f"The number of samples that do not {self.x_name}, do not {self.y_name}, and do not {self.z_name} is {int(table[0,3]):d}. "
             f"{int(table[1,3]):d} samples do not {self.x_name}, do not {self.y_name}, and do {self.z_name}. "
@@ -763,8 +706,8 @@ class MediatedCausality():
             f"{int(table[6,3]):d} samples do {self.x_name}, do {self.y_name}, and do not {self.z_name}. "
             f"{int(table[7,3]):d} samples do {self.x_name}, do {self.y_name}, and do {self.z_name}. "
             f"Does {self.x_name_verb} cause {self.y_name_noun}? Please answer 'A' for yes, 'B' for no, or 'C' for uncertain."
-            )                               
-        elif self.EXAM_NAME == 'mediatedCausalityWithMethod_tdist': 
+            )
+        elif self.exam_name == 'mediatedCausalityWithMethod_tdist':
             q = (f"The number of samples that do not {self.x_name}, do not {self.y_name}, and do not {self.z_name} is {int(table[0,3]):d}. "
             f"{int(table[1,3]):d} samples do not {self.x_name}, do not {self.y_name}, and do {self.z_name}. "
             f"{int(table[2,3]):d} samples do not {self.x_name}, do {self.y_name}, and do not {self.z_name}. "
@@ -775,7 +718,7 @@ class MediatedCausality():
             f"{int(table[7,3]):d} samples do {self.x_name}, do {self.y_name}, and do {self.z_name}. "
             f"Does {self.x_name_verb} cause {self.y_name_noun}? Use the front-door criterion to determine if smoking causes cancer from the provided data. Use the standard error of proportion and t distribution on the final front door probability difference to calculate the 95% confidence level intervals. Use the the 95% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain."
             )    
-        elif self.EXAM_NAME == 'mediatedCausalityWithMethod_bootstrap': 
+        elif self.exam_name == 'mediatedCausalityWithMethod_bootstrap': 
             q = (f"Please answer only with 'A', 'B', or 'C'. "
             f"The number of samples that do not {self.x_name}, do not {self.y_name}, and do not {self.z_name} is {int(table[0,3]):d}. "
             f"{int(table[1,3]):d} samples do not {self.x_name}, do not {self.y_name}, and do {self.z_name}. "
@@ -786,10 +729,9 @@ class MediatedCausality():
             f"{int(table[6,3]):d} samples do {self.x_name}, do {self.y_name}, and do not {self.z_name}. "
             f"{int(table[7,3]):d} samples do {self.x_name}, do {self.y_name}, and do {self.z_name}. "
             f"Does {self.x_name_verb} cause {self.y_name_noun}? Use the front-door criterion of causal inference and only the provided data. Bootstrap the final front door probability difference to calculate 95% confidence level by numerically estimating cumulative probabilities. Use the the 95% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain."
-            )  
-        return q      
+            )
+        return q
 
-    #def make_plot(self,j,n_samples_tmp,p_diff_tmp,p_diff_ci_lower_tmp,p_diff_ci_upper_tmp,select_idx,causality_tmp,diff_flag):
     def make_plot(
         self,
         j,
@@ -801,14 +743,15 @@ class MediatedCausality():
         causality_tmp,
         diff_flag,
     ):
-        if self.plot_flag: # make a plot of the 95% confidence interval 
-            create_missing_directory(self.PLOT_PATH) 
+        """ Plot the causal example for varied n_samples """
+        if self.plot_flag: # make a plot of the 95% confidence interval
+            create_missing_directory(self.plot_path)
             import matplotlib # pylint: disable=import-outside-toplevel
             matplotlib.use('Agg') # pylint: disable=import-outside-toplevel
             import matplotlib.pyplot as plt # pylint: disable=import-outside-toplevel
             low_n = np.power(10.,self.min_power10_sample_size)
             high_n = np.power(10.,self.max_power10_sample_size)
-            figname = f"{self.PLOT_PATH}{self.ci_method}_example_{j}.png"
+            figname = f"{self.plot_path}{self.ci_method}_example_{j}.png"
             fig = plt.figure(figsize=(12, 5))
             ax1=plt.subplot(1,2,1)
             plt.fill_between(
@@ -872,16 +815,30 @@ class MediatedCausality():
                 wspace=0.35
             )
             plt.savefig(figname,format="png")
-            plt.close(fig)     
+            plt.close(fig)
 
     def update_dict(self, info, variables, idx, valid_idx):
+        """ Update easy, medm, and hard dictionaries """
 
         if variables["answers_tmp"][idx] == 'A':
-            if info["n_A"] < int(self.n_problems/9) and not np.isnan(variables["p_diff_tmp"][idx]):
+            if (
+                info["n_A"] < int(self.n_problems / 9)
+                and not np.isnan(variables["p_diff_tmp"][idx])
+            ):
                 info["n_A"] += 1
                 info["p_diff"] = np.append(info["p_diff"],variables["p_diff_tmp"][idx])
-                info["p_diff_ci_upper"] = np.append(info["p_diff_ci_upper"],variables["p_diff_ci_upper_tmp"][idx])
-                info["p_diff_ci_lower"] = np.append(info["p_diff_ci_lower"],variables["p_diff_ci_lower_tmp"][idx])
+                info["p_diff_ci_upper"] = np.append(
+                    info["p_diff_ci_upper"],
+                    variables["p_diff_ci_upper_tmp"][idx]
+                )
+                info["p_diff_ci_upper"] = np.append(
+                    info["p_diff_ci_upper"],
+                    variables["p_diff_ci_upper_tmp"][idx],
+                )
+                info["p_diff_ci_lower"] = np.append(
+                    info["p_diff_ci_lower"],
+                    variables["p_diff_ci_lower_tmp"][idx]
+                )
                 info["n_problems"] += 1
                 info["questions"] = np.append(info["questions"],variables["questions_tmp"][idx])
                 info["answers"] = np.append(info["answers"],variables["answers_tmp"][idx])
@@ -892,35 +849,54 @@ class MediatedCausality():
                 pass
 
         elif variables["answers_tmp"][idx] == 'B':
-            if info["n_B"] < int(self.n_problems/9) and not np.isnan(variables["p_diff_tmp"][idx]):
+            #if info["n_B"] < int(self.n_problems/9) and not np.isnan(variables["p_diff_tmp"][idx]):
+            if (
+                info["n_B"] < int(self.n_problems / 9)
+                and not np.isnan(variables["p_diff_tmp"][idx])
+            ):
                 info["n_B"] += 1
                 info["p_diff"] = np.append(info["p_diff"],variables["p_diff_tmp"][idx])
-                info["p_diff_ci_upper"] = np.append(info["p_diff_ci_upper"],variables["p_diff_ci_upper_tmp"][idx])
-                info["p_diff_ci_lower"] = np.append(info["p_diff_ci_lower"],variables["p_diff_ci_lower_tmp"][idx])
+                info["p_diff_ci_upper"] = np.append(
+                    info["p_diff_ci_upper"],
+                    variables["p_diff_ci_upper_tmp"][idx]
+                )
+                info["p_diff_ci_lower"] = np.append(
+                    info["p_diff_ci_lower"],
+                    variables["p_diff_ci_lower_tmp"][idx]
+                )
                 info["n_problems"] += 1
                 info["questions"] = np.append(info["questions"],variables["questions_tmp"][idx])
                 info["answers"] = np.append(info["answers"],variables["answers_tmp"][idx])
                 info["n_samples"] = np.append(info["n_samples"],variables["n_samples_tmp"][idx])
                 info["table"].append(variables["table_tmp"][idx,:,:])
-                valid_idx = True          
+                valid_idx = True
             else:
                 pass
 
         elif variables["answers_tmp"][idx] == 'C':
-            if info["n_C"] < int(self.n_problems/9) and not np.isnan(variables["p_diff_tmp"][idx]):
+            if (
+                info["n_C"] < int(self.n_problems / 9)
+                and not np.isnan(variables["p_diff_tmp"][idx])
+            ):
                 info["n_C"] += 1
                 info["p_diff"] = np.append(info["p_diff"],variables["p_diff_tmp"][idx])
-                info["p_diff_ci_upper"] = np.append(info["p_diff_ci_upper"],variables["p_diff_ci_upper_tmp"][idx])
-                info["p_diff_ci_lower"] = np.append(info["p_diff_ci_lower"],variables["p_diff_ci_lower_tmp"][idx])
+                info["p_diff_ci_upper"] = np.append(
+                    info["p_diff_ci_upper"],
+                    variables["p_diff_ci_upper_tmp"][idx]
+                )
+                info["p_diff_ci_lower"] = np.append(
+                    info["p_diff_ci_lower"],
+                    variables["p_diff_ci_lower_tmp"][idx]
+                )
                 info["n_problems"] += 1
                 info["questions"] = np.append(info["questions"],variables["questions_tmp"][idx])
                 info["answers"] = np.append(info["answers"],variables["answers_tmp"][idx])
                 info["n_samples"] = np.append(info["n_samples"],variables["n_samples_tmp"][idx])
                 info["table"].append(variables["table_tmp"][idx,:,:])
-                valid_idx = True           
+                valid_idx = True
             else:
                 pass
-      
+
         return valid_idx
 
     def record_solutions(self,ci_lower,ci_upper):
@@ -939,13 +915,9 @@ class MediatedCausality():
     def print_problems(self):
         """Print to terminal information on all n_problems"""
         nan_flag = 'No NaNs!'
-        if not self.EXAM_NAME == 'mediatedCausalityArithmetic':
-            idx_list = self.reverse_idx
+        idx_list = self.reverse_idx
         for i in range(0,self.n_problems):
-            if not self.EXAM_NAME == 'mediatedCausalityArithmetic':
-                idx = idx_list[i]
-            else:
-                idx = i
+            idx = idx_list[i]
             print('\n')
             print(' Problem ',i)
             print(' Q = ',self.questions[idx])
@@ -992,18 +964,18 @@ class MediatedCausality():
 
 # python3 -m source.benchmarks.mediated_causality
 
-# # EXAM_NAME = 'mediatedCausalityWithMethod_tdist'
-# EXAM_NAME = 'mediatedCausality_tdist'
-# # EXAM_NAME = 'mediatedCausalitySmoking_tdist'
-# # EXAM_NAME = 'mediatedCausalityArithmetic'
-# # EXAM_NAME = 'mediatedCausality_bootstrap'
-# # EXAM_NAME = 'mediatedCausalitySmoking_bootstrap'
-# # EXAM_NAME = 'mediatedCausalityWithMethod_bootstrap'
+# # exam_name = 'mediatedCausalityWithMethod_tdist'
+#exam_name = 'mediatedCausality_tdist'
+# # exam_name = 'mediatedCausalitySmoking_tdist'
+# # exam_name = 'mediatedCausalityArithmetic'
+# # exam_name = 'mediatedCausality_bootstrap'
+# # exam_name = 'mediatedCausalitySmoking_bootstrap'
+# # exam_name = 'mediatedCausalityWithMethod_bootstrap'
 
-# #EXAM_NAME = 'mediatedCausalityArithmetic'
-# PLOT_PATH = './figures/'
+exam_name = 'mediatedCausalityArithmetic'
+plot_path = './figures/'
 
-# if __name__ == "__main__":
-#     exam = MediatedCausality(PLOT_PATH, EXAM_NAME, plot_flag=True, n_problems=18)
-#     #exam = MediatedCausalityArithmetic(n_problems=9)
-#     exam.print_problems()
+if __name__ == "__main__":
+    #exam = MediatedCausality(plot_path, exam_name, plot_flag=True, n_problems=18)
+    exam = MediatedCausalityArithmetic(n_problems=9)
+    exam.print_problems()

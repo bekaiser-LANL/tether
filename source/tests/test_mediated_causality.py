@@ -1,5 +1,5 @@
 # tests/test_mediated_causality.py
-
+import re
 import pytest
 import numpy as np
 from source.benchmarks.mediated_causality import MediatedCausality
@@ -66,6 +66,13 @@ def test_arithmetic():
     # Check for NaNs in p_diff
     p_diff = np.array(metadata["p_diff"], dtype=float)
     assert not np.any(np.isnan(p_diff)), f"{'mediatedCausalityArithmetic'}: p_diff contains NaNs"
+
+    # Check the question & answer pairs are numerically correct
+    for i in range(0,n_problems):
+        num = re.findall(r"\d+\.\d+", questions[i])
+        num = [float(x) for x in num]
+        ans = num[0] * (num[1] * num[2] + num[3] * num[4]) + num[5] * (num[6] * num[7] + num[8] * num[9]) - num[10] * (num[11] * num[12] + num[13] * num[14]) - num[15] * (num[16] * num[17] + num[18] * num[19])
+        assert abs(float(solutions[i]) - ans) < 1e-4, "Values are not approximately equal"
 
     # Check output dimensions
     assert len(solutions) == n_problems
