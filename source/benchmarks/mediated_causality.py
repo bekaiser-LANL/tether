@@ -444,7 +444,7 @@ class MediatedCausalityArithmetic():
         print(' Done! ')
 
     def print_problems(self):
-        """Print to terminal information on all n_problems"""
+        """ Print to terminal information on all n_problems """
         nan_flag = 'No NaNs!'
         for i in range(0,self.n_problems):
             print('\n')
@@ -732,6 +732,7 @@ class MediatedCausality():
             )
         return q
 
+    # pylint: disable=too-many-arguments
     def make_plot(
         self,
         j,
@@ -957,7 +958,7 @@ class MediatedCausality():
     def get_n_samples(self):
         """Return a vector (of length n_problems) of the number of samples in each problem"""
         return self.n_samples
- 
+
 #===============================================================================
 
 # TEST
@@ -972,10 +973,10 @@ class MediatedCausality():
 # # exam_name = 'mediatedCausalitySmoking_bootstrap'
 # # exam_name = 'mediatedCausalityWithMethod_bootstrap'
 
-exam_name = 'mediatedCausalityArithmetic'
-plot_path = './figures/'
+# exam_name = 'mediatedCausalityArithmetic'
+# plot_path = './figures/'
 
-if __name__ == "__main__":
-    #exam = MediatedCausality(plot_path, exam_name, plot_flag=True, n_problems=18)
-    exam = MediatedCausalityArithmetic(n_problems=9)
-    exam.print_problems()
+# if __name__ == "__main__":
+#     #exam = MediatedCausality(plot_path, exam_name, plot_flag=True, n_problems=18)
+#     exam = MediatedCausalityArithmetic(n_problems=9)
+#     exam.print_problems()
