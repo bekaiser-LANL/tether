@@ -1,8 +1,7 @@
 import numpy as np
 import math as ma
-import random
 
-class standardDeviation():
+class StandardDeviation():
 
     def __init__(self, range=[-100,100], n_numbers = 20, decimal_places=4, n_problems=100):
         self.n_problems = n_problems # all tests need this

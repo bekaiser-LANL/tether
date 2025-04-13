@@ -13,7 +13,7 @@ def probability_x(arr,var_idx,outcome_idx):
     # var_idx = 0,1,2 for x,y,z
     # outcome_idx = 0 or 1
     filtered_rows = arr[arr[:, var_idx] == outcome_idx]
-    return np.sum(filtered_rows[:, 3]) / np.sum(arr[:, 3]) # outputs P(x), for example
+    return np.sum(filtered_rows[:, 3]) / np.sum(arr[:, 3])
 
 def probability_z_given_x(data, x, z):
     """ Compute P(z|x) """
@@ -24,7 +24,8 @@ def probability_z_given_x(data, x, z):
     mask2 = (data[:, 0] == x) & (data[:, 1] == 1) & (data[:, 2] == z)
     sum_step1 = np.sum(data[mask1, 3]) + np.sum(data[mask2, 3])
 
-    # Step 2: Get all values from the fourth column where the first column equals x, then sum them
+    # Step 2: Get all values from the fourth column where the first
+    # column equals x, then sum them
     mask3 = (data[:, 0] == x)
     sum_step2 = np.sum(data[mask3, 3])
 
@@ -210,9 +211,7 @@ def estimate_p_y1_do_x1_dataframe(df):
     """Compute P(Y=1|do(X=1)) from Pandas dataframe"""
     p_x = df['X'].value_counts(normalize=True)
     p_z_given_x1 = df[df['X'] == 1]['Z'].value_counts(normalize=True)
-    #print(p_z_given_x1)
     p_y1_given_xz = df.groupby(['X', 'Z'])['Y'].mean()
-    #print(p_y1_given_xz)
 
     p = 0.0
     for z in p_z_given_x1.index:
@@ -301,7 +300,7 @@ def get_dictionaries():
 
 def get_names(exam_name):
     """ Variable names for prompt"""
-    if exam_name.startswith("mediatedCausalitySmoking"):
+    if exam_name.startswith("MediatedCausalitySmoking"):
         return (
             "smoke", # x_name
             "have lung cancer",  # y_name
@@ -322,7 +321,7 @@ class MediatedCausalityArithmetic():
 
     def __init__(self, **kwargs):
 
-        self.exam_name = 'mediatedCausalityArithmetic'
+        self.exam_name = 'MediatedCausalityArithmetic'
         self.n_problems = kwargs.get('n_problems', 120)
 
         # generation parameters:
@@ -568,10 +567,10 @@ class MediatedCausality():
             questions_tmp = np.zeros([self.n_samples],dtype=object)
             answers_tmp = np.zeros([self.n_samples],dtype=object)
             n_samples_tmp = np.zeros([self.n_samples])
-            causality_tmp =  np.zeros([self.n_samples]) # (for plotting) 
+            causality_tmp =  np.zeros([self.n_samples]) # (for plotting)
             table_tmp =  np.zeros([self.n_samples,8,4])
-                  
-            for i in reversed(range(self.n_samples)): 
+
+            for i in reversed(range(self.n_samples)):
 
                 table = generate_table(xyz, generated_array, factor[i], 'integers')
                 table_tmp[i,:,:] = table
@@ -587,14 +586,15 @@ class MediatedCausality():
                 abs_p_diff = np.abs(p_diff_tmp[i])
                 diff_flag = sorter.update_difficulty(abs_p_diff)
 
-                # Check if there are already enough problems generated for that difficulty level 
+                # Check if there are already enough problems
+                # generated for that difficulty level
                 if sorter.no_more_hard_problems_needed(hard):
                     continue
                 elif sorter.no_more_medm_problems_needed(medm):
                     continue
                 elif sorter.no_more_easy_problems_needed(easy):
                     continue
-               
+
                 # Get questions:
                 questions_tmp[i] = self.get_prompts(table)
 
@@ -646,7 +646,7 @@ class MediatedCausality():
                         select_idx,
                         valid_idx
                     )
-
+    
                 k += 1 # loop over sample sizes
 
                 if k == int(self.n_samples):
@@ -763,8 +763,8 @@ class MediatedCausality():
         """ Get questions for different tests """
         q = []
         if self.exam_name_wo_ci_method in (
-            "mediatedCausalitySmoking",
-            "mediatedCausality",
+            "MediatedCausalitySmoking",
+            "MediatedCausality",
         ):
             q = (
             f"The number of samples that do not {self.x_name}, do not "
@@ -786,7 +786,7 @@ class MediatedCausality():
             f"Does {self.x_name_verb} cause {self.y_name_noun}? Please " 
             f"answer 'A' for yes, 'B' for no, or 'C' for uncertain."
             )
-        elif self.exam_name == 'mediatedCausalityWithMethod_tdist':
+        elif self.exam_name == 'MediatedCausalityWithMethod_tdist':
             q = (f"The number of samples that do not {self.x_name}, do not "
             f"{self.y_name}, and do not {self.z_name} is {int(table[0,3]):d}. "
             f"{int(table[1,3]):d} samples do not {self.x_name}, do not "
@@ -811,7 +811,7 @@ class MediatedCausality():
             f"Use the the 95% confidence levels to answer 'A' for yes, "
             f"'B' for no, or 'C' for uncertain."
             )
-        elif self.exam_name == 'mediatedCausalityWithMethod_bootstrap':
+        elif self.exam_name == 'MediatedCausalityWithMethod_bootstrap':
             q = (f"Please answer only with 'A', 'B', or 'C'. "
             f"The number of samples that do not {self.x_name}, do not "
             f"{self.y_name}, and do not {self.z_name} is {int(table[0,3]):d}. "
@@ -1071,15 +1071,15 @@ class MediatedCausality():
 
 # python3 -m source.benchmarks.mediated_causality
 
-# # # exam_name = 'mediatedCausalityWithMethod_tdist'
-# #exam_name = 'mediatedCausality_tdist'
-# exam_name = 'mediatedCausalitySmoking_tdist'
-# # # exam_name = 'mediatedCausalityArithmetic'
-# # # exam_name = 'mediatedCausality_bootstrap'
-# # # exam_name = 'mediatedCausalitySmoking_bootstrap'
-# # # exam_name = 'mediatedCausalityWithMethod_bootstrap'
+# # # exam_name = 'MediatedCausalityWithMethod_tdist'
+# #exam_name = 'MediatedCausality_tdist'
+# exam_name = 'MediatedCausalitySmoking_tdist'
+# # # exam_name = 'MediatedCausalityArithmetic'
+# # # exam_name = 'MediatedCausality_bootstrap'
+# # # exam_name = 'MediatedCausalitySmoking_bootstrap'
+# # # exam_name = 'MediatedCausalityWithMethod_bootstrap'
 
-# #exam_name = 'mediatedCausalityArithmetic'
+# #exam_name = 'MediatedCausalityArithmetic'
 # plot_path = './figures/'
 
 # if __name__ == "__main__":

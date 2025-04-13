@@ -1,28 +1,21 @@
-# generate the benchmarks only
+""" Randomly generate new benchmarks """
 
 # Benchmark choices:
-# 'mediatedCausalityArithmetic'  
-# 'mediatedCausality_bootstrap' 
-# 'mediatedCausalitySmoking_bootstrap' 
-# 'mediatedCausalityWithMethod_bootstrap' 
-# 'mediatedCausalityWithMethod_tdist' 
-# 'mediatedCausality_tdist' 
-# 'mediatedCausalitySmoking_tdist' 
-# 'standardDeviation'
-# 'significantFigures'
+# 'MediatedCausalityArithmetic'  
+# 'MediatedCausality_bootstrap' 
+# 'MediatedCausalitySmoking_bootstrap' 
+# 'MediatedCausalityWithMethod_bootstrap' 
+# 'MediatedCausalityWithMethod_tdist' 
+# 'MediatedCausality_tdist' 
+# 'MediatedCausalitySmoking_tdist' 
+# 'StandardDeviation'
+# 'SignificantFigures'
 
 from source.generator import Generator
 
-exam_name = 'mediatedCausalitySmoking_tdist'
-generate = False # True = generate a new benchmark, False = load a saved benchmark .npz
-n_problems = 9 # number of problems in the exam
+exam_name = 'MediatedCausalitySmoking_tdist'
+benchmark_dir = '/Users/l281800/Desktop/benchmarks/'
 
-settings = {
-    "exam_idx": 1, # leave 1 unless you need to make multiples of the same exam
-    "path": '/Users/l281800/Desktop/', # path for the benchmark reports (i.e., results)  
-    "n_problems": n_problems, # number of problems in the benchmark
-}
+Generator(benchmark_dir, exam_name, n_problems=9)  
 
-Generator(settings, exam_name) #, checkpoints=2, restart=4) 
-
-print('\n ' + exam_name + ' benchmark generated! \n ')
+print(f"\n {exam_name} benchmark generated! \n")

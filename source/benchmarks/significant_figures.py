@@ -2,7 +2,7 @@ import numpy as np
 import math as ma
 import random
 
-class significantFigures():
+class SignificantFigures():
 
     def __init__(self, max_digits=10, n_problems=100):
         self.n_problems = n_problems # all tests need this
