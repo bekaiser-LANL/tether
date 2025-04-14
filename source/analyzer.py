@@ -1,15 +1,16 @@
+""" Tools for analyzing saved benchmarks """
 import numpy as np
-import math as ma
 import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import re
-import pandas as pd
+# matplotlib.use('Agg')
+# import matplotlib.pyplot as plt
+# import re
+# import pandas as pd
 
 # add bootstrapped confidence
 # add l1 norm error for standard deviation
 
-class analyzer():
+class Analyzer():
+    """ Tools for analyzing saved benchmarks """
 
     def __init__(self, path, model, benchmark, exam_idx):
         self.path      = path
@@ -17,9 +18,9 @@ class analyzer():
         self.benchmark = benchmark
         self.exam_idx = exam_idx
 
-        if self.benchmark == 'mediatedCausalitySmoking' or self.benchmark == 'mediatedCausalitySmokingWithMethod':
+        if self.benchmark.startswith(("MediatedCausalitySmoking",
+                                      "MediatedCausalitySmokingWithMethod")):
             self.data = self.getMediatedCausalityResults()
-
 
     def get_data(self):
         return self.data
@@ -127,4 +128,3 @@ class analyzer():
             "total_score": self.total_score
         }
         return data
-

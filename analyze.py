@@ -1,14 +1,9 @@
 """ Analyze benchmark results """
+from source import Analyzer
 
-import subprocess
-import requests
-import time
-import numpy as np
-import re
-from source import analyzer
-
-path        = '/Users/l281800/Desktop/benchmarks/completed/' # path to the completed benchmarks you want to analyze
-fig_path    = '/Users/l281800/Desktop/benchmarks/figures/'
+# path to the completed benchmarks you want to analyze:
+path        = '/Users/l281800/Desktop/benchmarks/completed/'
+figure_path = '/Users/l281800/Desktop/benchmarks/figures/'
 exam_idx    = 1
 
 benchmarks  = ['mediatedCausalitySmoking','mediatedCausalitySmokingWithMethod']
@@ -18,7 +13,7 @@ benchmarks  = ['mediatedCausalitySmoking','mediatedCausalitySmokingWithMethod']
 
 print('\n\n GPT-4o:')
 
-mCS_4o     = analyzer(path,'gpt-4o',benchmarks[0],exam_idx).get_data()
+mCS_4o     = Analyzer(path,'gpt-4o',benchmarks[0],exam_idx).get_data()
 print('\n mCS A_score = ',mCS_4o['A_score'])
 print(' mCS B_score = ',mCS_4o['B_score'])
 print(' mCS C_score = ',mCS_4o['C_score'])
