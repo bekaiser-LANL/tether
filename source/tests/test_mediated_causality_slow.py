@@ -8,12 +8,12 @@ from source.benchmarks.mediated_causality import MediatedCausalityArithmetic
 from source.benchmarks.mediated_causality import get_table
 
 EXAM_NAMES = [
-    #"mediatedCausalitySmoking_tdist",
-    "mediatedCausality_tdist",
-    # "mediatedCausalityWithMethod_tdist",
-    # "mediatedCausalitySmoking_bootstrap",
-    # "mediatedCausalityWithMethod_bootstrap",
-    # "mediatedCausality_bootstrap",
+    #"MediatedCausalitySmoking_tdist",
+    "MediatedCausality_tdist",
+    # "MediatedCausalityWithMethod_tdist",
+    # "MediatedCausalitySmoking_bootstrap",
+    # "MediatedCausalityWithMethod_bootstrap",
+    # "MediatedCausality_bootstrap",
 ]
 
 def get_method(name: str) -> str:
