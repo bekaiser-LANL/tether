@@ -61,6 +61,15 @@ class proctor():
                 plot_path = self.reuse + exam_name + '_figures/'
                 self.exam = mediatedCausality(plot_path,exam_name,name_list=name_list,plot_flag=True,n_problems=self.n_problems)
 
+            elif exam_name == 'equations':
+                from .benchmarks.equations import equations
+                self.exam = equations()
+
+            elif exam_name == 'simpleInequality':
+                from .benchmarks.simpleInequality import simpleInequality
+                self.exam = simpleInequality()
+
+
         else: # use a saved benchmark
 
             # # read saved .txt files
@@ -254,6 +263,105 @@ class proctor():
                 #     return f"Error: {e}"  
 
             self.benchmark.write_npz_report(report, grade_, correct_, response_)  
+
+        # for locally downloaded multimodal LLMS ******************************
+        elif self.model == "Llama-3.2-90B-Vision-Instruct" or self.model == "Llama-3.2-11B-Vision":
+
+            # Load the model and tokenizer
+            model = MllamaForConditionalGeneration.from_pretrained(self.modelpath + self.model)
+            processor = AutoProcessor.from_pretrained(self.modelpath + self.model)
+            model.tie_weights()
+            self.path = self.imgpath
+            # Get all image files in the directory (supports PNG, JPG, JPEG)
+            image_files = [f for f in os.listdir(self.path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+            responses = []
+            # Iterate through images
+            for index, img_file in enumerate(image_files):
+                img_path = os.path.join(self.path, img_file)
+                # Read image using OpenCV
+                image = Image.open(img_path)
+                print(img_file)
+
+                # Convert back to PIL (if needed for processor)
+                prompt = self.questions[index]#"<|begin_of_text|><|image|>Describe this equation"#                inputs = processor(images=image, text=prompt, return_tensors="pt")
+
+               # Generate response from the model
+                with torch.no_grad():
+                    outputs = model.generate(**inputs, max_new_tokens=200, do_sample=True, temperature=0.9)
+
+                # Decode the generated text
+                response = processor.decode(outputs[0])
+
+            # grade:
+                if exam_name == 'equations':#'mediatedCausalitySmoking' or exam_name == 'mediatedCausalitySmokingWithMethod':
+                    correct = self.grader.grade_images(self.solutions[index],response)
+                    continue
+
+                if correct:
+                    grade[i] = 1.0
+                else:
+                    grade[i] = 0.0
+
+                report['grade'] = grade
+                report['sim score'] = correct
+                report['question_idx'] = index
+                report['correct'] = img_file
+                report['response'] = response
+                self.print_questions_to_terminal(report)
+                self.benchmark.write_report(report) #model_str, exam_str, length_str, i, self.questions, self.solutions, response, correct, grade, self.save)
+
+                # Save the benchmark (a blank exam for re-using later):
+                if self.record_blank: #self.is_integer(self.save):
+                    self.benchmark.save_blank_exam(report) #exam_str, length_str, i, self.questions, self.solutions, self.reuse, self.save)
+
+
+        # for locally downloaded text-based LLMS ******************************
+        elif self.model == "Llama-3.3-70B-Instruct" or self.model == 'Llama-3.2-1B' or self.model == 'OpenMath2-Llama3.1-8B' or self.model =='CodeLlama-7b-Instruct-hf' or self.model == "WizardMath-7B-V1.1" or self.model == "Mathstral-7B-v0.1":
+            
+            # Load the model and tokenizer
+            model = AutoModelForCausalLM.from_pretrained(self.modelpath + self.model)
+            tokenizer = AutoTokenizer.from_pretrained(self.modelpath + self.model)
+            # Set pad_token_id to eos_token_id if not already set
+            if model.config.pad_token_id is None:
+                model.config.pad_token_id = model.config.eos_token_id
+
+            for i in range(0,self.length): # length of exam
+
+            # Define the prompt
+                prompt = self.questions[i]
+                inputs = tokenizer(prompt, return_tensors="pt")
+
+            # Generate response
+                #max_length = 400
+                max_new_tokens = 5
+                generate_ids = model.generate(
+                    inputs.input_ids,
+                    attention_mask=inputs.attention_mask,
+                    max_new_tokens=max_new_tokens
+                )
+                response = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+
+            # grade:
+                if exam_name == 'simpleInequality' or exam_name == 'mediatedCausalitySmoking' or exam_name == 'mediatedCausalitySmokingWithMethod':
+                    correct = self.grader.grade_string_multiple_choice(self.solutions[i],response,choices=['A', 'B', 'C'])
+                else:
+                    correct = self.grader.grade_string_exactly(self.solutions[i],response)
+                if correct:
+                    grade[i] = 1.0
+                else:
+                    grade[i] = 0.0
+
+                report['grade'] = grade
+                report['correct'] = correct
+                report['question_idx'] = i
+                report['response'] = response
+                self.print_questions_to_terminal(report)
+                self.benchmark.write_report(report) #model_str, exam_str, length_str, i, self.questions, self.solutions, response, correct, grade, self.save)
+
+                # Save the benchmark (a blank exam for re-using later):
+                if self.record_blank: #self.is_integer(self.save):
+                    self.benchmark.save_blank_exam(report) #exam_str, length_str, i, self.questions, self.solutions, self.reuse, self.save)
+
 
     def max_multiple(self, a: int, b: int) -> int:
         """
