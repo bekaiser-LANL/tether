@@ -78,7 +78,12 @@ class Generator():
             )
 
         # For grading and saving:
-        self.metadata  = self.exam.get_metadata()
+        self.n_samples  = self.exam.get_n_samples()
+        self.tables  = self.exam.get_tables()
+        self.p_diff  = self.exam.get_p_diff()
+        self.p_diff_ci_upper  = self.exam.get_p_diff_ci_upper()
+        self.p_diff_ci_lower  = self.exam.get_p_diff_ci_lower()
+        self.difficulty  = self.exam.get_difficulty()
         self.questions = self.exam.get_questions()
         self.solutions = self.exam.get_solutions()
         length_str = f"\n Number of questions: {self.n_problems}"
@@ -86,7 +91,7 @@ class Generator():
         model_str = '\n Model: '
         temp_str = '\n Temperature: ' + str(self.temperature)
         effort_str = '\n Reasoning effort: ' + self.reasoning_effort
-        self.benchmark = RecordBenchmark(self.path,'none',self.exam)
+        #self.benchmark = RecordBenchmark(self.path,'none',self.exam)
 
         report = {
             "exam_name": exam_name,
@@ -100,10 +105,15 @@ class Generator():
             "exam_idx": self.exam_idx,
             "reuse": self.save_path,
             "checkpoints": self.checkpoints,
-            "metadata": self.metadata
+            "n_samples": self.n_samples,
+            "tables": self.tables,
+            "p_diff": self.p_diff,
+            "p_diff_ci_upper":self.p_diff_ci_upper,
+            "p_diff_ci_lower":self.p_diff_ci_lower,
+            "difficulty":self.difficulty
         }
 
-        # save an npz file of this exam:
-        self.benchmark.save_blank_exam_npz(report)
-        if self.record_txt: # not recommended (files too big)
-            self.benchmark.save_blank_exam_txt(report)
+        # # save an npz file of this exam:
+        # self.benchmark.save_blank_exam_npz(report)
+        # if self.record_txt: # not recommended (files too big)
+        #     self.benchmark.save_blank_exam_txt(report)

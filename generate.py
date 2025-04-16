@@ -1,7 +1,6 @@
 """ Randomly generate new benchmarks """
 
-# Benchmark choices:
-# 'MediatedCausalityArithmetic'  
+# Benchmark choices: 
 # 'MediatedCausality_bootstrap' 
 # 'MediatedCausalitySmoking_bootstrap' 
 # 'MediatedCausalityWithMethod_bootstrap' 
