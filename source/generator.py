@@ -50,11 +50,11 @@ class Generator():
 
         if self.exam_name_wo_ci_method == 'SignificantFigures':
 
-            self.exam = SignificantFigures(n_problems=self.n_problems)
+            self.problems = SignificantFigures(n_problems=self.n_problems)
 
         elif self.exam_name_wo_ci_method == 'StandardDeviation':
 
-            self.exam = StandardDeviation(
+            self.problems = StandardDeviation(
                 n_numbers=self.n_numbers,
                 n_problems=self.n_problems
             )
@@ -62,36 +62,29 @@ class Generator():
         elif self.exam_name_wo_ci_method in ('MediatedCausalitySmoking',
                                              'MediatedCausality'):
 
-            x_name = 'smoke'
-            z_name = 'have tar deposits in lungs'
-            y_name = 'have lung cancer'
-            x_name_verb = 'smoking'
-            y_name_noun = 'lung cancer'
-            name_list = [x_name,z_name,y_name,x_name_verb,y_name_noun]
             plot_path = self.save_path + exam_name + '_figures/'
-            self.exam = MediatedCausality(
+            self.problems = MediatedCausality(
                 plot_path,
                 exam_name,
-                name_list=name_list,
                 plot_flag=True,
                 n_problems=self.n_problems
             )
 
         # For grading and saving:
-        self.n_samples  = self.exam.get_n_samples()
-        self.tables  = self.exam.get_tables()
-        self.p_diff  = self.exam.get_p_diff()
-        self.p_diff_ci_upper  = self.exam.get_p_diff_ci_upper()
-        self.p_diff_ci_lower  = self.exam.get_p_diff_ci_lower()
-        self.difficulty  = self.exam.get_difficulty()
-        self.questions = self.exam.get_questions()
-        self.solutions = self.exam.get_solutions()
+        self.n_samples = self.problems.get_n_samples()
+        self.tables = self.problems.get_tables()
+        self.p_diff = self.problems.get_p_diff()
+        self.p_diff_ci_upper = self.problems.get_p_diff_ci_upper()
+        self.p_diff_ci_lower = self.problems.get_p_diff_ci_lower()
+        self.difficulty = self.problems.get_difficulty()
+        self.questions = self.problems.get_questions()
+        self.solutions = self.problems.get_solutions()
         length_str = f"\n Number of questions: {self.n_problems}"
         exam_str = '\n Exam: ' + exam_name
         model_str = '\n Model: '
         temp_str = '\n Temperature: ' + str(self.temperature)
         effort_str = '\n Reasoning effort: ' + self.reasoning_effort
-        #self.benchmark = RecordBenchmark(self.path,'none',self.exam)
+        #self.benchmark = RecordBenchmark(self.path,'none',self.problems) #<---- FIX THIS NEXT
 
         report = {
             "exam_name": exam_name,
@@ -114,6 +107,6 @@ class Generator():
         }
 
         # # save an npz file of this exam:
-        # self.benchmark.save_blank_exam_npz(report)
+        # self.benchmark.save_blank_exam_npz(report)  #<---- FIX THIS NEXT, NEEDS TO SAVE WHATEVER IS IN report
         # if self.record_txt: # not recommended (files too big)
         #     self.benchmark.save_blank_exam_txt(report)
