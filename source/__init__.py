@@ -3,8 +3,6 @@ from . import grader
 from . import recorder
 from . import generator
 from . import utils
-from . import uncertainty_quantification 
-from . import sorter
 from .benchmarks import significant_figures
 from .benchmarks import standard_deviation
 from .benchmarks import mediated_causality
@@ -16,10 +14,8 @@ __all__ = [
     "proctor",
     "generator",    
     "recorder",
-    "sorter",
     "significant_figures",
     "standard_deviation",
     "mediated_causality",
-    "uncertainty_quantification",
     "utils"
 ]

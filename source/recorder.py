@@ -7,7 +7,7 @@ class RecordBenchmark():
         self.path = path
         self.model = model
         self.exam = exam
-        self.exam_name = self.exam.metadata["name"]
+        self.exam_name = self.exam["exam_name"]
 
     def create_missing_directory(self,directory_path):
         if not os.path.exists(directory_path):
