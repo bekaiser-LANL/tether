@@ -8,9 +8,23 @@ To benchmark a model you need to choose the model (e.g., llama3.2), the interfac
 
 ## Run a benchmark
 
+`$ python3 run.py BENCHMARK MODEL /PATH/benchmarks/ `
+
 ## Analyze a benchmark
 
-# Available benchmarks 
+# Models
+
+## Adding your own model
+
+## OpenAI models
+
+'o1' 'gpt-4o' 'o3-mini' 'gpt-4.5-preview'
+
+## Ollama models
+
+'llama3.2' 'llama3'
+
+# Benchmarks 
 
 ## SignificantFigures
 Randomly generates floating point numbers and a random number of significant figures, then asks the LLM to express the number in scientific E notation using the correct number of significant figures. 
