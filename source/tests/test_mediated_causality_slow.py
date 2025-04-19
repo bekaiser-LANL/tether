@@ -6,7 +6,7 @@ from source.benchmarks.mediated_causality import MediatedCausality
 from source.benchmarks.mediated_causality import causality_from_table
 from source.benchmarks.mediated_causality import get_table
 
-EXAM_NAMES = [
+exam_names = [
     "MediatedCausalitySmoking_tdist",
     # "MediatedCausality_tdist",
     # "MediatedCausalityWithMethod_tdist",
@@ -25,7 +25,7 @@ def get_method(name: str) -> str:
 def get_prefix(s: str) -> str:
     return s.split('_', 1)[0]
 
-@pytest.mark.parametrize("exam_name", EXAM_NAMES)
+@pytest.mark.parametrize("exam_name", exam_names)
 def test_prompts_nans_and_output_dims(exam_name):
     """
     Parametrized test for various mediatedCausality exam variants:

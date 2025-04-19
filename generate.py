@@ -1,5 +1,7 @@
 """ Randomly generate new benchmarks """
 
+# Needs to be set up so you can do: python3 generate.py 'model_name' with kwargs
+
 # Benchmark choices: 
 # 'MediatedCausality_bootstrap' 
 # 'MediatedCausalitySmoking_bootstrap' 
@@ -13,8 +15,8 @@
 from source.generator import Generator
 
 exam_name = 'MediatedCausalitySmoking_tdist'
-benchmark_dir = '/Users/l281800/Desktop/benchmarks/'
+path = '/Users/l281800/Desktop/benchmarks/'
 
-Generator(benchmark_dir, exam_name, n_problems=9)  
+Generator(path, exam_name, n_problems=9, plot_flag=True)  
 
 print(f"\n {exam_name} benchmark generated! \n")

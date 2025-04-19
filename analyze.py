@@ -8,6 +8,27 @@ exam_idx    = 1
 
 benchmarks  = ['mediatedCausalitySmoking','mediatedCausalitySmokingWithMethod']
 
+#===============================================================================
+
+# path_to_benchmarks = '/Users/l281800/Desktop/benchmarks/'
+# npz_filename = path_to_benchmarks + 'results/' + benchmark + '.npz'
+
+# import numpy as np
+
+# # Load the .npz file
+# data = np.load(npz_filename, allow_pickle=True)
+
+# # List all keys stored in the file
+# print("\n\n\n Keys:", data.files)
+
+# # Access individual arrays
+# print("\n\n First question:\n ", data["question"][0])
+# print("\n First response:\n ", data["responses"][0])
+# print("\n First solution:\n ", data["solution"][0])
+# print("\n\n Last question:\n ", data["question"][-1])
+# print("\n Last response:\n ", data["responses"][-1])
+# print("\n Last solution:\n ", data["solution"][-1])
+# print("\n Last p_diff:\n ", data["p_diff"][-1])
 
 #===============================================================================
 
