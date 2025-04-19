@@ -8,11 +8,11 @@ from source.benchmarks.mediated_causality import get_table
 
 exam_names = [
     "MediatedCausalitySmoking_tdist",
-    # "MediatedCausality_tdist",
-    # "MediatedCausalityWithMethod_tdist",
-    # "MediatedCausalitySmoking_bootstrap",
-    # "MediatedCausalityWithMethod_bootstrap",
-    # "MediatedCausality_bootstrap",
+    "MediatedCausality_tdist",
+    "MediatedCausalityWithMethod_tdist",
+    "MediatedCausalitySmoking_bootstrap",
+    "MediatedCausalityWithMethod_bootstrap",
+    "MediatedCausality_bootstrap",
 ]
 
 def get_method(name: str) -> str:
@@ -52,7 +52,6 @@ def test_prompts_nans_and_output_dims(exam_name):
         result = causality_from_table(table, get_method(exam_name))
         p_diff_verify = result[:1]
         assert np.allclose(p_diff[i], p_diff_verify, atol=1e-4)
-
 
     # Check for NaNs in p_diff
     #p_diff = np.array(metadata["p_diff"], dtype=float)

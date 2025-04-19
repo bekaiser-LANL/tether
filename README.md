@@ -8,17 +8,21 @@ To do
 
 # Available benchmarks 
 
-## standardDeviation 
-Randomly generates sets of 20 integers, then asks the LLM to compute the standard deviation to 4 decimal places by default.
-
-## significantFigures
+## SignificantFigures
 Randomly generates floating point numbers and a random number of significant figures, then asks the LLM to express the number in scientific E notation using the correct number of significant figures. 
 
-## mediatedCausalitySmoking 
-Randomly generates tables of 3 binary variables corresponding to cause (X, smoking), effect (Y, lung cancer), and mediator (Z, tar in lungs) with randomly chosen sample sizes. Asks the LLM to determine if A) X causes Y with 95% confidence, B) X does not cause Y with 95% confidence, or C) the causal relationship is uncertain at the 95% confidence level. The correct answer is computed using the front door criterion and the standard error of proportion is used to compute the 95% confidence intervals.
+## 'StandardDeviation'
+Randomly generates sets of 20 integers, then asks the LLM to compute the standard deviation to 4 decimal places by default.
 
-## mediatedCausalitySmokingWithMethod
-The same as mediatedCausalitySmoking but the prompt includes instructions on how to compute the correct answer: ``Does smoking cause lung cancer? Use the front-door criterion to determine if smoking causes cancer from the provided data. Use the standard error of proportion and full range error propagation to calculate the most conservative estimate of the 95% confidence level for the front-door criterion calculation. Use the 95% confidence level intervals to answer 'A' for yes, 'B' for no, or 'C' for uncertain.''
+## MediatedCausality 
+### MediatedCausalityArithmetic
+### MediatedCausality_bootstrap
+### MediatedCausalitySmoking_bootstrap
+Randomly generates tables of 3 binary variables corresponding to cause (X, smoking), effect (Y, lung cancer), and mediator (Z, tar in lungs) with randomly chosen sample sizes. Asks the LLM to determine if A) X causes Y with 95% confidence, B) X does not cause Y with 95% confidence, or C) the causal relationship is uncertain at the 95% confidence level. The correct answer is computed using the front door criterion and the standard error of proportion is used to compute the 95% confidence intervals.
+### MediatedCausalityWithMethod_bootstrap
+### MediatedCausalityWithMethod_tdist
+### MediatedCausality_tdist
+### MediatedCausalitySmoking_tdist
 
 # Using Tether to benchmark LLaMa models with Ollama
 
