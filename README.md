@@ -4,7 +4,11 @@ To benchmark a model you need to choose the model (e.g., llama3.2), the interfac
 
 # How to use Tether
 
-To do
+## Generate a benchmark
+
+## Run a benchmark
+
+## Analyze a benchmark
 
 # Available benchmarks 
 
