@@ -6,9 +6,11 @@ To benchmark a model you need to choose the model (e.g., llama3.2), the interfac
 
 ## Generate a benchmark
 
+`$ python3 generate.py BENCHMARK /PATH/benchmarks/`
+
 ## Run a benchmark
 
-`$ python3 run.py BENCHMARK MODEL /PATH/benchmarks/ `
+`$ python3 run.py BENCHMARK MODEL /PATH/benchmarks/`
 
 ## Analyze a benchmark
 

@@ -1,22 +1,42 @@
 """ Randomly generate new benchmarks """
-
-# Needs to be set up so you can do: python3 generate.py 'model_name' with kwargs
-
-# Benchmark choices: 
-# 'MediatedCausality_bootstrap' 
-# 'MediatedCausalitySmoking_bootstrap' 
-# 'MediatedCausalityWithMethod_bootstrap' 
-# 'MediatedCausalityWithMethod_tdist' 
-# 'MediatedCausality_tdist' 
-# 'MediatedCausalitySmoking_tdist' 
-# 'StandardDeviation'
-# 'SignificantFigures'
-
+import argparse
 from source.generator import Generator
 
-exam_name = 'MediatedCausalitySmoking_tdist'
-path = '/Users/l281800/Desktop/benchmarks/'
+def main():
+    """ Generate the benchmark """
+    parser = argparse.ArgumentParser(
+        description="Generate a benchmark dataset."
+    )
+    parser.add_argument(
+        "exam_name",
+        help="Name of the benchmark to generate"
+    )
+    parser.add_argument(
+        "path",
+        help="Directory path to save the benchmark"
+    )
+    parser.add_argument(
+        "--n_problems",
+        type=int,
+        default=180,
+        help="Number of problems to generate"
+    )
+    parser.add_argument(
+        "--plot_flag",
+        action="store_true",
+        help="Enable plotting"
+    )
 
-Generator(path, exam_name, n_problems=9, plot_flag=True)  
+    args = parser.parse_args()
 
-print(f"\n {exam_name} benchmark generated! \n")
+    Generator(
+        path=args.path,
+        exam_name=args.exam_name,
+        n_problems=args.n_problems,
+        plot_flag=args.plot_flag
+    )
+
+    print(f"\n {args.exam_name} benchmark generated at {args.path}!\n")
+
+if __name__ == "__main__":
+    main()
