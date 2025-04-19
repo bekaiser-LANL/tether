@@ -6,6 +6,11 @@ import numpy as np
 from .utils import load_saved_benchmark, get_npz_filename
 from .utils import create_missing_directory
 
+ollama_model_list = ["llama3.2", "llama3"]
+openai_reasoning_model_list = ['o3-mini','o1']
+openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o"]
+openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
+
 class Proctor():
     """ Administers benchmarks to LLMs """
     # pylint: disable=too-many-instance-attributes
@@ -53,7 +58,7 @@ class Proctor():
 
     def ask_openai(self, question, model_choice):
         """ Method for prompting & recording OpenAI products """
-        if model_choice in ('gpt-4o','gpt-4.5-preview'):
+        if model_choice in openai_classic_model_list:
             try:
                 response = self.client.chat.completions.create(
                     model=model_choice,  # gpt-4.5-preview, gpt-4o
@@ -66,7 +71,7 @@ class Proctor():
                 return response.choices[0].message.content
             except Exception as e: # pylint: disable=broad-exception-caught
                 return f"Error: {e}"
-        elif model_choice in ('o3-mini','o1'):
+        elif model_choice in openai_reasoning_model_list:
             try:
                 response = self.client.chat.completions.create(model=model_choice,
                 messages=[
@@ -100,7 +105,7 @@ class Proctor():
     def load_llm(self):
         """ Load & set up the LLM for benchmarking """
         tmp = None
-        if self.model in {"llama3.2","llama3"}:
+        if self.model in ollama_model_list:
             with subprocess.Popen(
                 ["ollama", "serve"],
                 stdout=subprocess.PIPE,
@@ -123,7 +128,7 @@ class Proctor():
     def give_question_to_llm(self, prompt, tmp):
         """ Method for prompting & recording LLMs """
         response = None
-        if self.model in {"llama3.2","llama3"}:
+        if self.model in ollama_model_list:
             payload = {
                 "model": self.model,
                 "prompt": prompt,

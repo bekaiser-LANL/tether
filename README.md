@@ -1,16 +1,14 @@
-# Tether: A suite of LLM benchmarks for ASC-related tasks 
-
-To benchmark a model you need to choose the model (e.g., llama3.2), the interface (e.g., Ollama), the benchmarks you would like to run (e.g., 'standardDeviation') in run.py. Then you must choose generate = True or False and save = True or False for each benchmark. If generate = True then a new randomly-generated instantiation of the benchmark will be run. If generate = False, then a previously saved version of the benchmark will run using the corresponding text file in /benchmarks/saved/. If save = True the benchmark will be saved to /benchmarks/saved/.
+# Tether: A suite of LLM benchmarks for scientific trustworthiness 
 
 # How to use Tether
 
 ## Generate a benchmark
 
-`$ python3 generate.py BENCHMARK /PATH/benchmarks/`
+`python3 generate.py BENCHMARK /PATH/benchmarks/`
 
 ## Run a benchmark
 
-`$ python3 run.py BENCHMARK MODEL /PATH/benchmarks/`
+`python3 run.py BENCHMARK MODEL /PATH/benchmarks/`
 
 ## Analyze a benchmark
 
@@ -24,7 +22,23 @@ To benchmark a model you need to choose the model (e.g., llama3.2), the interfac
 
 ## Ollama models
 
-'llama3.2' 'llama3'
+ available.
+
+1) Download ollama: https://ollama.com/download  
+2) Open the downloaded zip, install   
+3) Enter the following terminal command for each model you plan on using, for example:  
+
+`$ ollama pull llama3`   
+
+4) Now enter 
+
+`$ ollama serve` 
+
+and let it hang. This runs a server process that listens for API requests.
+
+5) Now check if Tether has your ollama model and, if not, add the model to ollama_model_list in proctor.py.
+
+6) Use your downloaded ollama model (e.g., 'llama3.2' 'llama3') to run.
 
 # Benchmarks 
 
@@ -43,22 +57,6 @@ Randomly generates tables of 3 binary variables corresponding to cause (X, smoki
 ### MediatedCausalityWithMethod_tdist
 ### MediatedCausality_tdist
 ### MediatedCausalitySmoking_tdist
-
-# Using Tether to benchmark LLaMa models with Ollama
-
-1) Download ollama: https://ollama.com/download  
-2) Open the downloaded zip, install   
-3) Enter the following terminal command for each model you plan on using, for example:  
-
-`$ ollama pull llama3`   
-
-4) Now enter 
-
-`$ ollama serve` 
-
-and let it hang. This runs a server process that listens for API requests.
-
-5) Now open another terminal, change the model choice in Tether/run.py to the llama model you pulled, and run.
 
 # Licenses
 This project is licensed under the [MIT License](LICENSE.md).
