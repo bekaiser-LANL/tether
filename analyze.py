@@ -1,98 +1,100 @@
 """ Analyze benchmark results """
-from source import Analyzer
+# from source import Analyzer
 
-# path to the completed benchmarks you want to analyze:
-path        = '/Users/l281800/Desktop/benchmarks/completed/'
-figure_path = '/Users/l281800/Desktop/benchmarks/figures/'
-exam_idx    = 1
+# # path to the completed benchmarks you want to analyze:
+# path        = '/Users/l281800/Desktop/benchmarks/completed/'
+# figure_path = '/Users/l281800/Desktop/benchmarks/figures/'
+# exam_idx    = 1
 
-benchmarks  = ['mediatedCausalitySmoking','mediatedCausalitySmokingWithMethod']
-
-#===============================================================================
-
-# path_to_benchmarks = '/Users/l281800/Desktop/benchmarks/'
-# npz_filename = path_to_benchmarks + 'results/' + benchmark + '.npz'
-
-# import numpy as np
-
-# # Load the .npz file
-# data = np.load(npz_filename, allow_pickle=True)
-
-# # List all keys stored in the file
-# print("\n\n\n Keys:", data.files)
-
-# # Access individual arrays
-# print("\n\n First question:\n ", data["question"][0])
-# print("\n First response:\n ", data["responses"][0])
-# print("\n First solution:\n ", data["solution"][0])
-# print("\n\n Last question:\n ", data["question"][-1])
-# print("\n Last response:\n ", data["responses"][-1])
-# print("\n Last solution:\n ", data["solution"][-1])
-# print("\n Last p_diff:\n ", data["p_diff"][-1])
+# benchmarks  = ['mediatedCausalitySmoking','mediatedCausalitySmokingWithMethod']
 
 #===============================================================================
 
-print('\n\n GPT-4o:')
+benchmark = 'MediatedCausalitySmoking_tdist'
 
-mCS_4o     = Analyzer(path,'gpt-4o',benchmarks[0],exam_idx).get_data()
-print('\n mCS A_score = ',mCS_4o['A_score'])
-print(' mCS B_score = ',mCS_4o['B_score'])
-print(' mCS C_score = ',mCS_4o['C_score'])
-print(' mCS total score = ',mCS_4o['total_score'])
-# print(mCS_4o['response'])
-# print(mCS_4o['solutions'])
-# print(mCS_4o['P_Y1doX1'])
-# print(mCS_4o['P_Y1doX1_CI'])
-# print(mCS_4o['questions'])
+path_to_benchmarks = '/Users/l281800/Desktop/benchmarks/'
+npz_filename = path_to_benchmarks + 'results/' + benchmark + '.npz'
 
+import numpy as np
 
-# mCSWM_4o   = analyses(path,'4o',benchmarks[1]).get_data()
-# print('\n mCSWM A_score = ',mCSWM_4o['A_score'])
-# print(' mCSWM B_score = ',mCSWM_4o['B_score'])
-# print(' mCSWM C_score = ',mCSWM_4o['C_score'])
-# print(' mCSWM total score = ',mCSWM_4o['total_score'])
+# Load the .npz file
+data = np.load(npz_filename, allow_pickle=True)
 
+# List all keys stored in the file
+print("\n\n\n Keys:", data.files)
 
-# print('\n\n o3-mini:')
+# Access individual arrays
+print("\n\n First question:\n ", data["question"][0])
+print("\n First response:\n ", data["responses"][0])
+print("\n First solution:\n ", data["solution"][0])
+print("\n\n Last question:\n ", data["question"][-1])
+print("\n Last response:\n ", data["responses"][-1])
+print("\n Last solution:\n ", data["solution"][-1])
+print("\n Last p_diff:\n ", data["p_diff"][-1])
 
-# mCS_o3mini     = analyses(path,'o3-mini',benchmarks[0]).get_data()
-# print('\n mCS A_score = ',mCS_o3mini['A_score'])
-# print(' mCS B_score = ',mCS_o3mini['B_score'])
-# print(' mCS C_score = ',mCS_o3mini['C_score'])
-# print(' mCS total score = ',mCS_o3mini['total_score'])
+#===============================================================================
 
-# mCSWM_o3mini     = analyses(path,'o3-mini',benchmarks[1]).get_data()
+# print('\n\n GPT-4o:')
 
-# print('\n mCSWM A_score = ',mCSWM_o3mini['A_score'])
-# print(' mCSWM B_score = ',mCSWM_o3mini['B_score'])
-# print(' mCSWM C_score = ',mCSWM_o3mini['C_score'])
-# print(' mCSWM total score = ',mCSWM_o3mini['total_score'])
-
-
-
-print('\n\n Llama 3:')
-
-mCS_l3     = analyses(path,'llama3',benchmarks[0],exam_idx).get_data()
-print('\n mCS A_score = ',mCS_l3['A_score'])
-print(' mCS B_score = ',mCS_l3['B_score'])
-print(' mCS C_score = ',mCS_l3['C_score'])
-print(' mCS total score = ',mCS_l3['total_score'])
-
-# mCSWM_l3   = analyses(path,'llama3',benchmarks[1]).get_data()
-# print('\n mCSWM A_score = ',mCSWM_l3['A_score'])
-# print(' mCSWM B_score = ',mCSWM_l3['B_score'])
-# print(' mCSWM C_score = ',mCSWM_l3['C_score'])
-# print(' mCSWM total score = ',mCSWM_l3['total_score'])
+# mCS_4o     = Analyzer(path,'gpt-4o',benchmarks[0],exam_idx).get_data()
+# print('\n mCS A_score = ',mCS_4o['A_score'])
+# print(' mCS B_score = ',mCS_4o['B_score'])
+# print(' mCS C_score = ',mCS_4o['C_score'])
+# print(' mCS total score = ',mCS_4o['total_score'])
+# # print(mCS_4o['response'])
+# # print(mCS_4o['solutions'])
+# # print(mCS_4o['P_Y1doX1'])
+# # print(mCS_4o['P_Y1doX1_CI'])
+# # print(mCS_4o['questions'])
 
 
-print('\n\n Llama 3.2:')
-# need to look at the llama 3.2 exams
+# # mCSWM_4o   = analyses(path,'4o',benchmarks[1]).get_data()
+# # print('\n mCSWM A_score = ',mCSWM_4o['A_score'])
+# # print(' mCSWM B_score = ',mCSWM_4o['B_score'])
+# # print(' mCSWM C_score = ',mCSWM_4o['C_score'])
+# # print(' mCSWM total score = ',mCSWM_4o['total_score'])
 
-mCS_l3p2     = analyses(path,'llama3.2',benchmarks[0],exam_idx).get_data()
-print('\n mCS A_score = ',mCS_l3p2['A_score'])
-print(' mCS B_score = ',mCS_l3p2['B_score'])
-print(' mCS C_score = ',mCS_l3p2['C_score'])
-print(' mCS total score = ',mCS_l3p2['total_score'])
+
+# # print('\n\n o3-mini:')
+
+# # mCS_o3mini     = analyses(path,'o3-mini',benchmarks[0]).get_data()
+# # print('\n mCS A_score = ',mCS_o3mini['A_score'])
+# # print(' mCS B_score = ',mCS_o3mini['B_score'])
+# # print(' mCS C_score = ',mCS_o3mini['C_score'])
+# # print(' mCS total score = ',mCS_o3mini['total_score'])
+
+# # mCSWM_o3mini     = analyses(path,'o3-mini',benchmarks[1]).get_data()
+
+# # print('\n mCSWM A_score = ',mCSWM_o3mini['A_score'])
+# # print(' mCSWM B_score = ',mCSWM_o3mini['B_score'])
+# # print(' mCSWM C_score = ',mCSWM_o3mini['C_score'])
+# # print(' mCSWM total score = ',mCSWM_o3mini['total_score'])
+
+
+
+# print('\n\n Llama 3:')
+
+# mCS_l3     = analyses(path,'llama3',benchmarks[0],exam_idx).get_data()
+# print('\n mCS A_score = ',mCS_l3['A_score'])
+# print(' mCS B_score = ',mCS_l3['B_score'])
+# print(' mCS C_score = ',mCS_l3['C_score'])
+# print(' mCS total score = ',mCS_l3['total_score'])
+
+# # mCSWM_l3   = analyses(path,'llama3',benchmarks[1]).get_data()
+# # print('\n mCSWM A_score = ',mCSWM_l3['A_score'])
+# # print(' mCSWM B_score = ',mCSWM_l3['B_score'])
+# # print(' mCSWM C_score = ',mCSWM_l3['C_score'])
+# # print(' mCSWM total score = ',mCSWM_l3['total_score'])
+
+
+# print('\n\n Llama 3.2:')
+# # need to look at the llama 3.2 exams
+
+# mCS_l3p2     = analyses(path,'llama3.2',benchmarks[0],exam_idx).get_data()
+# print('\n mCS A_score = ',mCS_l3p2['A_score'])
+# print(' mCS B_score = ',mCS_l3p2['B_score'])
+# print(' mCS C_score = ',mCS_l3p2['C_score'])
+# print(' mCS total score = ',mCS_l3p2['total_score'])
 
 # mCSWM_l3p2   = analyses(path,'llama3.2',benchmarks[1]).get_data()
 # print('\n mCSWM A_score = ',mCSWM_l3p2['A_score'])

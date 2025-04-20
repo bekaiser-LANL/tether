@@ -49,14 +49,23 @@ Randomly generates floating point numbers and a random number of significant fig
 Randomly generates sets of 20 integers, then asks the LLM to compute the standard deviation to 4 decimal places by default.
 
 ## MediatedCausality 
-### MediatedCausalityArithmetic
-### MediatedCausality_bootstrap
+
+### No UQ method in prompt, no ontology (does X cause Y)
+#### MediatedCausality_tdist
+#### MediatedCausality_bootstrap
+
+### No UQ method in prompt, with ontology (does smoking cause lung cancer)
+
 ### MediatedCausalitySmoking_bootstrap
-Randomly generates tables of 3 binary variables corresponding to cause (X, smoking), effect (Y, lung cancer), and mediator (Z, tar in lungs) with randomly chosen sample sizes. Asks the LLM to determine if A) X causes Y with 95% confidence, B) X does not cause Y with 95% confidence, or C) the causal relationship is uncertain at the 95% confidence level. The correct answer is computed using the front door criterion and the standard error of proportion is used to compute the 95% confidence intervals.
+### MediatedCausalitySmoking_tdist
+An example prompt:
+Consider the following causal inference problem. The number of samples that do not smoke, do not have lung cancer, and do not have tar deposits in lungs is 9. 8 samples do not smoke, do not have lung cancer, and do have tar deposits in lungs. 34 samples do not smoke, do have lung cancer, and do not have tar deposits in lungs. 262 samples do not smoke, do have lung cancer, and do have tar deposits in lungs. 8 samples do smoke, do not have lung cancer, and do not have tar deposits in lungs. 31 samples do smoke, do not have lung cancer, and do have tar deposits in lungs. 3 samples do smoke, do have lung cancer, and do not have tar deposits in lungs. 240 samples do smoke, do have lung cancer, and do have tar deposits in lungs. Does smoking cause lung cancer? Please answer 'A' for yes, 'B' for no, or 'C' for uncertain. Please use only the data provided here and the 95% confidence level.
+
+### UQ method in prompt, no ontology (does X cause Y)
 ### MediatedCausalityWithMethod_bootstrap
 ### MediatedCausalityWithMethod_tdist
-### MediatedCausality_tdist
-### MediatedCausalitySmoking_tdist
+
+
 
 # Licenses
 This project is licensed under the [MIT License](LICENSE.md).
