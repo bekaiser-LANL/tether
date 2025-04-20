@@ -6,6 +6,12 @@
 
 `python3 generate.py BENCHMARK /PATH/benchmarks/`
 
+For example:
+
+`python3 generate.py MediatedCausality_tdist /MY_PATH/Desktop/benchmarks/ --n_problems=9 --make_plots`
+
+will generate a saved benchmark MediatedCausality_tdist_0.npz in /MY_PATH/Desktop/benchmarks/saved/ and a figure for each problem in /MY_PATH/Desktop/benchmarks/saved/MediatedCausality_tdist_figures/.
+
 ## Run a benchmark
 
 `python3 run.py BENCHMARK MODEL /PATH/benchmarks/`

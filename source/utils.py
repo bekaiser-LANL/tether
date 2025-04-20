@@ -2,13 +2,42 @@
 import os
 import numpy as np
 
+def strip_after_second_underscore(s):
+    """ Get the exam_name if it has exam_idx on the end.
+    For names like MediatedCausality_tdist_0 it will
+    extract the exam_name MediatedCausality_tdist """
+    parts = s.split("_")
+    if len(parts) >= 2:
+        return "_".join(parts[:2])
+    return s
 
-def get_npz_filename(save_npz_path, exam_name, exam_idx):
+def get_after_second_underscore(s):
+    """ Get the exam_idx if the exam_name has one.
+    For names like MediatedCausality_tdist_0 it will
+    extract the exam_name MediatedCausality_tdist """
+    parts = s.split("_")
+    if len(parts) > 2:
+        return "_".join(parts[2:])
+    return ""
+
+def get_npz_filename_no_model(save_npz_path, exam_name, exam_idx):
     """ Determine filename """
     if exam_idx != 'unset':
         filename = f"{exam_name}_{exam_idx}.npz"  
     else:
         filename = f"{exam_name}.npz"
+    npz_filename = os.path.join(
+        save_npz_path, 
+        filename
+    )
+    return npz_filename
+
+def get_npz_filename(save_npz_path, exam_name, exam_idx, model):
+    """ Determine filename """
+    if exam_idx != 'unset':
+        filename = f"{exam_name}_{model}_{exam_idx}.npz"  
+    else:
+        filename = f"{exam_name}_{model}.npz"
     npz_filename = os.path.join(
         save_npz_path, 
         filename
@@ -183,7 +212,9 @@ class SaveBenchmark():
     """ Saves the benchmark (blank or completed) as a .npz"""
 
     def __init__(self, path, exam_name, **kwargs):
-        self.path = path
+        self.path = path # path including /PATH/benchmarks/saved/ 
+        # (for blank benchmark) or including /PATH/benchmarks/results/
+        # (for benchmarked model results)
         self.exam_name = exam_name
 
         self.checkpoint_freq = kwargs.get('checkpoint_freq','unset')
@@ -193,15 +224,16 @@ class SaveBenchmark():
         #self.responses = kwargs.get('model', 'no_model')
 
         # Determine save path based on model type
-        if self.model == 'no_model':
-            subfolder = 'saved'
-        else: 
-            subfolder = os.path.join('results', self.model)
-        self.save_npz_path = os.path.join(self.path, subfolder)
-        create_missing_directory(self.save_npz_path)
+        #if self.model == 'no_model':
+        #    subfolder = 'saved'
+        #else: 
+        #    subfolder = os.path.join('results', self.model)
+        #self.save_npz_path = os.path.join(self.path, subfolder)
+        self.save_npz_path = self.path       
+        #create_missing_directory(self.save_npz_path)
 
         # Determine filename 
-        self.npz_filename = get_npz_filename(
+        self.npz_filename = get_npz_filename_no_model(
             self.save_npz_path,
             self.exam_name,
             self.exam_idx

@@ -5,11 +5,15 @@ import requests
 import numpy as np
 from .utils import load_saved_benchmark, get_npz_filename
 from .utils import create_missing_directory
+from .utils import strip_after_second_underscore
+from .utils import get_after_second_underscore
 
 ollama_model_list = ["llama3.2", "llama3"]
 openai_reasoning_model_list = ['o3-mini','o1']
 openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
+
+# BROKEN NEED TO GET IT WORKING
 
 class Proctor():
     """ Administers benchmarks to LLMs """
@@ -19,16 +23,22 @@ class Proctor():
 
         self.benchmark_path = benchmark_path
         self.saved_benchmark_path = os.path.join(self.benchmark_path, 'saved')
+        if exam_name.count("_") == 2: # includes exam_idx at end
+            self.exam_name = strip_after_second_underscore(exam_name)
+            self.exam_idx = int(get_after_second_underscore(exam_name))
+        else:
+            self.exam_name = exam_name
+            self.exam_idx = kwargs.get('exam_idx','unset')
         self.exam_name = exam_name
         self.model = model
-        self.exam_idx = kwargs.get('exam_idx','unset')
         self.verbose = kwargs.get('verbose',False)
         self.results_path = os.path.join(self.benchmark_path, 'results')
         self.client = None
         self.npz_filename = get_npz_filename(
             self.results_path,
             self.exam_name,
-            self.exam_idx
+            self.exam_idx,
+            self.model
         )
         # Checkpoint frequency if an integer, no checkpoint .npz output if a NaN:
         self.checkpoint_freq = kwargs.get('checkpoint_freq','unset')
@@ -135,7 +145,7 @@ class Proctor():
                 "stream": False
             }
             # Send the request to the API
-            request = requests.post(tmp, json=payload, timeout=10)
+            request = requests.post(tmp, json=payload, timeout=60)
             if request.status_code == 200:
                 # This is the standard HTTP status code for a successful request.
                 # Successful response from the Ollama API
