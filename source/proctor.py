@@ -122,37 +122,32 @@ class Proctor():
                 stderr=subprocess.PIPE
             ) as process:
                 process.communicate()
-            # subprocess.Popen(
-            #     ["ollama", "serve"],
-            #     stdout=subprocess.PIPE,
-            #     stderr=subprocess.PIPE
-            # )
             tmp = "http://localhost:11434/api/generate"
-        elif self.model in {"gpt-4.5-preview", "gpt-4o", "o3-mini", "o1"}:
+        elif self.model in openai_all_model_list:
             from openai import OpenAI # pylint: disable=import-outside-toplevel
             openai_api_key = os.getenv("OPENAI_API_KEY")
             self.client = OpenAI(api_key=openai_api_key)
-            tmp = []
         return tmp
 
     def give_question_to_llm(self, prompt, tmp):
         """ Method for prompting & recording LLMs """
         response = None
         if self.model in ollama_model_list:
+            #print("Model selected:", self.model)
             payload = {
                 "model": self.model,
                 "prompt": prompt,
                 "stream": False
             }
             # Send the request to the API
-            request = requests.post(tmp, json=payload, timeout=60)
+            request = requests.post(tmp, json=payload, timeout=120)
             if request.status_code == 200:
                 # This is the standard HTTP status code for a successful request.
                 # Successful response from the Ollama API
                 response = request.json()["response"]
             else:
                 print("Error:", request.status_code, request.text)
-        elif self.model in {"gpt-4.5-preview", "gpt-4o", "o3-mini", "o1"}:
+        elif self.model in openai_all_model_list:
             response = self.ask_openai(prompt,self.model)
         #
         # ADDITIONAL LLMs CAN BE ADDED HERE
