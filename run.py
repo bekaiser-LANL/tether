@@ -1,9 +1,11 @@
 """ Run a previously generated benchmark on an LLM """
 import sys
 from source.proctor import Proctor
+ 
 
 def main():
     """ Run the benchmark """
+    print("we're running")
     if len(sys.argv) < 4:
         # Usage: python run.py <benchmark_name>" "<model_name>
         #        <path_to_benchmarks>"
@@ -18,3 +20,6 @@ def main():
     Proctor(path_to_benchmarks, model, benchmark, verbose=True)
 
     print(f"\n Benchmark {benchmark} of model {model} complete")
+
+if __name__ == "__main__":
+    main()

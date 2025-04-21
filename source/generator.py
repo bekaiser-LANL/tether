@@ -3,6 +3,7 @@ from .utils import create_missing_directory, SaveBenchmark
 from .benchmarks.mediated_causality import MediatedCausality
 from .benchmarks.standard_deviation import StandardDeviation
 from .benchmarks.significant_figures import SignificantFigures
+from .benchmarks.simpleInequality import simpleInequality
 
 def generate_benchmarks(path, exam_name, **kwargs):
     """ Randomly generates and saves benchmarks as .npz files """
@@ -62,6 +63,21 @@ def generate_benchmarks(path, exam_name, **kwargs):
         #     exam_name=self.exam_name,
         #     exam_idx=self.exam_idx
         # )
+    elif exam_name_wo_ci_method == 'simpleInequality':
+
+        # Generate all of the problems in the benchmark:
+        problems = simpleInequality(
+            n_numbers=n_numbers,
+            n_problems=n_problems
+        )
+
+        # # Save the benchmark as an .npz
+        # saver = SaveBenchmark.from_simple_inequality(
+        #     source=problems,
+        #     path=self.path,
+        #     exam_name=self.exam_name,
+        #     exam_idx=self.exam_idx
+        # )
 
     elif exam_name_wo_ci_method == 'StandardDeviation':
 
@@ -98,4 +114,4 @@ def generate_benchmarks(path, exam_name, **kwargs):
             exam_idx=exam_idx
         )
 
-    saver.save_attributes()
+    #saver.save_attributes()

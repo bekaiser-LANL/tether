@@ -324,7 +324,8 @@ class SaveBenchmark():
         instance.table = np.array(source.table)[perm]
         instance.name = np.array(source.name)[perm]
         return instance        
-
+    
+    @classmethod
     def save_attributes(self):
         """ Save the data as a dict within an npz file"""
         if self.exam_name_wo_ci_method in (

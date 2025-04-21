@@ -38,6 +38,11 @@ def main():
         default=0,
         help="Index for multiple benchmarks of the same type"
     )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        help="path for locally downloaded model"
+    )
 
     args = parser.parse_args()
 
@@ -47,8 +52,18 @@ def main():
         n_problems=args.n_problems,
         plot_flag=args.make_plots,
         exam_idx=args.exam_idx,
-        n_numbers=args.n_numbers
+        n_numbers=args.n_numbers,
+        model_path=args.model_path
     )
+    
+    model_path=args.model_path
+    if model_path:
+        if not os.path.isdir(directory):
+            print(f"The directory '{directory}' does not exist.")
+        else:
+            print(f"Using locally downloaded model")
+    else:
+        print("Using API.")
 
     print(f"\n {args.exam_name} benchmark generated at {args.path}!\n")
 

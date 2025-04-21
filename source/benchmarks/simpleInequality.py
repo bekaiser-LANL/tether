@@ -12,15 +12,16 @@ from source.utils import check_probability
 class simpleInequality():
 
 
-    def __init__(self, plot_path, exam_name, **kwargs):
+    def __init__(self, n_numbers = 100, **kwargs):
 
-        self.plot_path = plot_path
-        self.exam_name = exam_name
+        #self.plot_path = plot_path
+        #self.exam_name = exam_name
 
         #generation parameters:
         self.plot_flag = kwargs.get('plot_flag', False)
         self.generate_flag = kwargs.get('generate_flag', True)
         self.verbose = kwargs.get('verbose', False)
+        self.n_numbers = n_numbers #length of each vector
         self.answer_proportions = kwargs.get(
             "answer_proportions",
             [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
@@ -30,8 +31,8 @@ class simpleInequality():
             'difficulty_thresholds',
             np.array([0.66,1.33])
         )
-        self.ci_method = (exam_name).split('_')[1]
-        self.exam_name_wo_ci_method = (exam_name).split('_')[0]
+        #self.ci_method = (exam_name).split('_')[1]
+        #self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_problems = kwargs.get('n_problems', 180)
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
         if not is_divisible_by_9(self.n_problems):
@@ -50,8 +51,7 @@ class simpleInequality():
         v1numbers_str = " ".join(map(str, v1)) 
         v2numbers_str = " ".join(map(str, v2)) 
         q = []
-        if self.exam_name == 'simpleInequality':
-            q = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Answer with one letter only: A, B, or C. Answer:"
+        q = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Answer with one letter only: A, B, or C. Answer:"
         return v1, v2, q
 
     def make_problems(self): 
@@ -116,13 +116,13 @@ class simpleInequality():
         self.solutions = [] # all tests need this
         for i in range(0,self.n_problems): # all tests need this
 
-            v1, v2, q_str = self.generate_question()
+            v1, v2, q_str = self.get_prompts()
             self.questions = np.append(self.questions,q_str)
 
             #ans_str1 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v1) + "]"
             #ans_str2 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v2) + "]"
-            label = self.classify_mean_difference(v1,v2)
-            print('label=',label)
+            label = self.find_mean_difference(v1,v2)
+            #print('label=',label)
             self.solutions = np.append(self.solutions,label)
 
     def generate_vector(self, target_mean, target_std, length):
