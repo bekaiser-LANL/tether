@@ -5,7 +5,40 @@ import os
 from sentence_transformers import SentenceTransformer, util
 import re
 
-class grader():
+class Grader():
+
+    def __init__(self, benchmark, responses):
+
+        exam_name = benchmark['name'][0]
+
+        n = len(benchmark['question'])
+        solutions = benchmark["solution"]
+        grade = np.zeros([n])
+        for i in range(0,n):
+            if exam_name.startswith("MediatedCausality"):
+                correct = self.grade_string_multiple_choice(
+                    solutions[i],
+                    responses[i],
+                    choices=['A', 'B', 'C']
+                )
+            else:
+                correct = self.grade_string_exactly(
+                    solutions[i],
+                    responses[i]
+                )
+            if correct:
+                grade[i] = 1.0
+            else:
+                grade[i] = 0.0
+        
+        self.grade = grade
+        self.responses = responses
+
+    def get_grades(self):
+        return self.grade
+    
+    def get_responses(self):
+        return self.responses
 
     def assertEqualImageDescriptions(self, solution,response):
         # Load CLIP for text embeddings
@@ -63,7 +96,7 @@ class grader():
         else:
             return False
 
-    def assertAlmostEqualNumbers(self,first, second, places=1):
+    def assertAlmostEqualNumbers(self, first, second, places=1):
         """
         False if the two objects are unequal as determined by their rounded difference
         to the given number of decimal places (default 7) and compare them as equal.

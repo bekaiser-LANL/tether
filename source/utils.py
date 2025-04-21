@@ -1,7 +1,60 @@
 """ General purpose benchmark functions & classes """
-import random
 import os
 import numpy as np
+
+def strip_after_second_underscore(s):
+    """ Get the exam_name if it has exam_idx on the end.
+    For names like MediatedCausality_tdist_0 it will
+    extract the exam_name MediatedCausality_tdist """
+    parts = s.split("_")
+    if len(parts) >= 2:
+        return "_".join(parts[:2])
+    return s
+
+def get_after_second_underscore(s):
+    """ Get the exam_idx if the exam_name has one.
+    For names like MediatedCausality_tdist_0 it will
+    extract the exam_name MediatedCausality_tdist """
+    parts = s.split("_")
+    if len(parts) > 2:
+        return "_".join(parts[2:])
+    return ""
+
+def get_npz_filename_no_model(save_npz_path, exam_name, exam_idx):
+    """ Determine filename """
+    if exam_idx != 'unset':
+        filename = f"{exam_name}_{exam_idx}.npz"  
+    else:
+        filename = f"{exam_name}.npz"
+    npz_filename = os.path.join(
+        save_npz_path, 
+        filename
+    )
+    return npz_filename
+
+def get_npz_filename(save_npz_path, exam_name, exam_idx, model):
+    """ Determine filename """
+    if exam_idx != 'unset':
+        filename = f"{exam_name}_{model}_{exam_idx}.npz"  
+    else:
+        filename = f"{exam_name}_{model}.npz"
+    npz_filename = os.path.join(
+        save_npz_path, 
+        filename
+    )
+    return npz_filename
+
+def load_saved_benchmark(benchmark_path, exam_name, exam_idx):
+    """ read saved .npz file containing dict (benchmark) """
+    if exam_idx != 'unset':
+        filename = os.path.join(benchmark_path, f"{exam_name}_{exam_idx}.npz")
+    else:
+        filename = os.path.join(benchmark_path, f"{exam_name}.npz") 
+    data = np.load(filename, allow_pickle=True)
+    return data
+
+def is_integer(value):
+    return isinstance(value, int)
 
 def get_95_CI_tdist(P,N):
     # t distribution to estimate standard error
@@ -154,3 +207,144 @@ class QuestionBank:
             for difficulty in ['easy', 'medium', 'hard']:
                 all_qs.extend(self.data[choice][difficulty])
         return all_qs
+
+class SaveBenchmark():
+    """ Saves the benchmark (blank or completed) as a .npz"""
+
+    def __init__(self, path, exam_name, **kwargs):
+        self.path = path # path including /PATH/benchmarks/saved/ 
+        # (for blank benchmark) or including /PATH/benchmarks/results/
+        # (for benchmarked model results)
+        self.exam_name = exam_name
+
+        self.checkpoint_freq = kwargs.get('checkpoint_freq','unset')
+        self.restart_idx = kwargs.get('restart_idx','unset')
+        self.model = kwargs.get('model', 'no_model')
+        self.exam_idx = kwargs.get('exam_idx','unset')
+        #self.responses = kwargs.get('model', 'no_model')
+
+        # Determine save path based on model type
+        #if self.model == 'no_model':
+        #    subfolder = 'saved'
+        #else: 
+        #    subfolder = os.path.join('results', self.model)
+        #self.save_npz_path = os.path.join(self.path, subfolder)
+        self.save_npz_path = self.path       
+        #create_missing_directory(self.save_npz_path)
+
+        # Determine filename 
+        self.npz_filename = get_npz_filename_no_model(
+            self.save_npz_path,
+            self.exam_name,
+            self.exam_idx
+        )
+        # if self.exam_idx != 'unset':
+        #     filename = f"{self.exam_name}_{self.exam_idx}.npz"  
+        # else:
+        #     filename = f"{self.exam_name}.npz"
+        # self.npz_filename = os.path.join(
+        #     self.save_npz_path, 
+        #     filename
+        # )
+
+        if '_' in self.exam_name:
+            self.ci_method = (self.exam_name).split('_')[1]
+            self.exam_name_wo_ci_method = (self.exam_name).split('_')[0]
+        else:
+            self.exam_name_wo_ci_method = self.exam_name
+
+        # Necessary so that these attributes can be set on the instance 
+        # of the corresponding generated benchmarks:
+        self.question = None
+        self.solution = None
+        self.difficulty = None
+        self.p_diff = None
+        self.p_diff_ci_lower = None
+        self.p_diff_ci_upper = None
+        self.n_samples = None
+        self.table = None
+        self.name = None
+        self.response = None
+        self.grade = None
+
+    @classmethod
+    def from_simple_inequality(cls, source, path, exam_name):
+        """ Constructs a new instance from the class SaveBenchmark and then
+        set the source (SimpleInequality) attributes on the instance """
+        # TO DO        
+        return cls(name=source.name, age=source.age) # <-
+
+    @classmethod
+    def from_complex_inequality(cls, source, path, exam_name):
+        """ Constructs a new instance from the class SaveBenchmark and then
+        set the source (ComplexInequality) attributes on the instance """
+        # TO DO        
+        return cls(name=source.name, age=source.age) # <-
+
+    @classmethod
+    def from_significant_figures(cls, source, path, exam_name):
+        """ Constructs a new instance from the class SaveBenchmark and then
+        set the source (SignificantFigures) attributes on the instance """
+        # TO DO        
+        return cls(name=source.name, age=source.age) # <-
+
+    @classmethod
+    def from_standard_deviation(cls, source, path, exam_name):
+        """ Constructs a new instance from the class SaveBenchmark and then
+        set the source (StandardDeviation) attributes on the instance """
+        # TO DO
+        return cls(title=source.title)
+
+    @classmethod
+    def from_mediated_causality(cls, source, path, exam_name, exam_idx):
+        """ Constructs a new instance from the class SaveBenchmark and then
+        set the source (MediatedCausality) attributes on the instance """
+        instance = cls(path, exam_name)
+        instance.exam_idx = exam_idx
+        instance.save_npz_path = path
+        # Build filename
+        if exam_idx != 'unset':
+            filename = f"{exam_name}_{exam_idx}.npz"
+        else:
+            filename = f"{exam_name}.npz"
+        instance.npz_filename = os.path.join(instance.save_npz_path, filename)
+        # Shuffle the questions:
+        # Get number of samples (assumes all arrays are the same length)
+        n = len(source.question)
+        # Generate a random permutation of indices
+        perm = np.random.permutation(n)
+        # Apply the permutation to all arrays
+        instance.question = np.array(source.question)[perm]
+        instance.solution = np.array(source.solution)[perm]
+        instance.difficulty = np.array(source.difficulty)[perm]
+        instance.p_diff = np.array(source.p_diff)[perm]
+        instance.p_diff_ci_lower = np.array(source.p_diff_ci_lower)[perm]
+        instance.p_diff_ci_upper = np.array(source.p_diff_ci_upper)[perm]
+        instance.n_samples = np.array(source.n_samples)[perm]
+        instance.table = np.array(source.table)[perm]
+        instance.name = np.array(source.name)[perm]
+        return instance        
+
+    def save_attributes(self):
+        """ Save the data as a dict within an npz file"""
+        if self.exam_name_wo_ci_method in (
+            'MediatedCausalitySmoking', 
+            'MediatedCausality'
+            ):
+            self.attributes_to_save = [
+                "question",
+                "solution",
+                "difficulty",
+                "p_diff",
+                "p_diff_ci_lower",
+                "p_diff_ci_upper",
+                "n_samples",
+                "table",
+                "name"
+            ]
+            data = {key: getattr(self, key) for key in self.attributes_to_save}
+            np.savez(self.npz_filename, **data)
+        else:
+            raise ValueError(
+                f"Unsupported benchmark: {self.exam_name_wo_ci_method}"
+            )

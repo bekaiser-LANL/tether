@@ -3,7 +3,6 @@ import re
 import numpy as np
 from pytest import approx
 from source.benchmarks.mediated_causality import causality_from_table
-#from source.benchmarks.mediated_causality import MediatedCausalityArithmetic
 
 def test_causality_from_table_tdist():
     """ Verifies the front-door criterion calculation """

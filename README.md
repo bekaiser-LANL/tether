@@ -1,26 +1,34 @@
-# Tether: A suite of LLM benchmarks for ASC-related tasks 
-
-To benchmark a model you need to choose the model (e.g., llama3.2), the interface (e.g., Ollama), the benchmarks you would like to run (e.g., 'standardDeviation') in run.py. Then you must choose generate = True or False and save = True or False for each benchmark. If generate = True then a new randomly-generated instantiation of the benchmark will be run. If generate = False, then a previously saved version of the benchmark will run using the corresponding text file in /benchmarks/saved/. If save = True the benchmark will be saved to /benchmarks/saved/.
+# Tether: A suite of LLM benchmarks for scientific trustworthiness 
 
 # How to use Tether
 
-To do
+## Generate a benchmark
 
-# Available benchmarks 
+`python3 generate.py BENCHMARK /PATH/benchmarks/`
 
-## standardDeviation 
-Randomly generates sets of 20 integers, then asks the LLM to compute the standard deviation to 4 decimal places by default.
+For example:
 
-## significantFigures
-Randomly generates floating point numbers and a random number of significant figures, then asks the LLM to express the number in scientific E notation using the correct number of significant figures. 
+`python3 generate.py MediatedCausality_tdist /MY_PATH/Desktop/benchmarks/ --n_problems=9 --make_plots`
 
-## mediatedCausalitySmoking 
-Randomly generates tables of 3 binary variables corresponding to cause (X, smoking), effect (Y, lung cancer), and mediator (Z, tar in lungs) with randomly chosen sample sizes. Asks the LLM to determine if A) X causes Y with 95% confidence, B) X does not cause Y with 95% confidence, or C) the causal relationship is uncertain at the 95% confidence level. The correct answer is computed using the front door criterion and the standard error of proportion is used to compute the 95% confidence intervals.
+will generate a saved benchmark MediatedCausality_tdist_0.npz in /MY_PATH/Desktop/benchmarks/saved/ and a figure for each problem in /MY_PATH/Desktop/benchmarks/saved/MediatedCausality_tdist_figures/.
 
-## mediatedCausalitySmokingWithMethod
-The same as mediatedCausalitySmoking but the prompt includes instructions on how to compute the correct answer: ``Does smoking cause lung cancer? Use the front-door criterion to determine if smoking causes cancer from the provided data. Use the standard error of proportion and full range error propagation to calculate the most conservative estimate of the 95% confidence level for the front-door criterion calculation. Use the 95% confidence level intervals to answer 'A' for yes, 'B' for no, or 'C' for uncertain.''
+## Run a benchmark
 
-# Using Tether to benchmark LLaMa models with Ollama
+`python3 run.py BENCHMARK MODEL /PATH/benchmarks/`
+
+## Analyze a benchmark
+
+# Models
+
+## Adding your own model
+
+## OpenAI models
+
+'o1' 'gpt-4o' 'o3-mini' 'gpt-4.5-preview'
+
+## Ollama models
+
+ available.
 
 1) Download ollama: https://ollama.com/download  
 2) Open the downloaded zip, install   
@@ -34,7 +42,37 @@ The same as mediatedCausalitySmoking but the prompt includes instructions on how
 
 and let it hang. This runs a server process that listens for API requests.
 
-5) Now open another terminal, change the model choice in Tether/run.py to the llama model you pulled, and run.
+5) Now check if Tether has your ollama model and, if not, add the model to ollama_model_list in proctor.py.
+
+6) Use your downloaded ollama model (e.g., 'llama3.2' 'llama3') to run.
+
+# Benchmarks 
+
+## SignificantFigures
+Randomly generates floating point numbers and a random number of significant figures, then asks the LLM to express the number in scientific E notation using the correct number of significant figures. 
+
+## 'StandardDeviation'
+Randomly generates sets of 20 integers, then asks the LLM to compute the standard deviation to 4 decimal places by default.
+
+## MediatedCausality 
+
+### No UQ method in prompt, no ontology (does X cause Y)
+#### MediatedCausality_tdist
+#### MediatedCausality_bootstrap
+
+### No UQ method in prompt, with ontology (does smoking cause lung cancer)
+
+#### MediatedCausalitySmoking_bootstrap
+#### MediatedCausalitySmoking_tdist
+An example prompt:  
+  
+"Consider the following causal inference problem. The number of samples that do not smoke, do not have lung cancer, and do not have tar deposits in lungs is 9. 8 samples do not smoke, do not have lung cancer, and do have tar deposits in lungs. 34 samples do not smoke, do have lung cancer, and do not have tar deposits in lungs. 262 samples do not smoke, do have lung cancer, and do have tar deposits in lungs. 8 samples do smoke, do not have lung cancer, and do not have tar deposits in lungs. 31 samples do smoke, do not have lung cancer, and do have tar deposits in lungs. 3 samples do smoke, do have lung cancer, and do not have tar deposits in lungs. 240 samples do smoke, do have lung cancer, and do have tar deposits in lungs. Does smoking cause lung cancer? Please answer 'A' for yes, 'B' for no, or 'C' for uncertain. Please use only the data provided here and the 95% confidence level."
+
+### UQ method in prompt, no ontology (does X cause Y)
+#### MediatedCausalityWithMethod_bootstrap
+#### MediatedCausalityWithMethod_tdist
+
+
 
 # Licenses
 This project is licensed under the [MIT License](LICENSE.md).
