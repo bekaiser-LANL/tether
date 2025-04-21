@@ -28,20 +28,20 @@ import numpy as np
 import re
 from source import *
 
-benchmark = 'mediatedCausalitySmoking'
-model = 'llama3'
-generate = False # True = generate a new benchmark, False = load a saved benchmark .npz
+benchmark = 'simpleInequality'
+model = '/lustre/scratch5/dmperez/LLMs/meta_models/OpenMath2-Llama3.1-8B'
+generate = True # True = generate a new benchmark, False = load a saved benchmark .npz
 n_problems = 180 # number of problems in the exam
 
 settings = {
     "model": model,
     "generate": generate, 
     "exam_idx": 1, # leave 1 unless you need to make multiples of the same exam
-    "path": '/Users/l281800/Desktop/', # path for the benchmark reports (i.e., results)  
+    "path": '/lustre/scratch5/dmperez/LLMs/llama_tether', # path for the benchmark reports (i.e., results)  
     "n_problems": n_problems, # number of problems in the benchmark
 }
 
-proctor(settings, benchmark) #, checkpoints=2, restart=4) 
+proctor.proctor(settings, benchmark) #, checkpoints=2, restart=4) 
 
 # #===============================================================================
 # # standardDeviation study

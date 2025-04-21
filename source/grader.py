@@ -7,7 +7,7 @@ import re
 
 class grader():
 
-        def assertEqualImageDescriptions(self, solution,response):
+    def assertEqualImageDescriptions(self, solution,response):
         # Load CLIP for text embeddings
         model = SentenceTransformer("/lustre/scratch5/dmperez/LLMs/local_all_MiniLM_L6_v2")
         self.path = "/lustre/scratch5/dmperez/Tether/source/benchmarks/equations/"

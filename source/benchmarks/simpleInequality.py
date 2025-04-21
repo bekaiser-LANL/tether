@@ -1,17 +1,115 @@
 import numpy as np
 import math as ma
 import random
+import sys
 from scipy.stats import t
+from .mediated_causality import MediatedCausality
+from source.utils import QuestionBank
+from source.utils import create_missing_directory
+from source.utils import is_divisible_by_9
+from source.utils import check_probability
 
 class simpleInequality():
 
-    def __init__(self, n_numbers = 10, n_problems=18):
-        self.n_problems = n_problems #all tests need this
-        self.n_numbers = n_numbers
-        self.metadata = {
-            "Name": 'simpleInequality'
-        }
-        self.make_problems() #all tests need this
+
+    def __init__(self, plot_path, exam_name, **kwargs):
+
+        self.plot_path = plot_path
+        self.exam_name = exam_name
+
+        #generation parameters:
+        self.plot_flag = kwargs.get('plot_flag', False)
+        self.generate_flag = kwargs.get('generate_flag', True)
+        self.verbose = kwargs.get('verbose', False)
+        self.answer_proportions = kwargs.get(
+            "answer_proportions",
+            [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
+        )
+        self.n_samples = kwargs.get('n_samples', 60)
+        self.difficulty_thresholds = kwargs.get(
+            'difficulty_thresholds',
+            np.array([0.66,1.33])
+        )
+        self.ci_method = (exam_name).split('_')[1]
+        self.exam_name_wo_ci_method = (exam_name).split('_')[0]
+        self.n_problems = kwargs.get('n_problems', 180)
+        self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
+        if not is_divisible_by_9(self.n_problems):
+            raise ValueError(
+                "\n The number of problems specified is not divisible by 9."
+                "Benchmark not created."
+            )
+        if self.generate_flag: 
+            self.make_problems()
+
+    def get_prompts(self):
+        """ Get questions for different kinds of inequality tests """
+        v1, v2 = self.generate_dataset()
+
+        # Convert the list of numbers to a space-separated string
+        v1numbers_str = " ".join(map(str, v1)) 
+        v2numbers_str = " ".join(map(str, v2)) 
+        q = []
+        if self.exam_name == 'simpleInequality':
+            q = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Answer with one letter only: A, B, or C. Answer:"
+        return v1, v2, q
+
+    def make_problems(self): 
+        """ Generate simple Inequality questions for the LLMs """
+
+        qb = QuestionBank(target_per_bin =int(self.n_problems/9))
+        #question = add_question(question_text = , 
+         #                   correct_choice)
+        q_count = count
+
+        simpleInequality.print_problems()
+    
+        test_complete = False
+        #sys.exit()
+        while not test_complete:
+            
+            # these range over varied n_samples:
+            questions_tmp = np.zeros([self.n_samples],dtype=object)
+            answers_tmp = np.zeros([self.n_samples],dtype=object)
+            difficulty_tmp = np.empty(self.n_samples, dtype=object)
+            n_samples_tmp = np.zeros([self.n_samples])
+            mean_difference_tmp = np.zeros([self.n_samples])
+            for i in reversed(range(self.n_samples)):
+
+                mean_difference[i] = self.find_mean_difference()
+
+                #calculate the difficulty level
+                difficulty_tmp[i] = self.assign_difficulty(np.abs(mean_difference[i]))
+
+                #get questions:
+                questions_tmp[i] = self.get_prompts()
+
+                #record the solutions:
+                answers_tmp[i] = self.record_solutions()
+
+        #problem = {
+        #    "question": questions_tmp
+
+        # Check if ready:
+        if qb.is_full():
+            final_set = qb.get_balanced_set()
+            if self.verbose:
+                print("Test is complete:", len(final_set), "questions")
+            test_complete = True
+            #Pull attributes from qb
+            qb.n_samples = np.array([q['metadata']['n_samples'] for q in qb.get_balanced_set()])
+            qb.name = np.array([q['metadata']['name'] for q in qb.get_balanced_set()])
+            qb.solution = [q['solution'] for q in qb.get_balanced_set()]
+            qb.question = [q['question'] for q in qb.get_balanced_set()]
+            qb.difficulty = [q['difficulty'] for q in qb.get_balanced_set()]
+            for name, value in qb.__dict__.items():
+                setattr(self, name, value)
+            else:
+                if self.verbose:
+                    print("Still building test. Current count:", qb.count())
+                example_idx += 1 # loop over examples 
+            print(' Done! ')
+
 
     def make_problems(self): # all tests need this
         self.questions = [] # all tests need this
@@ -26,22 +124,6 @@ class simpleInequality():
             label = self.classify_mean_difference(v1,v2)
             print('label=',label)
             self.solutions = np.append(self.solutions,label)
-
-
-    def generate_question(self): # all tests need this
-        v1, v2 = self.generate_dataset()
-        #v1 = [v1 for v1, _ in vectors]
-        #v2 = [v2 for _, v2 in vectors]
-
-        # Convert the list of numbers to a space-separated string
-        v1numbers_str = " ".join(map(str, v1)) 
-        v2numbers_str = " ".join(map(str, v2)) 
-        
-        # Construct the question with image and add prompt
-        q_str = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Answer with one letter only: A, B, or C. Answer:"
-        #Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} A:Vector 1 has the higher mean, B:Vector 2 has the higher mean, C: Uncertain Responde only with a single letter. Do not repeat the prompt. Answer:"
-
-        return v1, v2, q_str
 
     def generate_vector(self, target_mean, target_std, length):
         length = self.n_numbers
@@ -82,26 +164,43 @@ class simpleInequality():
                 vectors.append((v1, v2))
                 return v1, v2
 
-    # Generate the dataset
-    #vector_sets = generate_dataset()
+    def record_solutions(self, mean1, mean2):
+        """ Determine if answer is A, B, or C """
+        if mean1 > mean2:
+            plot_val = 2 # for plotting
+            answer = 'A' # X > Y
+        elif mean1 < mean2:
+            plot_val = 1 # for plotting
+            answer = 'B' #  X < Y
+        else:
+            plot_val = 0 # for plotting
+            answer = 'C' # Uncertain
+        #if abs(mean1 - mean2) < epsilon:
+        #    return 'C'  # Uncertain
+        #elif mean1 > mean2:
+        #    return 'A'
+        #else:
+        #    return 'B'
+        return plot_val, answer
 
-    # Example: Check a few sets
-    #for i in range(3):
-    #    v1, v2 = vector_sets[i]
-    #    print(f"Set {i+1}: mean1 = {np.mean(v1):.3f}, std1 = {np.std(v1):.3f}, "
-    #      f"mean2 = {np.mean(v2):.3f}, std2 = {np.std(v2):.3f}, "
-    #      f"mean diff = {abs(np.mean(v1) - np.mean(v2)):.3f}")
 
-    def classify_mean_difference(self, v1, v2, epsilon=0.05):
+    def find_mean_difference(self, v1, v2, epsilon=0.05):
         mean1 = np.mean(v1)
         mean2 = np.mean(v2)
 
-        if abs(mean1 - mean2) < epsilon:
-            return 'C'  # Uncertain
-        elif mean1 > mean2:
-            return 'A'
-        else:
-            return 'B'
+        return (mean1 - mean2)
+
+    def assign_difficulty(self, diff_value):
+        if diff_value <= self.difficulty_thresholds[0]:
+            difficulty = 'hard'
+        elif diff_value <= self.difficulty_thresholds[1]:
+            difficulty = 'medium'
+        elif diff_value > self.difficulty_thresholds[1]:
+            difficulty = 'easy'
+        else: # diff_value = NaN
+            difficulty = 'N/A'    
+        return difficulty
+
 
     def compute_confidence_intervals(vector_sets, confidence=0.95):
         z_score = 1.96  # for 95% confidence
