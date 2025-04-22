@@ -12,7 +12,7 @@ exam_names = [
     "MediatedCausalityWithMethod_tdist",
     # "MediatedCausalitySmoking_bootstrap",
     # "MediatedCausalityWithMethod_bootstrap",
-    # "MediatedCausality_bootstrap",
+    #"MediatedCausality_bootstrap",
 ]
 
 def get_method(name: str) -> str:
@@ -37,7 +37,11 @@ def test_prompts_nans_and_output_dims(exam_name):
     n_problems = 9
     plot_path = "./figures/"
  
-    exam = MediatedCausality(plot_path, exam_name, n_problems=n_problems, n_bootstrap=200)
+    exam = MediatedCausality(
+        plot_path, 
+        exam_name, 
+        n_problems=n_problems
+    ) #plot_flag=True  n_bootstrap=200
     p_diff = exam.get_p_diff()
     solutions = np.array(exam.get_solutions())
     questions = exam.get_questions()

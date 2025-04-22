@@ -10,11 +10,9 @@ from .utils import strip_after_second_underscore
 from .utils import get_after_second_underscore
 
 ollama_model_list = ["llama3","llama3.2"]
-openai_reasoning_model_list = ['o3-mini','o1']
-openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o"]
+openai_reasoning_model_list = ['o3-mini','o1','o3']
+openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
-
-# BROKEN NEED TO GET IT WORKING
 
 def ensure_ollama_running():
     try:
@@ -32,10 +30,10 @@ class Proctor():
         self.benchmark_path = benchmark_path
         self.saved_benchmark_path = os.path.join(self.benchmark_path, 'saved')
         if exam_name.count("_") == 2: # includes exam_idx at end
-            self.exam_name = strip_after_second_underscore(exam_name)
+            #self.exam_name = strip_after_second_underscore(exam_name)
             self.exam_idx = int(get_after_second_underscore(exam_name))
         else:
-            self.exam_name = exam_name
+            #self.exam_name = exam_name
             self.exam_idx = kwargs.get('exam_idx','unset')
         self.exam_name = exam_name
         self.model = model

@@ -1,7 +1,8 @@
-# Tether: A suite of LLM benchmarks for scientific trustworthiness 
+# A suite of LLM benchmarks for scientific trustworthiness 
 
 # How to use Tether
 
+## Set your path for benchmark data
 Prior to generating, running, or analyzing benchmarks (or running pytests) you need to set the path to your benchmarks directory. Do this in terminal with:
 
 `export MY_CUSTOM_PATH=/PATH_TO_BENCHMARKS/benchmarks`
@@ -20,9 +21,13 @@ will generate a saved benchmark MediatedCausality_tdist_0.npz in /PATH_TO_BENCHM
 
 ## Run a benchmark
 
-`python3 run.py BENCHMARK MODEL /PATH/benchmarks/`
+`python3 run.py BENCHMARK MODEL`
+
+Be sure to include the index of the benchmark in BENCHMARK. For example, MediatedCausality_tdist_0 for the first MediatedCausality_tdist benchmark (you can repeated generate more of the same benchmark).
 
 ## Analyze a benchmark
+
+`python3 analyze.py BENCHMARK MODEL`
 
 # Models
 

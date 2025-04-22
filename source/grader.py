@@ -89,12 +89,27 @@ class Grader():
             rf"\bThe correct answer is:?\s*{solution}\b",
             rf"\bThe answer is:?\s*{solution}\b",
             rf"\bAnswer:\s*{solution}\b",
+            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",
+            rf"\*\*?Answer:?\s*{solution}",
+            rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.", 
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",
+            rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",
+            rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",
+            rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",
+            rf"\*\*Answer:\s*{solution}\*\*",
+            rf"\banswer:\s*\n+\s*\*\*{solution}\b",
+            rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",
+            rf"\n+\s*\*\*Answer:\s*{solution}\b",
+            rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b", 
         ]
 
         # Check if the last line explicitly declares the answer
         for pattern in explicit_answer_patterns:
             if re.search(pattern, last_line, re.IGNORECASE):
                 return True
+        # As soon as re.search(...) finds a match, the function
+        # returns True immediately
 
         # General pattern to check if the answer appears anywhere in the response
         general_pattern = rf"\b{solution}\b|the answer is {solution}"

@@ -151,6 +151,8 @@ def causality_from_table(data, test, n_bootstrap=1000):
         df_full,
         n_boot=n_bootstrap,
     )
+    # print("boot_diffs shape:", np.shape(boot_diffs))
+    # print("boot_diffs sample:", boot_diffs[:10])
 
     # Point estimate
     p_diff = np.mean(boot_diffs)
