@@ -8,8 +8,8 @@ from source.benchmarks.mediated_causality import get_table
 
 exam_names = [
     "MediatedCausalitySmoking_tdist",
-    # "MediatedCausality_tdist",
-    # "MediatedCausalityWithMethod_tdist",
+    "MediatedCausality_tdist",
+    "MediatedCausalityWithMethod_tdist",
     # "MediatedCausalitySmoking_bootstrap",
     # "MediatedCausalityWithMethod_bootstrap",
     # "MediatedCausality_bootstrap",

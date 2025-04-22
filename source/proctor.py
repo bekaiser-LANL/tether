@@ -2,18 +2,26 @@
 import os
 import subprocess
 import requests
+import time
 import numpy as np
 from .utils import load_saved_benchmark, get_npz_filename
 from .utils import create_missing_directory
 from .utils import strip_after_second_underscore
 from .utils import get_after_second_underscore
 
-ollama_model_list = ["llama3.2", "llama3"]
+ollama_model_list = ["llama3","llama3.2"]
 openai_reasoning_model_list = ['o3-mini','o1']
 openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
 
 # BROKEN NEED TO GET IT WORKING
+
+def ensure_ollama_running():
+    try:
+        requests.get("http://localhost:11434")
+    except requests.exceptions.ConnectionError:
+        subprocess.Popen(["ollama", "serve"])
+        time.sleep(5)
 
 class Proctor():
     """ Administers benchmarks to LLMs """
@@ -98,12 +106,15 @@ class Proctor():
 
     def give_benchmark(self, benchmark):
         """ Give all of the questions to the LLM """
-        tmp = self.load_llm()
+        if self.model in openai_all_model_list:
+            from openai import OpenAI # pylint: disable=import-outside-toplevel
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            self.client = OpenAI(api_key=openai_api_key)
         n = len(benchmark['question'])
         responses = []
         for i in range(0,n):
             prompt = benchmark["question"][i]
-            response = self.give_question_to_llm(prompt, tmp)
+            response = self.give_question_to_llm(prompt)
             if self.verbose:
                 print('\n Question ',i)
                 print(prompt)
@@ -112,44 +123,30 @@ class Proctor():
         responses = np.array(responses)
         return responses
 
-    def load_llm(self):
-        """ Load & set up the LLM for benchmarking """
-        tmp = None
-        if self.model in ollama_model_list:
-            with subprocess.Popen(
-                ["ollama", "serve"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            ) as process:
-                process.communicate()
-            tmp = "http://localhost:11434/api/generate"
-        elif self.model in openai_all_model_list:
-            from openai import OpenAI # pylint: disable=import-outside-toplevel
-            openai_api_key = os.getenv("OPENAI_API_KEY")
-            self.client = OpenAI(api_key=openai_api_key)
-        return tmp
-
-    def give_question_to_llm(self, prompt, tmp):
+    def give_question_to_llm(self, prompt):
         """ Method for prompting & recording LLMs """
         response = None
         if self.model in ollama_model_list:
-            #print("Model selected:", self.model)
+            print(" Ollama is broken ")
+            # This will work — as long as you manually run `ollama run llama3'
+            # in one terminal, and then execute this Python script from another.
+            #ensure_ollama_running()
+            url = "http://localhost:11434/api/generate"
             payload = {
                 "model": self.model,
                 "prompt": prompt,
                 "stream": False
             }
-            # Send the request to the API
-            request = requests.post(tmp, json=payload, timeout=120)
-            if request.status_code == 200:
-                # This is the standard HTTP status code for a successful request.
-                # Successful response from the Ollama API
-                response = request.json()["response"]
-            else:
-                print("Error:", request.status_code, request.text)
-        elif self.model in openai_all_model_list:
-            response = self.ask_openai(prompt,self.model)
-        #
-        # ADDITIONAL LLMs CAN BE ADDED HERE
-        #
+            try:
+                request = requests.post(url, json=payload, timeout=60)
+                if request.status_code == 200:
+                    return request.json()["response"]
+                else:
+                    print("Error:", request.status_code, request.text)
+            except requests.exceptions.RequestException as e:
+                print("Request failed:", e)
+
+        # openai model:
+        #if self.model in openai_all_model_list:
+        response = self.ask_openai(prompt,self.model)
         return response

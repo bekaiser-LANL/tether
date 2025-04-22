@@ -2,15 +2,21 @@
 
 # How to use Tether
 
+Prior to generating, running, or analyzing benchmarks (or running pytests) you need to set the path to your benchmarks directory. Do this in terminal with:
+
+`export MY_CUSTOM_PATH=/PATH_TO_BENCHMARKS/benchmarks`
+
+where you need to replace the component of the path PATH_TO_BENCHMARKS with the path to where you want the benchmarks directory to be on your machine. Alternatively, you can add the export command above into your ~/.bashrc or ~/.zshrc file and source them.
+
 ## Generate a benchmark
 
-`python3 generate.py BENCHMARK /PATH/benchmarks/`
+`python3 generate.py BENCHMARK`
 
 For example:
 
-`python3 generate.py MediatedCausality_tdist /MY_PATH/Desktop/benchmarks/ --n_problems=9 --make_plots`
+`python3 generate.py MediatedCausality_tdist --n_problems=9 --make_plots`
 
-will generate a saved benchmark MediatedCausality_tdist_0.npz in /MY_PATH/Desktop/benchmarks/saved/ and a figure for each problem in /MY_PATH/Desktop/benchmarks/saved/MediatedCausality_tdist_figures/.
+will generate a saved benchmark MediatedCausality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and a figure for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/MediatedCausality_tdist_figures/.
 
 ## Run a benchmark
 

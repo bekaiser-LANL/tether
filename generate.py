@@ -1,6 +1,12 @@
 """ Randomly generate new benchmarks """
+import os
 import argparse
 from source.generator import generate_benchmarks
+
+# Prior to running pytest, you need to set your path with:
+# export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE
+# where ENTER_YOUR_PATH_HERE needs to be replaced with your path.
+data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
 def main():
     """ Generate the benchmark """
@@ -13,7 +19,9 @@ def main():
     )
     parser.add_argument(
         "path",
-        help="Directory path to /benchmarks/"
+        nargs="?",
+        default=data_path,
+        help=f"Directory path to /benchmarks/ (default: {data_path})"
     )
     parser.add_argument(
         "--n_problems",

@@ -589,13 +589,13 @@ class MediatedCausality():
     def make_plot(self,problem):
         """ Plot the causal example for varied n_samples """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            create_missing_directory(self.plot_path)
+            #create_missing_directory(self.plot_path)
             import matplotlib # pylint: disable=import-outside-toplevel
             matplotlib.use('Agg') # pylint: disable=import-outside-toplevel
             import matplotlib.pyplot as plt # pylint: disable=import-outside-toplevel
             low_n = np.power(10.,self.min_power10_sample_size)
             high_n = np.power(10.,self.max_power10_sample_size)
-            figname = f"{self.plot_path}{self.ci_method}_example_{problem['example_idx']}.png"
+            figname = f"{self.plot_path}/example_{problem['example_idx']}.png"
             fig = plt.figure(figsize=(12, 5))
             ax1=plt.subplot(1,2,1)
             plt.fill_between(
