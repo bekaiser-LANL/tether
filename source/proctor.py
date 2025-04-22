@@ -123,19 +123,26 @@ class Proctor():
     def give_benchmark(self, benchmark):
         """ Give all of the questions to the LLM """
         tmp = None
-        local_models = os.listdir(self.modelpath)
-        if not (self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model))):
+        model_path = os.path.join(self.modelpath, self.model)
+        is_local_model = self.model in os.listdir(self.modelpath) and os.path.isdir(model_path)
+
+        if not is_local_model:
             tmp = self.load_llm()
-        n = len(self.questions)
+
         responses = []
-        for i in range(0,n):
-            prompt = self.questions[i]
-            response = self.give_question_to_llm(prompt, tmp)
-            if self.verbose:
-                print('\n Question ',i)
-                print(prompt)
-                print(response)
-            responses.append(response)
+
+        if is_local_model:
+            # Only call once for all questions
+            responses = self.give_question_to_llm(None, tmp)  # local model handles its own loop
+        else:
+            # API models, call per-question
+            for i, prompt in enumerate(self.questions):
+                response = self.give_question_to_llm(prompt, tmp)
+                if self.verbose:
+                    print(f"\n Question {i}")
+                    print(prompt)
+                    print(response)
+                responses.append(response)
         responses = np.array(responses)
         return responses
 
@@ -163,7 +170,7 @@ class Proctor():
         ollama_model_list = []
         openai_all_model_list = [] 
         if self.model in ollama_model_list:
-            #print("Model selected:", self.model)
+            print("Model selected:", self.model)
             payload = {
                 "model": self.model,
                 "prompt": prompt,
@@ -179,10 +186,12 @@ class Proctor():
                 print("Error:", request.status_code, request.text)
             return response
         elif self.model in openai_all_model_list:
+            print("Model selected:", self.model)
             response = self.ask_openai(prompt,self.model)
             return response
         # locally downloaded LLMs
         elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
+            print("Model selected:", self.model)
             responses = []
             # Load the model and tokenizer
             model = AutoModelForCausalLM.from_pretrained(self.modelpath + self.model)
@@ -205,7 +214,6 @@ class Proctor():
                     max_new_tokens=max_new_tokens
                 )
                 response = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-                #response = self.give_question_to_llm(prompt, tmp)
                 if self.verbose:
                     print('\n Question ',i)
                     print(prompt)
