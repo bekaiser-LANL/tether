@@ -15,12 +15,15 @@ class Grader():
         solutions = benchmark["solution"]
         grade = np.zeros([n])
         for i in range(0,n):
-            if exam_name.startswith("MediatedCausality"):
+            if exam_name.startswith("MediatedCausality") or exam_name.endswith("Inequality"):
                 correct = self.grade_string_multiple_choice(
                     solutions[i],
                     responses[i],
                     choices=['A', 'B', 'C']
                 )
+            elif exam_name == 'equations':
+                correct = self.grader.grade_images(self.solutions[index],response)
+                continue
             else:
                 correct = self.grade_string_exactly(
                     solutions[i],

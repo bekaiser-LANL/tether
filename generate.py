@@ -1,49 +1,11 @@
 """ Randomly generate new benchmarks """
-import argparse
+from cli_args import get_parser
+import os
 from source.generator import generate_benchmarks
 
-def main():
-    """ Generate the benchmark """
-    parser = argparse.ArgumentParser(
-        description="Generate a benchmark dataset."
-    )
-    parser.add_argument(
-        "exam_name",
-        help="Name of the benchmark to generate"
-    )
-    parser.add_argument(
-        "path",
-        help="Directory path to /benchmarks/"
-    )
-    parser.add_argument(
-        "--n_problems",
-        type=int,
-        default=180,
-        help="Number of problems to generate for the benchmark"
-    )
-    parser.add_argument(
-        "--make_plots",
-        action="store_true",
-        help="Enable plotting"
-    )
-    parser.add_argument(
-        "--n_numbers",
-        type=int,
-        default=20,
-        help="Number of integers for standard deviation benchmark"
-    )
-    parser.add_argument(
-        "--exam_idx",
-        type=int,
-        default=0,
-        help="Index for multiple benchmarks of the same type"
-    )
-    parser.add_argument(
-        "--model_path",
-        type=str,
-        help="path for locally downloaded model"
-    )
 
+def main():
+    parser = get_parser(script="generate")
     args = parser.parse_args()
 
     generate_benchmarks(
@@ -58,8 +20,8 @@ def main():
     
     model_path=args.model_path
     if model_path:
-        if not os.path.isdir(directory):
-            print(f"The directory '{directory}' does not exist.")
+        if not os.path.isdir(model_path):
+            print(f"The directory '{model_path}' does not exist.")
         else:
             print(f"Using locally downloaded model")
     else:

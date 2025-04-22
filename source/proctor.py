@@ -1,15 +1,21 @@
 from .grader import Grader
-#from .recorder import RecordBenchmark
+from .utils import load_saved_benchmark, get_npz_filename
+from .utils import create_missing_directory
+from .utils import strip_after_second_underscore
+from .utils import get_after_second_underscore
 import numpy as np
 import subprocess
 import requests
 import os
+from torchvision import transforms
+from PIL import Image
+from transformers import AutoConfig, MllamaProcessor, AutoTokenizer, AutoModelForVision2Seq, AutoModelForCausalLM, AutoProcessor, MllamaForConditionalGeneration
 
 # remove generation from this
 
 class Proctor():
 
-    def __init__(self, benchmark_path, model, exam_name, **kwargs):
+    def __init__(self, exam_name, model, benchmark_path, **kwargs):
 
         self.benchmark_path = benchmark_path
         self.saved_benchmark_path = os.path.join(self.benchmark_path, 'saved')
@@ -22,6 +28,7 @@ class Proctor():
         self.exam_name = exam_name
         self.model = model
         self.verbose = kwargs.get('verbose',False)
+        self.modelpath = kwargs.get('model_path')
         self.results_path = os.path.join(self.benchmark_path, 'results')
         self.client = None
         self.npz_filename = get_npz_filename(
@@ -42,7 +49,8 @@ class Proctor():
         self.n_numbers = kwargs.get('n_numbers',100)
         # exam index for multiple versions of the same exam:
         self.exam_idx = kwargs.get('exam_idx','unset')
-
+        if self.exam_idx =='unset':
+            self.exam_idx = 0
         create_missing_directory(self.results_path)
         create_missing_directory(self.saved_benchmark_path)
 
@@ -51,7 +59,17 @@ class Proctor():
             self.exam_name,
             self.exam_idx
         )
-        
+        #print(benchmark)
+        self.questions = benchmark['question']
+        #print("Value:", len(questions))
+        #npzfile = np.load(benchmark, allow_pickle=True)
+        #print("Keys in npz file:", npzfile.files)
+
+        # To see the raw content
+        #for key in npzfile.files:
+        #    print(f"{key}: {type(npzfile[key])}") 
+        #print("Type of benchmark:", type(benchmark))
+        #print("Type of benchmark['question']:", type(benchmark['question']))
         responses = self.give_benchmark(benchmark)
 
         np.savez(self.npz_filename, **benchmark, responses=responses)
@@ -61,7 +79,7 @@ class Proctor():
         #self.path       = settings['path'] + '/benchmarks/completed/' # path to benchmark reports
         #self.reuse      = settings['path'] + '/benchmarks/saved/' # path to saved benchmark
         #self.figures    = settings['path'] + '/benchmarks/figures/'
-        self.modelpath = settings['model_path']
+        #self.modelpath = kwargs.get('model_path')
         #self.grader     = grader()
         #self.generate   = settings['generate']
         #self.exam_idx   = settings['exam_idx']
@@ -69,6 +87,8 @@ class Proctor():
         #self.create_missing_directory(self.path)
         #self.create_missing_directory(self.reuse)
         #self.create_missing_directory(self.figures)
+        ollama_model_list = []
+        openai_classic_model_list = [] 
 
     def ask_openai(self, question, model_choice):
         """ Method for prompting & recording OpenAI products """
@@ -102,11 +122,14 @@ class Proctor():
 
     def give_benchmark(self, benchmark):
         """ Give all of the questions to the LLM """
-        tmp = self.load_llm()
-        n = len(benchmark['question'])
+        tmp = None
+        local_models = os.listdir(self.modelpath)
+        if not (self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model))):
+            tmp = self.load_llm()
+        n = len(self.questions)
         responses = []
         for i in range(0,n):
-            prompt = benchmark["question"][i]
+            prompt = self.questions[i]
             response = self.give_question_to_llm(prompt, tmp)
             if self.verbose:
                 print('\n Question ',i)
@@ -136,6 +159,9 @@ class Proctor():
     def give_question_to_llm(self, prompt, tmp):
         """ Method for prompting & recording LLMs """
         response = None
+        local_models = os.listdir(self.modelpath)
+        ollama_model_list = []
+        openai_all_model_list = [] 
         if self.model in ollama_model_list:
             #print("Model selected:", self.model)
             payload = {
@@ -151,19 +177,44 @@ class Proctor():
                 response = request.json()["response"]
             else:
                 print("Error:", request.status_code, request.text)
+            return response
         elif self.model in openai_all_model_list:
             response = self.ask_openai(prompt,self.model)
-        #
-        # ADDITIONAL LLMs CAN BE ADDED HERE
-        #
-        return response
+            return response
+        # locally downloaded LLMs
+        elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
+            responses = []
+            # Load the model and tokenizer
+            model = AutoModelForCausalLM.from_pretrained(self.modelpath + self.model)
+            tokenizer = AutoTokenizer.from_pretrained(self.modelpath + self.model)
+            # Set pad_token_id to eos_token_id if not already set
+            if model.config.pad_token_id is None:
+                model.config.pad_token_id = model.config.eos_token_id
 
+            n = len(self.questions)
+            for i in range(0,n): # length of exam
 
-        # **********************************************************************
-        # 2) assess the model using the benchmark ******************************
-        # for locally downloaded multimodal LLMS ******************************
-        elif self.model == "Llama-3.2-90B-Vision-Instruct" or self.model == "Llama-3.2-11B-Vision":
-            
+                prompt = self.questions[i]
+                inputs = tokenizer(prompt, return_tensors="pt")
+
+                # Generate response
+                max_new_tokens = 5
+                generate_ids = model.generate(
+                    inputs.input_ids,
+                    attention_mask=inputs.attention_mask,
+                    max_new_tokens=max_new_tokens
+                )
+                response = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+                #response = self.give_question_to_llm(prompt, tmp)
+                if self.verbose:
+                    print('\n Question ',i)
+                    print(prompt)
+                    print(response)
+                responses.append(response)
+            responses = np.array(responses)
+            return responses
+        #need to add multimodal models - these are only hardcoded for now; need to figure out better approach
+        elif self.model == "Llama-3.2-90B-Vision-Instruct" or self.model == "Llama-3.2-11B-Vision":    
             # Load the model and tokenizer
             model = MllamaForConditionalGeneration.from_pretrained(self.modelpath + self.model)
             processor = AutoProcessor.from_pretrained(self.modelpath + self.model)
@@ -188,75 +239,6 @@ class Proctor():
 
                 # Decode the generated text
                 response = processor.decode(outputs[0])
-
-            # grade:
-                if exam_name == 'equations':#'mediatedCausalitySmoking' or exam_name == 'mediatedCausalitySmokingWithMethod':
-                    correct = self.grader.grade_images(self.solutions[index],response)
-                    continue
-
-                if correct:
-                    grade[i] = 1.0
-                else:
-                    grade[i] = 0.0
-
-                report['grade'] = grade
-                report['sim score'] = correct
-                report['question_idx'] = index
-                report['correct'] = img_file
-                report['response'] = response
-                self.print_questions_to_terminal(report)
-                self.benchmark.write_report(report) #model_str, exam_str, length_str, i, self.questions, self.solutions, response, correct, grade, self.save)
-
-                # Save the benchmark (a blank exam for re-using later):
-                if self.record_blank: #self.is_integer(self.save):
-                    self.benchmark.save_blank_exam(report) #exam_str, length_str, i, self.questions, self.solutions, self.reuse, self.save)
-
-
-        # for locally downloaded text-based LLMS ******************************
-        elif self.model == "Llama-3.3-70B-Instruct" or self.model == 'Llama-3.2-1B' or self.model == 'OpenMath2-Llama3.1-8B' or self.model =='CodeLlama-7b-Instruct-hf' or self.model == "WizardMath-7B-V1.1" or self.model == "Mathstral-7B-v0.1":
-            
-            # Load the model and tokenizer
-            model = AutoModelForCausalLM.from_pretrained(self.modelpath + self.model)
-            tokenizer = AutoTokenizer.from_pretrained(self.modelpath + self.model)
-            # Set pad_token_id to eos_token_id if not already set
-            if model.config.pad_token_id is None:
-                model.config.pad_token_id = model.config.eos_token_id
-
-            for i in range(0,self.length): # length of exam
-
-            # Define the prompt
-                prompt = self.questions[i]
-                inputs = tokenizer(prompt, return_tensors="pt")
-
-            # Generate response
-                #max_length = 400
-                max_new_tokens = 5
-                generate_ids = model.generate(
-                    inputs.input_ids,
-                    attention_mask=inputs.attention_mask,
-                    max_new_tokens=max_new_tokens
-                )
-                response = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-
-            # grade:
-                if exam_name == 'simpleInequality' or exam_name == 'mediatedCausalitySmoking' or exam_name == 'mediatedCausalitySmokingWithMethod':
-                    correct = self.grader.grade_string_multiple_choice(self.solutions[i],response,choices=['A', 'B', 'C'])
-                else:
-                    correct = self.grader.grade_string_exactly(self.solutions[i],response)
-                if correct:
-                    grade[i] = 1.0
-                else:
-                    grade[i] = 0.0
-
-                report['grade'] = grade
-                report['correct'] = correct
-                report['question_idx'] = i
-                report['response'] = response
-                self.print_questions_to_terminal(report)
-                self.benchmark.write_report(report) #model_str, exam_str, length_str, i, self.questions, self.solutions, response, correct, grade, self.save)
-
-                # Save the benchmark (a blank exam for re-using later):
-                if self.record_blank: #self.is_integer(self.save):
-                    self.benchmark.save_blank_exam(report) #exam_str, length_str, i, self.questions, self.solutions, self.reuse, self.save)
-
-
+                responses.append(response)
+            responses = np.array(responses)
+            return responses

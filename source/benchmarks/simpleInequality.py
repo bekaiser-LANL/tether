@@ -12,10 +12,10 @@ from source.utils import check_probability
 class simpleInequality():
 
 
-    def __init__(self, n_numbers = 100, **kwargs):
+    def __init__(self, exam_name, n_numbers = 100, **kwargs):
 
         #self.plot_path = plot_path
-        #self.exam_name = exam_name
+        self.exam_name = exam_name
 
         #generation parameters:
         self.plot_flag = kwargs.get('plot_flag', False)
@@ -26,14 +26,15 @@ class simpleInequality():
             "answer_proportions",
             [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
         )
-        self.n_samples = kwargs.get('n_samples', 60)
+        self.n_problems = kwargs.get('n_problems', 18)
+        self.n_samples = kwargs.get('n_samples', self.n_problems/len(self.answer_proportions))
+        self.n_samples = int(self.n_samples)
         self.difficulty_thresholds = kwargs.get(
             'difficulty_thresholds',
             np.array([0.66,1.33])
         )
         #self.ci_method = (exam_name).split('_')[1]
         #self.exam_name_wo_ci_method = (exam_name).split('_')[0]
-        self.n_problems = kwargs.get('n_problems', 180)
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
         if not is_divisible_by_9(self.n_problems):
             raise ValueError(
@@ -54,76 +55,184 @@ class simpleInequality():
         q = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Answer with one letter only: A, B, or C. Answer:"
         return v1, v2, q
 
+    def make_plot(self,problem):
+        """ Plot the causal example for varied n_samples """
+        if self.plot_flag: # make a plot of the 95% confidence interval
+            create_missing_directory(self.plot_path)
+            import matplotlib # pylint: disable=import-outside-toplevel
+            matplotlib.use('Agg') # pylint: disable=import-outside-toplevel
+            import matplotlib.pyplot as plt # pylint: disable=import-outside-toplevel
+            low_n = np.power(10.,self.min_power10_sample_size)
+            high_n = np.power(10.,self.max_power10_sample_size)
+            figname = f"{self.plot_path}{self.ci_method}_example_{problem['example_idx']}.png"
+            fig = plt.figure(figsize=(12, 5))
+            ax1=plt.subplot(1,2,1)
+            plt.fill_between(
+                problem["n_samples_all"],
+                problem["p_diff_ci_lower_all"],
+                problem["p_diff_ci_upper_all"],
+                color="royalblue",
+                alpha=0.2,
+                label="95% CI"
+            )
+            plt.plot(problem["n_samples_all"],problem["p_diff_all"],color='royalblue',linewidth=1)
+            plt.plot(
+                problem["n_samples"],
+                problem["p_diff"],
+                color='royalblue',
+                linestyle='None',
+                marker='*',
+                markersize=20,
+                linewidth=2
+            )
+            plt.legend(loc=1,fontsize=13,framealpha=1.)
+            plt.xlabel(r'$N_{samples}$',fontsize=18)
+            plt.ylabel(r'Probability',fontsize=16)
+            ax1.set_xscale("log")
+            plt.axis([low_n,high_n,-1.,1.])
+            ax1=plt.subplot(1,2,2)
+            plt.plot(
+                problem["n_samples_all"],
+                problem["causality_all"],
+                color='black',
+                linestyle='None',
+                marker='o',
+                markersize=10,
+                linewidth=2
+            )
+            plt.plot(
+                problem["n_samples"],
+                problem["causality"],
+                color='red',
+                linestyle='None',
+                marker='*',
+                markersize=20,
+                linewidth=2
+            )
+            plt.xlabel(r'$N_{samples}$',fontsize=18)
+            ax1.set_xscale("log")
+            plt.grid()
+            plt.axis([low_n,high_n,-0.5,2.5])
+            plt.title(problem["difficulty"])
+            plt.yticks(
+                [0.,1.,2.],
+                [r'Uncertain (C)',r'$\neg X$ causes $Y$ (B)',r'$X$ causes $Y$ (A)'],
+                fontsize=14
+            )
+            plt.subplots_adjust(
+                top=0.95,
+                bottom=0.14,
+                left=0.07,
+                right=0.985,
+                hspace=0.4,
+                wspace=0.35
+            )
+            plt.savefig(figname,format="png")
+            plt.close(fig)
+
+
     def make_problems(self): 
         """ Generate simple Inequality questions for the LLMs """
 
         qb = QuestionBank(target_per_bin =int(self.n_problems/9))
-        #question = add_question(question_text = , 
-         #                   correct_choice)
-        q_count = count
-
-        simpleInequality.print_problems()
-    
         test_complete = False
-        #sys.exit()
+        example_idx = 0
         while not test_complete:
             
+            #mean1, mean2, diff = self.find_mean_difference(v1,v2)
             # these range over varied n_samples:
             questions_tmp = np.zeros([self.n_samples],dtype=object)
             answers_tmp = np.zeros([self.n_samples],dtype=object)
             difficulty_tmp = np.empty(self.n_samples, dtype=object)
             n_samples_tmp = np.zeros([self.n_samples])
-            mean_difference_tmp = np.zeros([self.n_samples])
+            mean_diff_tmp = np.zeros([self.n_samples])
             for i in reversed(range(self.n_samples)):
 
-                mean_difference[i] = self.find_mean_difference()
-
-                #calculate the difficulty level
-                difficulty_tmp[i] = self.assign_difficulty(np.abs(mean_difference[i]))
 
                 #get questions:
-                questions_tmp[i] = self.get_prompts()
-
+                questions_tmp[i] = self.get_prompts()[2]
+               # print(questions_tmp[i])
+                #calculate the difficulty level
+                difficulty_tmp[i] = self.assign_difficulty(self.get_prompts()[0],self.get_prompts()[1])
                 #record the solutions:
-                answers_tmp[i] = self.record_solutions()
+                answers_tmp[i] = self.record_solutions(self.get_prompts()[0],self.get_prompts()[1])[1]
+                #print(answers_tmp[i])
+                mean_diff_tmp[i] = self.find_mean_difference(self.get_prompts()[0],self.get_prompts()[1])[2]
+        
+            # Randomly select one case from the generated causal examples
+            # with different numbers of samples:
+            random_choice_of_n_samples = np.random.randint(
+                0,
+                high=self.n_samples,
+                size=self.n_samples
+            )
 
-        #problem = {
-        #    "question": questions_tmp
+            # Make sure the random choice has a non-NaN p_diff:
+            mean_diff_is_not_nan = False
+            k = 0
+            subsample_idx = 0
+            while not mean_diff_is_not_nan:
+                subsample_idx = random_choice_of_n_samples[k]
+                if np.isnan(mean_diff_tmp[subsample_idx]):
+                    k += 1
+                else:
+                    mean_diff_is_not_nan = True
 
-        # Check if ready:
-        if qb.is_full():
-            final_set = qb.get_balanced_set()
-            if self.verbose:
-                print("Test is complete:", len(final_set), "questions")
-            test_complete = True
-            #Pull attributes from qb
-            qb.n_samples = np.array([q['metadata']['n_samples'] for q in qb.get_balanced_set()])
-            qb.name = np.array([q['metadata']['name'] for q in qb.get_balanced_set()])
-            qb.solution = [q['solution'] for q in qb.get_balanced_set()]
-            qb.question = [q['question'] for q in qb.get_balanced_set()]
-            qb.difficulty = [q['difficulty'] for q in qb.get_balanced_set()]
-            for name, value in qb.__dict__.items():
-                setattr(self, name, value)
+            problem = {
+                "question": questions_tmp[subsample_idx],
+                "solution": answers_tmp[subsample_idx],
+                "difficulty": difficulty_tmp[subsample_idx],
+                "n_samples": n_samples_tmp[subsample_idx],
+                "n_samples_all": n_samples_tmp,
+                "subsample_idx": subsample_idx,
+                "example_idx": example_idx,
+                "name": self.exam_name
+            }
+
+            if qb.add_question(
+                problem["question"],
+                problem["solution"],
+                problem["difficulty"],
+                metadata={k: v for k, v in problem.items() if k not in {"question", "solution", "difficulty"}}
+                ):
+                #continue
+                self.make_plot(problem)
+
+            # Check if ready:
+            if qb.is_full():
+                final_set = qb.get_balanced_set()
+                if self.verbose:
+                    print("Test is complete:", len(final_set), "questions")
+                test_complete = True
+                #Pull attributes from qb
+                qb.n_samples = np.array([q['metadata']['n_samples'] for q in qb.get_balanced_set()])
+                qb.name = np.array([q['metadata']['name'] for q in qb.get_balanced_set()])
+                qb.example_idx = np.array([q['metadata']['example_idx'] for q in qb.get_balanced_set()])
+                qb.solution = [q['solution'] for q in qb.get_balanced_set()]
+                qb.question = [q['question'] for q in qb.get_balanced_set()]
+                qb.difficulty = [q['difficulty'] for q in qb.get_balanced_set()]
+                for name, value in qb.__dict__.items():
+                    setattr(self, name, value)
             else:
                 if self.verbose:
                     print("Still building test. Current count:", qb.count())
                 example_idx += 1 # loop over examples 
-            print(' Done! ')
+        print(' Done! ')
 
 
-    def make_problems(self): # all tests need this
-        self.questions = [] # all tests need this
-        self.solutions = [] # all tests need this
-        for i in range(0,self.n_problems): # all tests need this
-
-            v1, v2, q_str = self.get_prompts()
-            self.questions = np.append(self.questions,q_str)
-
-            #ans_str1 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v1) + "]"
-            #ans_str2 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v2) + "]"
-            label = self.find_mean_difference(v1,v2)
-            #print('label=',label)
-            self.solutions = np.append(self.solutions,label)
+    #def make_problems(self): # all tests need this
+    #    self.questions = [] # all tests need this
+    #    self.solutions = [] # all tests need this
+    #    for i in range(0,self.n_problems): # all tests need this
+#
+#            v1, v2, q_str = self.get_prompts()
+#            self.questions = np.append(self.questions,q_str)
+#
+#            #ans_str1 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v1) + "]"
+#            #ans_str2 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v2) + "]"
+#            label = self.find_mean_difference(v1,v2)
+#            #print('label=',label)
+#            self.solutions = np.append(self.solutions,label)
 
     def generate_vector(self, target_mean, target_std, length):
         length = self.n_numbers
@@ -164,8 +273,9 @@ class simpleInequality():
                 vectors.append((v1, v2))
                 return v1, v2
 
-    def record_solutions(self, mean1, mean2):
+    def record_solutions(self, v1, v2):
         """ Determine if answer is A, B, or C """
+        mean1, mean2, diff = self.find_mean_difference(v1, v2)
         if mean1 > mean2:
             plot_val = 2 # for plotting
             answer = 'A' # X > Y
@@ -181,16 +291,18 @@ class simpleInequality():
         #    return 'A'
         #else:
         #    return 'B'
+        #print(answer)
         return plot_val, answer
 
 
-    def find_mean_difference(self, v1, v2, epsilon=0.05):
+    def find_mean_difference(self, v1, v2):
         mean1 = np.mean(v1)
         mean2 = np.mean(v2)
+        diff = abs(mean1 - mean2)
+        return mean1, mean2, diff
 
-        return (mean1 - mean2)
-
-    def assign_difficulty(self, diff_value):
+    def assign_difficulty(self, v1, v2):
+        mean1, mean2, diff_value = self.find_mean_difference(v1, v2)
         if diff_value <= self.difficulty_thresholds[0]:
             difficulty = 'hard'
         elif diff_value <= self.difficulty_thresholds[1]:

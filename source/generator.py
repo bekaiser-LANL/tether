@@ -27,7 +27,7 @@ def generate_benchmarks(path, exam_name, **kwargs):
     # index for repeated benchmarks:
     exam_idx = kwargs.get('exam_idx', 'unset')
     # number of problems in the benchmark
-    n_problems = kwargs.get('n_problems', 180)
+    n_problems = kwargs.get('n_problems', 18)
     # flag for plotting extra generated benchmark data:
     plot_flag = kwargs.get("plot_flag", False)
     # path to benchmark reports:
@@ -48,7 +48,6 @@ def generate_benchmarks(path, exam_name, **kwargs):
         exam_name_wo_ci_method = exam_name
 
     saver = None
-
     if exam_name_wo_ci_method == 'SignificantFigures':
 
         # Generate all of the problems in the benchmark:
@@ -68,16 +67,17 @@ def generate_benchmarks(path, exam_name, **kwargs):
         # Generate all of the problems in the benchmark:
         problems = simpleInequality(
             n_numbers=n_numbers,
-            n_problems=n_problems
+            n_problems=n_problems,
+            exam_name=exam_name
         )
 
         # # Save the benchmark as an .npz
-        # saver = SaveBenchmark.from_simple_inequality(
-        #     source=problems,
-        #     path=self.path,
-        #     exam_name=self.exam_name,
-        #     exam_idx=self.exam_idx
-        # )
+        saver = SaveBenchmark.from_simple_inequality(
+             source=problems,
+             path=save_path,
+             exam_name=exam_name,
+             exam_idx=exam_idx
+        )
 
     elif exam_name_wo_ci_method == 'StandardDeviation':
 
@@ -114,4 +114,4 @@ def generate_benchmarks(path, exam_name, **kwargs):
             exam_idx=exam_idx
         )
 
-    #saver.save_attributes()
+    saver.save_attributes()
