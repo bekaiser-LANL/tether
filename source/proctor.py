@@ -76,17 +76,17 @@ class Proctor():
 
         self.record_txt = kwargs.get('record_txt', False) # save blank benchmark as .txt  
       
-        #self.path       = settings['path'] + '/benchmarks/completed/' # path to benchmark reports
-        #self.reuse      = settings['path'] + '/benchmarks/saved/' # path to saved benchmark
-        #self.figures    = settings['path'] + '/benchmarks/figures/'
+        self.path       = settings['path'] + '/benchmarks/completed/' # path to benchmark reports
+        self.reuse      = settings['path'] + '/benchmarks/saved/' # path to saved benchmark
+        self.figures    = settings['path'] + '/benchmarks/figures/'
         #self.modelpath = kwargs.get('model_path')
         #self.grader     = grader()
         #self.generate   = settings['generate']
         #self.exam_idx   = settings['exam_idx']
             
-        #self.create_missing_directory(self.path)
-        #self.create_missing_directory(self.reuse)
-        #self.create_missing_directory(self.figures)
+        self.create_missing_directory(self.path)
+        self.create_missing_directory(self.reuse)
+        self.create_missing_directory(self.figures)
         ollama_model_list = []
         openai_classic_model_list = [] 
 
@@ -207,10 +207,12 @@ class Proctor():
                 inputs = tokenizer(prompt, return_tensors="pt")
 
                 # Generate response
-                max_new_tokens = 5
+                max_new_tokens = 200
+                #max_length = 1000
                 generate_ids = model.generate(
                     inputs.input_ids,
                     attention_mask=inputs.attention_mask,
+                    #max_length=max_length
                     max_new_tokens=max_new_tokens
                 )
                 response = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]

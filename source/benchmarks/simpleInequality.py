@@ -16,17 +16,23 @@ class simpleInequality():
 
         #self.plot_path = plot_path
         self.exam_name = exam_name
-
         #generation parameters:
+        self.n_problems = kwargs.get('n_problems', 18) #length of test
+        self.n_numbers = n_numbers #length of each vector
         self.plot_flag = kwargs.get('plot_flag', False)
         self.generate_flag = kwargs.get('generate_flag', True)
         self.verbose = kwargs.get('verbose', False)
-        self.n_numbers = n_numbers #length of each vector
+        self.mean_diff_ranges = kwargs.get('mean_diff_ranges',[
+            (0, 0.66), 
+            (0.66, 1.33), 
+            (1.33, 2.0)
+        ])
         self.answer_proportions = kwargs.get(
             "answer_proportions",
             [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
         )
-        self.n_problems = kwargs.get('n_problems', 18)
+        self.n_per_range = kwargs.get('n_per_range', self.n_problems/len(self.answer_proportions))
+        self.n_per_range = int(self.n_per_range)
         self.n_samples = kwargs.get('n_samples', self.n_problems/len(self.answer_proportions))
         self.n_samples = int(self.n_samples)
         self.difficulty_thresholds = kwargs.get(
@@ -36,6 +42,7 @@ class simpleInequality():
         #self.ci_method = (exam_name).split('_')[1]
         #self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
+        self.range_index=0
         if not is_divisible_by_9(self.n_problems):
             raise ValueError(
                 "\n The number of problems specified is not divisible by 9."
@@ -52,84 +59,21 @@ class simpleInequality():
         v1numbers_str = " ".join(map(str, v1)) 
         v2numbers_str = " ".join(map(str, v2)) 
         q = []
-        q = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Answer with one letter only: A, B, or C. Answer:"
+        q = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Is it more probable that a sample from Vector 1 is greater than sample from Vector2? Answer 'A' for yes, 'B' for no, or 'C' for uncertain. Use only the data provided here and the 95% confidence level. Do not repeat the prompt. Answer:"
         return v1, v2, q
 
-    def make_plot(self,problem):
+    def make_plot(self,count,v1,v2,problem):
         """ Plot the causal example for varied n_samples """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            create_missing_directory(self.plot_path)
-            import matplotlib # pylint: disable=import-outside-toplevel
-            matplotlib.use('Agg') # pylint: disable=import-outside-toplevel
-            import matplotlib.pyplot as plt # pylint: disable=import-outside-toplevel
-            low_n = np.power(10.,self.min_power10_sample_size)
-            high_n = np.power(10.,self.max_power10_sample_size)
-            figname = f"{self.plot_path}{self.ci_method}_example_{problem['example_idx']}.png"
-            fig = plt.figure(figsize=(12, 5))
-            ax1=plt.subplot(1,2,1)
-            plt.fill_between(
-                problem["n_samples_all"],
-                problem["p_diff_ci_lower_all"],
-                problem["p_diff_ci_upper_all"],
-                color="royalblue",
-                alpha=0.2,
-                label="95% CI"
-            )
-            plt.plot(problem["n_samples_all"],problem["p_diff_all"],color='royalblue',linewidth=1)
-            plt.plot(
-                problem["n_samples"],
-                problem["p_diff"],
-                color='royalblue',
-                linestyle='None',
-                marker='*',
-                markersize=20,
-                linewidth=2
-            )
-            plt.legend(loc=1,fontsize=13,framealpha=1.)
-            plt.xlabel(r'$N_{samples}$',fontsize=18)
-            plt.ylabel(r'Probability',fontsize=16)
-            ax1.set_xscale("log")
-            plt.axis([low_n,high_n,-1.,1.])
-            ax1=plt.subplot(1,2,2)
-            plt.plot(
-                problem["n_samples_all"],
-                problem["causality_all"],
-                color='black',
-                linestyle='None',
-                marker='o',
-                markersize=10,
-                linewidth=2
-            )
-            plt.plot(
-                problem["n_samples"],
-                problem["causality"],
-                color='red',
-                linestyle='None',
-                marker='*',
-                markersize=20,
-                linewidth=2
-            )
-            plt.xlabel(r'$N_{samples}$',fontsize=18)
-            ax1.set_xscale("log")
-            plt.grid()
-            plt.axis([low_n,high_n,-0.5,2.5])
-            plt.title(problem["difficulty"])
-            plt.yticks(
-                [0.,1.,2.],
-                [r'Uncertain (C)',r'$\neg X$ causes $Y$ (B)',r'$X$ causes $Y$ (A)'],
-                fontsize=14
-            )
-            plt.subplots_adjust(
-                top=0.95,
-                bottom=0.14,
-                left=0.07,
-                right=0.985,
-                hspace=0.4,
-                wspace=0.35
-            )
-            plt.savefig(figname,format="png")
-            plt.close(fig)
-
+            import seaborn as sns
+            sns.histplot(v1, kde=True, label="Vector 1", color="blue")
+            sns.histplot(v2, kde=True, label="Vector 2", color="orange")
+            plt.axvline(np.mean(v1), color='blue', linestyle='--')
+            plt.axvline(np.mean(v2), color='orange', linestyle='--')
+            plt.legend()
+            plt.title("Distribution with KDE")
+            plot_name = f"distribution_plot_{count}.png"
+            plt.savefig(plot_name)
 
     def make_problems(self): 
         """ Generate simple Inequality questions for the LLMs """
@@ -137,6 +81,7 @@ class simpleInequality():
         qb = QuestionBank(target_per_bin =int(self.n_problems/9))
         test_complete = False
         example_idx = 0
+        count = 0
         while not test_complete:
             
             #mean1, mean2, diff = self.find_mean_difference(v1,v2)
@@ -195,8 +140,8 @@ class simpleInequality():
                 problem["difficulty"],
                 metadata={k: v for k, v in problem.items() if k not in {"question", "solution", "difficulty"}}
                 ):
-                #continue
-                self.make_plot(problem)
+                self.make_plot(count,self.get_prompts()[0],self.get_prompts()[1],problem)
+                count = count + 1
 
             # Check if ready:
             if qb.is_full():
@@ -220,20 +165,6 @@ class simpleInequality():
         print(' Done! ')
 
 
-    #def make_problems(self): # all tests need this
-    #    self.questions = [] # all tests need this
-    #    self.solutions = [] # all tests need this
-    #    for i in range(0,self.n_problems): # all tests need this
-#
-#            v1, v2, q_str = self.get_prompts()
-#            self.questions = np.append(self.questions,q_str)
-#
-#            #ans_str1 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v1) + "]"
-#            #ans_str2 = mean#vector_str = "[" + ", ".join('{:.2f}'.format(x) for x in v2) + "]"
-#            label = self.find_mean_difference(v1,v2)
-#            #print('label=',label)
-#            self.solutions = np.append(self.solutions,label)
-
     def generate_vector(self, target_mean, target_std, length):
         length = self.n_numbers
         vec = np.random.randn(length)
@@ -244,7 +175,7 @@ class simpleInequality():
         vec = np.round(vec, 2) #round to 2 decimal places
         return vec
 
-    def generate_vector_pair(self, mean_diff_range, length):
+    def generate_vector_pair(self, mean_diff_range):
         length = self.n_numbers
         while True:
             mean1 = np.random.uniform(-1, 1)
@@ -263,15 +194,12 @@ class simpleInequality():
                 return vec1, vec2
 
     def generate_dataset(self):
-        ranges = [(0, 0.66), (0.66, 1.33), (1.33, 2.0)]
-        vectors = []
-        length = self.n_numbers
-
-        for diff_range in ranges:
-            for _ in range(60):
-                v1, v2 = self.generate_vector_pair(diff_range, length)
-                vectors.append((v1, v2))
-                return v1, v2
+        chosen_range = self.mean_diff_ranges[self.range_index]
+    
+        # Cycle through 0, 1, 2, 0, 1, ...
+        self.range_index = (self.range_index + 1) % len(self.mean_diff_ranges)
+    
+        return self.generate_vector_pair(chosen_range)
 
     def record_solutions(self, v1, v2):
         """ Determine if answer is A, B, or C """
@@ -285,13 +213,6 @@ class simpleInequality():
         else:
             plot_val = 0 # for plotting
             answer = 'C' # Uncertain
-        #if abs(mean1 - mean2) < epsilon:
-        #    return 'C'  # Uncertain
-        #elif mean1 > mean2:
-        #    return 'A'
-        #else:
-        #    return 'B'
-        #print(answer)
         return plot_val, answer
 
 

@@ -68,6 +68,7 @@ def generate_benchmarks(path, exam_name, **kwargs):
         problems = simpleInequality(
             n_numbers=n_numbers,
             n_problems=n_problems,
+            plot_flag=plot_flag,
             exam_name=exam_name
         )
 
