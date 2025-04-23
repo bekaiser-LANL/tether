@@ -2,6 +2,7 @@
 import os
 import argparse
 from source.generator import generate_benchmarks
+from source.utils import get_parser
 
 # Prior to running pytest, you need to set your path with:
 # export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE

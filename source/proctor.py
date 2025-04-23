@@ -1,18 +1,11 @@
-<<<<<<< HEAD
-from .grader import Grader
-=======
 """ Proctor administers benchmarks to LLMs """
-import os
-import subprocess
-import requests
-import time
-import numpy as np
->>>>>>> origin/main
 from .utils import load_saved_benchmark, get_npz_filename
 from .utils import create_missing_directory
 from .utils import strip_after_second_underscore
 from .utils import get_after_second_underscore
+from .grader import Grader
 import numpy as np
+import time
 import subprocess
 import requests
 import os
