@@ -82,7 +82,9 @@ def generate_benchmarks(path, exam_name, **kwargs):
         # )
 
     elif exam_name_wo_ci_method in ('MediatedCausalitySmoking',
-                                            'MediatedCausality'):
+                                    'MediatedCausality',
+                                    'MediatedCausalityWithMethod'
+                                    ):
 
         # Generate all of the problems in the benchmark:
         problems = MediatedCausality(

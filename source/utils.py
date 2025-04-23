@@ -105,6 +105,7 @@ class ReadSavedBenchmarkNpz():
         self.exam_str = data['exam_str']
         self.n_problems = data['n_problems']
 
+        # FIX THIS:
         if self.exam_name == 'significantFigures' or self.exam_name == 'standardDeviation':
             self.metadata = {
                 "Name": self.exam_name,
@@ -329,7 +330,8 @@ class SaveBenchmark():
         """ Save the data as a dict within an npz file"""
         if self.exam_name_wo_ci_method in (
             'MediatedCausalitySmoking', 
-            'MediatedCausality'
+            'MediatedCausality',
+            'MediatedCausalityWithMethod',
             ):
             self.attributes_to_save = [
                 "question",

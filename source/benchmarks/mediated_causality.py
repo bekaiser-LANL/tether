@@ -151,8 +151,6 @@ def causality_from_table(data, test, n_bootstrap=1000):
         df_full,
         n_boot=n_bootstrap,
     )
-    # print("boot_diffs shape:", np.shape(boot_diffs))
-    # print("boot_diffs sample:", boot_diffs[:10])
 
     # Point estimate
     p_diff = np.mean(boot_diffs)
@@ -230,7 +228,7 @@ def generate_dataset(
     sum_target_range=(0.7, 0.9),
     probability_of_pattern=0.90,
 ):
-    """ Randomly generate data for the frequency table """
+    """ Randomly generate frequencies for the frequency table """
 
     chance = np.random.uniform(0, 1)
 
@@ -332,8 +330,6 @@ class MediatedCausality():
             "answer_proportions",
             [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
         )
-        # n_samples = number of sample sizes generated per causal example
-        self.n_samples = kwargs.get('n_samples', 50)
         self.min_power10_sample_size = kwargs.get(
             'min_power10_sample_size', 
             1
@@ -347,6 +343,11 @@ class MediatedCausality():
             np.array([0.05,0.25])
         )
         self.ci_method = (exam_name).split('_')[1]
+        # n_samples = number of sample sizes generated per causal example
+        if self.ci_method == 'bootstrap':  
+            self.n_samples = kwargs.get('n_samples', 5)
+        else:
+            self.n_samples = kwargs.get('n_samples', 50)    
         self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_problems = kwargs.get('n_problems', 360)
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
@@ -376,14 +377,35 @@ class MediatedCausality():
         test_complete = False
         example_idx = 0
         while not test_complete:
+            #print(' New problem generated ')
 
-            # generate a causal example:
-            factor = np.logspace(
+            # flag to control whether we continue the while loop
+            # (this expedites the random guessing of new problems)
+            skip_to_next = False 
+
+            # frequency factor:
+            if self.ci_method == 'bootstrap':
+                # bootstrapping is expensive
+                factor_tmp = np.logspace(
                 self.min_power10_sample_size,
                 self.max_power10_sample_size,
-                num=self.n_samples,
+                num=200,
                 endpoint=True,
-            )
+                )
+                random_subset = np.random.choice(
+                    factor_tmp, 
+                    size=self.n_samples, 
+                    replace=False
+                )
+                factor = np.sort(random_subset)
+            else:
+                factor = np.logspace(
+                    self.min_power10_sample_size,
+                    self.max_power10_sample_size,
+                    num=self.n_samples,
+                    endpoint=True,
+                )
+            # frequency proportions:
             generated_array = generate_dataset()
 
             # these range over varied n_samples:
@@ -401,6 +423,28 @@ class MediatedCausality():
 
                 table = generate_table(xyz, generated_array, factor[i], 'integers')
                 table_tmp[i,:,:] = table
+
+                if self.ci_method == 'bootstrap':
+                    # quickly skip if difficulty level is not needed.
+                    # This is done to speed up bootstrap
+                    check_results = causality_from_table(
+                        table, 
+                        'tdist', 
+                        self.n_bootstrap
+                    )
+                    check_answers_tmp = self.record_solutions(
+                    check_results[1],
+                    check_results[2],
+                    )
+                    check_answers = check_answers_tmp[1]
+                    if np.isnan(check_results[0]):
+                        skip_to_next = True
+                        break  # break only the for loop over self.n_samples
+                    check_difficulty = self.assign_difficulty(np.abs(check_results[0]))
+                    fixed_value = int(self.n_problems/9)
+                    if qb.count()[check_answers][check_difficulty] == fixed_value:
+                        skip_to_next = True
+                        break  # break only the for loop over self.n_samples
 
                 (
                     p_diff_tmp[i],
@@ -424,6 +468,11 @@ class MediatedCausality():
                     p_diff_ci_lower_tmp[i],
                     p_diff_ci_upper_tmp[i],
                 )
+
+            if skip_to_next:
+                # immediately go to next while-loop iteration. 
+                # This is done merely to speed things up.
+                continue  
 
             # Randomly select one case from the generated causal examples
             # with different numbers of samples:
@@ -463,6 +512,10 @@ class MediatedCausality():
                 "example_idx": example_idx,
                 "name": self.exam_name
             }
+
+            # print('\n question = ',problem["question"])
+            # print('\n solution = ',problem["solution"])
+            # print('\n difficulty = ',problem["difficulty"])
 
             if qb.add_question(
                 problem["question"],
