@@ -2,7 +2,6 @@
 import os
 import argparse
 from source.proctor import Proctor
-from cli_args import get_parser 
 
 # Prior to running pytest, you need to set your path with:
 # export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE
