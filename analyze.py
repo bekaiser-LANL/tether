@@ -1,5 +1,46 @@
 """ Analyze benchmark results """
-# from source import Analyzer
+import os
+import argparse
+from source.analyzer import Analyzer
+
+# Prior to running pytest, you need to set your path with:
+# export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE
+# where ENTER_YOUR_PATH_HERE needs to be replaced with your path.
+data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Analyze the completed benchmark for a specified model."
+    )
+
+    parser.add_argument(
+        "benchmark_name",
+        help="Name of the benchmark to run, including its index (e.g., MediatedCausality_tdist_0)"
+    )
+
+    parser.add_argument(
+        "model_name",
+        help="Name of the model to test (e.g., gpt-4o)"
+    )
+
+    parser.add_argument(
+        "--path",
+        default=data_path,
+        help=f"Path to the benchmarks directory (default: from PATH_TO_BENCHMARKS or '{data_path}')"
+    )
+
+    args = parser.parse_args()
+
+    Analyzer(args.path, args.model_name, args.benchmark_name)
+
+    print(f"\n Analyses of benchmark '{args.benchmark_name}' for model '{args.model_name}' completed at: {args.path}")
+
+if __name__ == "__main__":
+    main()
+
+
+
+# 
 
 # # path to the completed benchmarks you want to analyze:
 # path        = '/Users/l281800/Desktop/benchmarks/completed/'
@@ -10,27 +51,27 @@
 
 #===============================================================================
 
-benchmark = 'MediatedCausalitySmoking_tdist'
+# benchmark = 'MediatedCausalitySmoking_tdist'
 
-path_to_benchmarks = '/Users/l281800/Desktop/benchmarks/'
-npz_filename = path_to_benchmarks + 'results/' + benchmark + '.npz'
+# path_to_benchmarks = '/Users/l281800/Desktop/benchmarks/'
+# npz_filename = path_to_benchmarks + 'results/' + benchmark + '.npz'
 
-import numpy as np
 
-# Load the .npz file
-data = np.load(npz_filename, allow_pickle=True)
 
-# List all keys stored in the file
-print("\n\n\n Keys:", data.files)
+# # Load the .npz file
+# data = np.load(npz_filename, allow_pickle=True)
 
-# Access individual arrays
-print("\n\n First question:\n ", data["question"][0])
-print("\n First response:\n ", data["responses"][0])
-print("\n First solution:\n ", data["solution"][0])
-print("\n\n Last question:\n ", data["question"][-1])
-print("\n Last response:\n ", data["responses"][-1])
-print("\n Last solution:\n ", data["solution"][-1])
-print("\n Last p_diff:\n ", data["p_diff"][-1])
+# # List all keys stored in the file
+# print("\n\n\n Keys:", data.files)
+
+# # Access individual arrays
+# print("\n\n First question:\n ", data["question"][0])
+# print("\n First response:\n ", data["responses"][0])
+# print("\n First solution:\n ", data["solution"][0])
+# print("\n\n Last question:\n ", data["question"][-1])
+# print("\n Last response:\n ", data["responses"][-1])
+# print("\n Last solution:\n ", data["solution"][-1])
+# print("\n Last p_diff:\n ", data["p_diff"][-1])
 
 #===============================================================================
 

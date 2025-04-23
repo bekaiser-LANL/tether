@@ -61,26 +61,14 @@ def test_give_benchmark(mock_give_q, sample_benchmark):
     assert isinstance(responses, np.ndarray)
     assert responses.tolist() == ["4", "Paris"]
 
-@mock.patch("subprocess.Popen")
-def test_load_llm_ollama(mock_popen):
-    """ Test of function: test_load_llm_ollama """
-    process_mock = mock.Mock()
-    mock_popen.return_value.__enter__.return_value = process_mock
-    process_mock.communicate.return_value = (b"", b"")
+# @mock.patch("requests.post")
+# def test_give_question_to_llama(mock_post):
+#     """ Test of function: test_give_question_to_llm_llama """
+#     mock_post.return_value.status_code = 200
+#     mock_post.return_value.json.return_value = {"response": "Test response"}
 
-    proctor = Proctor.__new__(Proctor)
-    proctor.model = "llama3"
-    url = proctor.load_llm()
-    assert url == "http://localhost:11434/api/generate"
+#     proctor = Proctor.__new__(Proctor)
+#     proctor.model = "llama3"
 
-@mock.patch("requests.post")
-def test_give_question_to_llm_llama(mock_post):
-    """ Test of function: test_give_question_to_llm_llama """
-    mock_post.return_value.status_code = 200
-    mock_post.return_value.json.return_value = {"response": "Test response"}
-
-    proctor = Proctor.__new__(Proctor)
-    proctor.model = "llama3"
-
-    result = proctor.give_question_to_llm("Prompt?", "http://localhost:11434/api/generate")
-    assert result == "Test response"
+#     result = proctor.give_question_to_llm("Prompt?")
+#     assert result == "Test response"

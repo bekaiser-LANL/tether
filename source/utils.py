@@ -1,6 +1,64 @@
 """ General purpose benchmark functions & classes """
 import os
 import numpy as np
+import argparse
+
+def get_parser(script="generate"):
+    parser = argparse.ArgumentParser(
+        description="Generate a benchmark dataset."
+    )
+
+    if script == "run":
+        parser.add_argument(
+            "exam_name",
+            help="Name of the benchmark to generate"
+        )
+        parser.add_argument(
+            "model",
+            help="Name of model to use"
+        )
+        parser.add_argument(
+            "path",
+            help="Directory path to /benchmarks/"
+        )
+    if script == "generate":
+        parser.add_argument(
+            "exam_name",
+            help="Name of the benchmark to generate"
+        )
+        parser.add_argument(
+            "path",
+            help="Directory path to /benchmarks/"
+        )
+    parser.add_argument(
+        "--n_problems",
+        type=int,
+        default=180,
+        help="Number of problems to generate for the benchmark"
+    )
+    parser.add_argument(
+        "--make_plots",
+        action="store_true",
+        help="Enable plotting"
+    )
+    parser.add_argument(
+        "--n_numbers",
+        type=int,
+        default=20,
+        help="Number of integers for standard deviation benchmark"
+    )
+    parser.add_argument(
+        "--exam_idx",
+        type=int,
+        default=0,
+        help="Index for multiple benchmarks of the same type"
+    )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        help="Optional path for locally downloaded model"
+    )
+    return parser
 
 def strip_after_second_underscore(s):
     """ Get the exam_name if it has exam_idx on the end.
@@ -105,6 +163,7 @@ class ReadSavedBenchmarkNpz():
         self.exam_str = data['exam_str']
         self.n_problems = data['n_problems']
 
+        # FIX THIS:
         if self.exam_name == 'significantFigures' or self.exam_name == 'standardDeviation':
             self.metadata = {
                 "Name": self.exam_name,
@@ -358,7 +417,8 @@ class SaveBenchmark():
         """ Save the data as a dict within an npz file"""
         if self.exam_name_wo_ci_method in (
             'MediatedCausalitySmoking', 
-            'MediatedCausality'
+            'MediatedCausality',
+            'MediatedCausalityWithMethod',
             ):
             self.attributes_to_save = [
                 "question",
@@ -394,7 +454,7 @@ class SaveBenchmark():
         for key in self.attributes_to_save:
            value = getattr(self, key, None)
            if value is None:
-               print(f"⚠️ Warning: '{key}' is None and will not be saved.")
+               print(f" Warning: '{key}' is None and will not be saved.")
            else:
                data[key] = value
         np.savez(self.npz_filename, **data)

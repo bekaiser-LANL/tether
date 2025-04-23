@@ -1,4 +1,5 @@
 """ Randomly generates and saves benchmarks as .npz files """
+import os
 from .utils import create_missing_directory, SaveBenchmark
 from .benchmarks.mediated_causality import MediatedCausality
 from .benchmarks.standard_deviation import StandardDeviation
@@ -31,11 +32,12 @@ def generate_benchmarks(path, exam_name, **kwargs):
     # flag for plotting extra generated benchmark data:
     plot_flag = kwargs.get("plot_flag", False)
     # path to benchmark reports:
-    results_path = path + 'results/'
+    results_path = os.path.join(path, 'results')
     # save blank benchmarks for repeated use:
-    save_path = path + 'saved/'
+    save_path = os.path.join(path, 'saved')
     # save figures path for extra generated benchmark data:
-    plot_path = save_path + exam_name + '_figures/'
+    #plot_path = os.path.join(save_path , exam_name , '_figures')
+    plot_path = os.path.join(save_path, f"{exam_name}_figures")
 
     create_missing_directory(path)
     create_missing_directory(save_path)
@@ -97,7 +99,9 @@ def generate_benchmarks(path, exam_name, **kwargs):
         # )
 
     elif exam_name_wo_ci_method in ('MediatedCausalitySmoking',
-                                            'MediatedCausality'):
+                                    'MediatedCausality',
+                                    'MediatedCausalityWithMethod'
+                                    ):
 
         # Generate all of the problems in the benchmark:
         problems = MediatedCausality(

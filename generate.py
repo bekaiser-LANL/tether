@@ -1,8 +1,12 @@
 """ Randomly generate new benchmarks """
-from cli_args import get_parser
 import os
+import argparse
 from source.generator import generate_benchmarks
 
+# Prior to running pytest, you need to set your path with:
+# export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE
+# where ENTER_YOUR_PATH_HERE needs to be replaced with your path.
+data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
 def main():
     parser = get_parser(script="generate")

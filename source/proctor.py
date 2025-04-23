@@ -1,4 +1,13 @@
+<<<<<<< HEAD
 from .grader import Grader
+=======
+""" Proctor administers benchmarks to LLMs """
+import os
+import subprocess
+import requests
+import time
+import numpy as np
+>>>>>>> origin/main
 from .utils import load_saved_benchmark, get_npz_filename
 from .utils import create_missing_directory
 from .utils import strip_after_second_underscore
@@ -11,7 +20,17 @@ from torchvision import transforms
 from PIL import Image
 from transformers import AutoConfig, MllamaProcessor, AutoTokenizer, AutoModelForVision2Seq, AutoModelForCausalLM, AutoProcessor, MllamaForConditionalGeneration
 
-# remove generation from this
+ollama_model_list = ["llama3","llama3.2"]
+openai_reasoning_model_list = ['o3-mini','o1','o3']
+openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
+openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
+
+def ensure_ollama_running():
+    try:
+        requests.get("http://localhost:11434")
+    except requests.exceptions.ConnectionError:
+        subprocess.Popen(["ollama", "serve"])
+        time.sleep(5)
 
 class Proctor():
 
@@ -20,10 +39,10 @@ class Proctor():
         self.benchmark_path = benchmark_path
         self.saved_benchmark_path = os.path.join(self.benchmark_path, 'saved')
         if exam_name.count("_") == 2: # includes exam_idx at end
-            self.exam_name = strip_after_second_underscore(exam_name)
+            #self.exam_name = strip_after_second_underscore(exam_name)
             self.exam_idx = int(get_after_second_underscore(exam_name))
         else:
-            self.exam_name = exam_name
+            #self.exam_name = exam_name
             self.exam_idx = kwargs.get('exam_idx','unset')
         self.exam_name = exam_name
         self.model = model
@@ -59,17 +78,7 @@ class Proctor():
             self.exam_name,
             self.exam_idx
         )
-        #print(benchmark)
         self.questions = benchmark['question']
-        #print("Value:", len(questions))
-        #npzfile = np.load(benchmark, allow_pickle=True)
-        #print("Keys in npz file:", npzfile.files)
-
-        # To see the raw content
-        #for key in npzfile.files:
-        #    print(f"{key}: {type(npzfile[key])}") 
-        #print("Type of benchmark:", type(benchmark))
-        #print("Type of benchmark['question']:", type(benchmark['question']))
         responses = self.give_benchmark(benchmark)
 
         np.savez(self.npz_filename, **benchmark, responses=responses)
@@ -79,10 +88,6 @@ class Proctor():
         self.path       = settings['path'] + '/benchmarks/completed/' # path to benchmark reports
         self.reuse      = settings['path'] + '/benchmarks/saved/' # path to saved benchmark
         self.figures    = settings['path'] + '/benchmarks/figures/'
-        #self.modelpath = kwargs.get('model_path')
-        #self.grader     = grader()
-        #self.generate   = settings['generate']
-        #self.exam_idx   = settings['exam_idx']
             
         self.create_missing_directory(self.path)
         self.create_missing_directory(self.reuse)
@@ -122,55 +127,35 @@ class Proctor():
 
     def give_benchmark(self, benchmark):
         """ Give all of the questions to the LLM """
-        tmp = None
-        model_path = os.path.join(self.modelpath, self.model)
-        is_local_model = self.model in os.listdir(self.modelpath) and os.path.isdir(model_path)
-
-        if not is_local_model:
-            tmp = self.load_llm()
-
-        responses = []
-
-        if is_local_model:
-            # Only call once for all questions
-            responses = self.give_question_to_llm(None, tmp)  # local model handles its own loop
-        else:
-            # API models, call per-question
-            for i, prompt in enumerate(self.questions):
-                response = self.give_question_to_llm(prompt, tmp)
-                if self.verbose:
-                    print(f"\n Question {i}")
-                    print(prompt)
-                    print(response)
-                responses.append(response)
-        responses = np.array(responses)
-        return responses
-
-    def load_llm(self):
-        """ Load & set up the LLM for benchmarking """
-        tmp = None
-        if self.model in ollama_model_list:
-            with subprocess.Popen(
-                ["ollama", "serve"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            ) as process:
-                process.communicate()
-            tmp = "http://localhost:11434/api/generate"
-        elif self.model in openai_all_model_list:
+        if self.model in openai_all_model_list:
             from openai import OpenAI # pylint: disable=import-outside-toplevel
             openai_api_key = os.getenv("OPENAI_API_KEY")
             self.client = OpenAI(api_key=openai_api_key)
-        return tmp
+        n = len(benchmark['question'])
+        responses = []
+        for i in range(0,n):
+            prompt = benchmark["question"][i]
+            response = self.give_question_to_llm(prompt)
+            if self.verbose:
+                print('\n Question ',i)
+                print(prompt)
+                print(response)
+            responses.append(response)
+        responses = np.array(responses)
+        return responses
 
-    def give_question_to_llm(self, prompt, tmp):
+    def give_question_to_llm(self, prompt):
         """ Method for prompting & recording LLMs """
         response = None
         local_models = os.listdir(self.modelpath)
         ollama_model_list = []
         openai_all_model_list = [] 
         if self.model in ollama_model_list:
-            print("Model selected:", self.model)
+            print(" Ollama is broken ")
+            # This will work — as long as you manually run `ollama run llama3'
+            # in one terminal, and then execute this Python script from another.
+            #ensure_ollama_running()
+            url = "http://localhost:11434/api/generate"
             payload = {
                 "model": self.model,
                 "prompt": prompt,
@@ -252,3 +237,16 @@ class Proctor():
                 responses.append(response)
             responses = np.array(responses)
             return responses
+            try:
+                request = requests.post(url, json=payload, timeout=60)
+                if request.status_code == 200:
+                    return request.json()["response"]
+                else:
+                    print("Error:", request.status_code, request.text)
+            except requests.exceptions.RequestException as e:
+                print("Request failed:", e)
+
+        # openai model:
+        #if self.model in openai_all_model_list:
+        response = self.ask_openai(prompt,self.model)
+        return response

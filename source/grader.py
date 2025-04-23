@@ -141,10 +141,42 @@ class Grader():
             raise ValueError(f"Invalid solution '{solution}', must be one of {choices}")
 
         
-        # Regular expression pattern to match the exact choice
-        pattern = rf"\b{solution}\b|the answer is {solution}"  # \b ensures word boundaries
+        # Normalize whitespace and get the last line of the response
+        lines = response.strip().split("\n")
+        last_line = lines[-1].strip() if lines else ""
 
+        # Regular expressions to detect explicit answer declarations
+        explicit_answer_patterns = [
+            rf"\bThe final answer is:?\s*{solution}\b",
+            rf"\bThe correct answer is:?\s*{solution}\b",
+            rf"\bThe answer is:?\s*{solution}\b",
+            rf"\bAnswer:\s*{solution}\b",
+            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",
+            rf"\*\*?Answer:?\s*{solution}",
+            rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.", 
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",
+            rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",
+            rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",
+            rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",
+            rf"\*\*Answer:\s*{solution}\*\*",
+            rf"\banswer:\s*\n+\s*\*\*{solution}\b",
+            rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",
+            rf"\n+\s*\*\*Answer:\s*{solution}\b",
+            rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b", 
+        ]
+
+        # Check if the last line explicitly declares the answer
+        for pattern in explicit_answer_patterns:
+            if re.search(pattern, last_line, re.IGNORECASE):
+                return True
+        # As soon as re.search(...) finds a match, the function
+        # returns True immediately
+
+        # General pattern to check if the answer appears any where in the response
+        pattern = rf"\b{solution}\b|the answer is {solution}"  
         # Perform case-insensitive regex search
+        
         match = re.search(r'Answer:\s*(?:\$?\\?boxed\{)?["\'\$\\\s]*([A-Ca-c])["\'\}\$\\\s]*', response)
         if match:
             extracted = str(match.group(1)).strip().upper()
@@ -152,7 +184,6 @@ class Grader():
 
             # Optional: strip any non-A/B/C just in case
             extracted = re.sub(r'[^A-C]', '', extracted)
-
             is_correct = extracted == expected
             return is_correct
         else:

@@ -1,19 +1,30 @@
 """ Tests for Generate """
 import os
+import pytest
 import numpy as np
 from source.benchmarks.mediated_causality import causality_from_table
-from source.generator import Generator
+from source.generator import generate_benchmarks
 
-def test_generator_shuffle():
+# Prior to running pytest, you need to set your path with:
+# export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE
+# where ENTER_YOUR_PATH_HERE needs to be replaced with your path.
+
+@pytest.fixture
+def user_specific_path():
+    path = os.environ.get("PATH_TO_BENCHMARKS")
+    if not path:
+        pytest.skip("PATH_TO_BENCHMARKS not set in environment.")
+    return path
+
+# could test all of the benchmarks:
+def test_generator_shuffle(user_specific_path):
     """ Verifies that the shuffling of problems within SaveBenchmark
-    inside Generator is working properly (arrays shuffled together)"""
+    inside Generator is working properly (arrays shuffled together) """
     exam_name = 'MediatedCausalitySmoking_tdist'
-    path = '/Users/l281800/Desktop/benchmarks/saved/'
     exam_idx=99999 # set to prevent overwriting other exams
-    Generator(path, exam_name, n_problems=9, exam_idx=exam_idx)
-    filename = os.path.join(path, f"{exam_name}_{exam_idx}.npz")
-    #Generator(path, exam_name, n_problems=9)
-    #filename = os.path.join(path, f"{exam_name}.npz")
+    os.makedirs(os.path.join(user_specific_path, "saved"), exist_ok=True)
+    generate_benchmarks(user_specific_path, exam_name, n_problems=9, exam_idx=exam_idx)
+    filename = os.path.join(user_specific_path, "saved", f"{exam_name}_{exam_idx}.npz")
     data = np.load(filename, allow_pickle=True)
     n = len(data['question'])
     for i in range(0,n):
