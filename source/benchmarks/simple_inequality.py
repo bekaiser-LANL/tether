@@ -1,29 +1,18 @@
-<<<<<<< HEAD
-import numpy as np
-import random
-=======
 """This module defines simpleInequality benchmark that 
 generates two vector from a gaussian distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
 import matplotlib.pyplot as plt
->>>>>>> 3b3a332 (new simple_inequality.py)
 from scipy.stats import t
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
 
 class SimpleInequality():
-<<<<<<< HEAD
-
-    def __init__(self, exam_name, n_numbers = 100, **kwargs):
-
-=======
     """Generates questions about the simple inequality case to be saved and then fed to LLMs"""
 
     def __init__(self, exam_name, n_numbers = 100, **kwargs):
 
         #self.plot_path = plot_path
->>>>>>> 3b3a332 (new simple_inequality.py)
         self.exam_name = exam_name
         #generation parameters:
         self.n_problems = kwargs.get('n_problems', 18) #length of test
@@ -32,13 +21,8 @@ class SimpleInequality():
         self.generate_flag = kwargs.get('generate_flag', True)
         self.verbose = kwargs.get('verbose', False)
         self.mean_diff_ranges = kwargs.get('mean_diff_ranges',[
-<<<<<<< HEAD
-            (0, 0.66), 
-            (0.66, 1.33), 
-=======
             (0, 0.66),
             (0.66, 1.33),
->>>>>>> 3b3a332 (new simple_inequality.py)
             (1.33, 2.0)
         ])
         self.answer_proportions = kwargs.get(
@@ -62,11 +46,7 @@ class SimpleInequality():
                 "\n The number of problems specified is not divisible by 9."
                 "Benchmark not created."
             )
-<<<<<<< HEAD
-        if self.generate_flag: 
-=======
         if self.generate_flag:
->>>>>>> 3b3a332 (new simple_inequality.py)
             self.make_problems()
 
     def get_prompts(self):
@@ -74,15 +54,6 @@ class SimpleInequality():
         v1, v2 = self.generate_dataset()
 
         # Convert the list of numbers to a space-separated string
-<<<<<<< HEAD
-        v1numbers_str = " ".join(map(str, v1)) 
-        v2numbers_str = " ".join(map(str, v2)) 
-        q = []
-        q = f"Vector 1: {v1numbers_str} Vector 2: {v2numbers_str} Which vector has the higher mean? A: Vector 1 B: Vector 2 C: Uncertain Is it more probable that a sample from Vector 1 is greater than sample from Vector2? Answer 'A' for yes, 'B' for no, or 'C' for uncertain. Use only the data provided here and the 95% confidence level. Do not repeat the prompt. Answer:"
-        return v1, v2, q
-
-    def make_plot(self,count,v1,v2,problem):
-=======
         v1numbers_str = " ".join(map(str, v1))
         v2numbers_str = " ".join(map(str, v2))
         q = []
@@ -94,7 +65,6 @@ class SimpleInequality():
         return v1, v2, q
 
     def make_plot(self,count,v1,v2):
->>>>>>> 3b3a332 (new simple_inequality.py)
         """ Plot the causal example for varied n_samples """
         if self.plot_flag: # make a plot of the 95% confidence interval
             import seaborn as sns
@@ -107,11 +77,7 @@ class SimpleInequality():
             plot_name = f"distribution_plot_{count}.png"
             plt.savefig(plot_name)
 
-<<<<<<< HEAD
-    def make_problems(self): 
-=======
     def make_problems(self):
->>>>>>> 3b3a332 (new simple_inequality.py)
         """ Generate simple Inequality questions for the LLMs """
 
         qb = QuestionBank(target_per_bin =int(self.n_problems/9))
@@ -119,10 +85,6 @@ class SimpleInequality():
         example_idx = 0
         count = 0
         while not test_complete:
-<<<<<<< HEAD
-            
-=======
->>>>>>> 3b3a332 (new simple_inequality.py)
             #mean1, mean2, diff = self.find_mean_difference(v1,v2)
             # these range over varied n_samples:
             questions_tmp = np.zeros([self.n_samples],dtype=object)
@@ -137,14 +99,6 @@ class SimpleInequality():
                 questions_tmp[i] = self.get_prompts()[2]
                # print(questions_tmp[i])
                 #calculate the difficulty level
-<<<<<<< HEAD
-                difficulty_tmp[i] = self.assign_difficulty(self.get_prompts()[0],self.get_prompts()[1])
-                #record the solutions:
-                answers_tmp[i] = self.record_solutions(self.get_prompts()[0],self.get_prompts()[1])[1]
-                #print(answers_tmp[i])
-                mean_diff_tmp[i] = self.find_mean_difference(self.get_prompts()[0],self.get_prompts()[1])[2]
-        
-=======
                 difficulty_tmp[i] = self.assign_difficulty(
                         self.get_prompts()[0],
                         self.get_prompts()[1]
@@ -157,7 +111,6 @@ class SimpleInequality():
                 mean_diff_tmp[i] = self.find_mean_difference(
                         self.get_prompts()[0],
                         self.get_prompts()[1])[2]
->>>>>>> 3b3a332 (new simple_inequality.py)
             # Randomly select one case from the generated causal examples
             # with different numbers of samples:
             random_choice_of_n_samples = np.random.randint(
@@ -192,18 +145,12 @@ class SimpleInequality():
                 problem["question"],
                 problem["solution"],
                 problem["difficulty"],
-<<<<<<< HEAD
-                metadata={k: v for k, v in problem.items() if k not in {"question", "solution", "difficulty"}}
-                ):
-                self.make_plot(count,self.get_prompts()[0],self.get_prompts()[1],problem)
-=======
                 metadata={
                     k: v
                     for k, v in problem.items()
                     if k not in {"question", "solution", "difficulty"}}
                 ):
                 self.make_plot(count,self.get_prompts()[0],self.get_prompts()[1])
->>>>>>> 3b3a332 (new simple_inequality.py)
                 count = count + 1
 
             # Check if ready:
@@ -213,11 +160,6 @@ class SimpleInequality():
                     print("Test is complete:", len(final_set), "questions")
                 test_complete = True
                 #Pull attributes from qb
-<<<<<<< HEAD
-                qb.n_samples = np.array([q['metadata']['n_samples'] for q in qb.get_balanced_set()])
-                qb.name = np.array([q['metadata']['name'] for q in qb.get_balanced_set()])
-                qb.example_idx = np.array([q['metadata']['example_idx'] for q in qb.get_balanced_set()])
-=======
                 qb.n_samples = np.array(
                         [q['metadata']['n_samples'] for q in qb.get_balanced_set()]
                         )
@@ -227,7 +169,6 @@ class SimpleInequality():
                 qb.example_idx = np.array(
                         [q['metadata']['example_idx'] for q in qb.get_balanced_set()]
                         )
->>>>>>> 3b3a332 (new simple_inequality.py)
                 qb.solution = [q['solution'] for q in qb.get_balanced_set()]
                 qb.question = [q['question'] for q in qb.get_balanced_set()]
                 qb.difficulty = [q['difficulty'] for q in qb.get_balanced_set()]
@@ -236,19 +177,11 @@ class SimpleInequality():
             else:
                 if self.verbose:
                     print("Still building test. Current count:", qb.count())
-<<<<<<< HEAD
-                example_idx += 1 # loop over examples 
-        print(' Done! ')
-
-
-    def generate_vector(self, target_mean, target_std, length):
-=======
                 example_idx += 1 # loop over examples
         print('Done!')
 
     def generate_vector(self, target_mean, target_std, length):
         """Generate vector with gaussian centered about mean with std"""
->>>>>>> 3b3a332 (new simple_inequality.py)
         length = self.n_numbers
         vec = np.random.randn(length)
         vec -= np.mean(vec)
@@ -259,10 +192,7 @@ class SimpleInequality():
         return vec
 
     def generate_vector_pair(self, mean_diff_range):
-<<<<<<< HEAD
-=======
         """Generate vectors with random means and stdevs in given ranges"""
->>>>>>> 3b3a332 (new simple_inequality.py)
         length = self.n_numbers
         while True:
             mean1 = np.random.uniform(-1, 1)
@@ -281,27 +211,15 @@ class SimpleInequality():
                 return vec1, vec2
 
     def generate_dataset(self):
-<<<<<<< HEAD
-        chosen_range = self.mean_diff_ranges[self.range_index]
-    
-        # Cycle through 0, 1, 2, 0, 1, ...
-        self.range_index = (self.range_index + 1) % len(self.mean_diff_ranges)
-    
-=======
         """Generate vector pairs with mean differences in ranges specified"""
         chosen_range = self.mean_diff_ranges[self.range_index]
         # Cycle through 0, 1, 2, 0, 1, ...
         self.range_index = (self.range_index + 1) % len(self.mean_diff_ranges)
->>>>>>> 3b3a332 (new simple_inequality.py)
         return self.generate_vector_pair(chosen_range)
 
     def record_solutions(self, v1, v2):
         """ Determine if answer is A, B, or C """
-<<<<<<< HEAD
-        mean1, mean2, diff = self.find_mean_difference(v1, v2)
-=======
         mean1, mean2, _ = self.find_mean_difference(v1, v2)
->>>>>>> 3b3a332 (new simple_inequality.py)
         if mean1 > mean2:
             plot_val = 2 # for plotting
             answer = 'A' # X > Y
@@ -315,22 +233,15 @@ class SimpleInequality():
 
 
     def find_mean_difference(self, v1, v2):
-<<<<<<< HEAD
-=======
         """Calculate the difference between each vector mean"""
->>>>>>> 3b3a332 (new simple_inequality.py)
         mean1 = np.mean(v1)
         mean2 = np.mean(v2)
         diff = abs(mean1 - mean2)
         return mean1, mean2, diff
 
     def assign_difficulty(self, v1, v2):
-<<<<<<< HEAD
-        mean1, mean2, diff_value = self.find_mean_difference(v1, v2)
-=======
         """Assign difficulty of problem based on mean differences"""
         _, _, diff_value = self.find_mean_difference(v1, v2)
->>>>>>> 3b3a332 (new simple_inequality.py)
         if diff_value <= self.difficulty_thresholds[0]:
             difficulty = 'hard'
         elif diff_value <= self.difficulty_thresholds[1]:
@@ -338,19 +249,11 @@ class SimpleInequality():
         elif diff_value > self.difficulty_thresholds[1]:
             difficulty = 'easy'
         else: # diff_value = NaN
-<<<<<<< HEAD
-            difficulty = 'N/A'    
-        return difficulty
-
-
-    def compute_confidence_intervals(vector_sets, confidence=0.95):
-=======
             difficulty = 'N/A'
         return difficulty
 
     def compute_confidence_intervals(self, vector_sets):
         """Population confidence interval (z-scores)"""
->>>>>>> 3b3a332 (new simple_inequality.py)
         z_score = 1.96  # for 95% confidence
         ci_results = []
 
@@ -372,34 +275,18 @@ class SimpleInequality():
                 'ci2': ci2,
                 'mean_diff': abs(mean1 - mean2)
             })
-<<<<<<< HEAD
-    
-        return ci_results
-
-    def compute_t_confidence_intervals(vector_sets, confidence=0.95):
-        ci_results = []
-
-=======
 
         return ci_results
 
     def compute_t_confidence_intervals(self, vector_sets, confidence=0.95):
         """Calculate CI using student t"""
         ci_results = []
->>>>>>> 3b3a332 (new simple_inequality.py)
         for idx, (v1, v2) in enumerate(vector_sets):
             n = len(v1)
             df = n - 1
             t_crit = t.ppf((1 + confidence) / 2, df)
-<<<<<<< HEAD
-
             mean1, std1 = np.mean(v1), np.std(v1, ddof=1)
             mean2, std2 = np.mean(v2), np.std(v2, ddof=1)
-
-=======
-            mean1, std1 = np.mean(v1), np.std(v1, ddof=1)
-            mean2, std2 = np.mean(v2), np.std(v2, ddof=1)
->>>>>>> 3b3a332 (new simple_inequality.py)
             ci1 = (mean1 - t_crit * (std1 / np.sqrt(n)),
                 mean1 + t_crit * (std1 / np.sqrt(n)))
             ci2 = (mean2 - t_crit * (std2 / np.sqrt(n)),
@@ -416,9 +303,6 @@ class SimpleInequality():
 
         return ci_results
 
-<<<<<<< HEAD
-    def compute_bootstrap_confidence_intervals(vector_sets, confidence=0.95, n_bootstrap=1000, random_state=None):
-=======
     def compute_bootstrap_confidence_intervals(
             self,
             vector_sets,
@@ -427,7 +311,6 @@ class SimpleInequality():
             random_state=None
             ):
         """Use bootstrap method to find CIs"""
->>>>>>> 3b3a332 (new simple_inequality.py)
         if random_state:
             np.random.seed(random_state)
 
@@ -437,10 +320,6 @@ class SimpleInequality():
         upper_percentile = 100 * (1 - alpha / 2)
 
         for idx, (v1, v2) in enumerate(vector_sets):
-<<<<<<< HEAD
-            means1 = [np.mean(np.random.choice(v1, size=len(v1), replace=True)) for _ in range(n_bootstrap)]
-            means2 = [np.mean(np.random.choice(v2, size=len(v2), replace=True)) for _ in range(n_bootstrap)]
-=======
             means1 = [
                     np.mean(np.random.choice(v1, size=len(v1), replace=True))
                     for _ in range(n_bootstrap)
@@ -449,7 +328,6 @@ class SimpleInequality():
                     np.mean(np.random.choice(v2, size=len(v2), replace=True))
                     for _ in range(n_bootstrap)
                     ]
->>>>>>> 3b3a332 (new simple_inequality.py)
 
             ci1 = (np.percentile(means1, lower_percentile), np.percentile(means1, upper_percentile))
             ci2 = (np.percentile(means2, lower_percentile), np.percentile(means2, upper_percentile))
@@ -467,65 +345,3 @@ class SimpleInequality():
             })
 
         return ci_results
-<<<<<<< HEAD
-
-    def classify_by_confidence_intervals(ci_results):
-        A, B, C = [], [], []
-
-        for result in ci_results:
-            lower1, upper1 = result['ci1']
-            lower2, upper2 = result['ci2']
-
-            if lower1 > upper2:
-                A.append(result)
-            elif upper1 < lower2:
-                B.append(result)
-            else:
-                C.append(result)
-
-        return A, B, C
-
-
-    def get_balanced_confidence_classification(ci_results, n_each=60, random_state=None):
-        A, B, C = classify_by_confidence_intervals(ci_results)
-
-        if random_state:
-            random.seed(random_state)
-
-        # Ensure we have enough in each category
-        min_counts = min(len(A), len(B), len(C))
-        if min_counts < n_each:
-            raise ValueError(f"Not enough samples in each category to get {n_each} per class.")
-
-        selected = random.sample(A, n_each) + random.sample(B, n_each) + random.sample(C, n_each)
-        random.shuffle(selected)  # Shuffle for randomness
-
-        return selected
-
-    # Step 1: Generate bootstrap confidence intervals
-    #bootstrap_ci_data = compute_bootstrap_confidence_intervals(vector_sets, n_bootstrap=1000, random_state=42)
-
-    # Step 2: Get a balanced distribution
-    #balanced_results = get_balanced_confidence_classification(bootstrap_ci_data, n_each=60, random_state=123)
-
-    # Step 3: Count how many of each class we got
-    #greater, less, uncertain = classify_by_confidence_intervals(balanced_results)
-    #print(f"Greater: {len(greater)}, Less: {len(less)}, Uncertain: {len(uncertain)}")
-
-
-    def print_problems(self): # all tests need this
-        for i in range(0,self.n_problems):
-            print('\n')
-            print(self.questions[i])
-            print(self.solutions[i])
-
-    def get_questions(self): # all tests need this
-        return self.questions
-
-    def get_solutions(self): # all tests need this
-        return self.solutions
-
-    def get_metadata(self): # all tests need this
-        return self.metadata
-=======
->>>>>>> 3b3a332 (new simple_inequality.py)

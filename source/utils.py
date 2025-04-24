@@ -228,7 +228,7 @@ class QuestionBank:
             'difficulty': difficulty,
             'metadata': metadata or {}
         }
-
+        print(entry)
         bin_list.append(entry)
         return True
 
@@ -432,7 +432,7 @@ class SaveBenchmark():
             ]
             data = {key: getattr(self, key) for key in self.attributes_to_save}
             np.savez(self.npz_filename, **data)
-        elif self.exam_name_wo_ci_method in ('simpleInequality'):
+        elif self.exam_name_wo_ci_method in ('SimpleInequality'):
             self.attributes_to_save = [
                 "question",
                 "solution",
