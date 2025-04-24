@@ -1,17 +1,14 @@
 """ Proctor administers benchmarks to LLMs """
-from .utils import load_saved_benchmark, get_npz_filename
-from .utils import create_missing_directory
-from .utils import strip_after_second_underscore
-from .utils import get_after_second_underscore
-from .grader import Grader
-import numpy as np
 import time
 import subprocess
 import requests
 import os
-from torchvision import transforms
+from .utils import load_saved_benchmark, get_npz_filename
+from .utils import create_missing_directory
+from .utils import get_after_second_underscore
+import numpy as np
 from PIL import Image
-from transformers import AutoConfig, MllamaProcessor, AutoTokenizer, AutoModelForVision2Seq, AutoModelForCausalLM, AutoProcessor, MllamaForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor, MllamaForConditionalGeneration
 
 ollama_model_list = ["llama3","llama3.2"]
 openai_reasoning_model_list = ['o3-mini','o1','o3']
@@ -78,9 +75,6 @@ class Proctor():
 
         self.record_txt = kwargs.get('record_txt', False) # save blank benchmark as .txt  
       
-        ollama_model_list = []
-        openai_classic_model_list = [] 
-
     def ask_openai(self, question, model_choice):
         """ Method for prompting & recording OpenAI products """
         if model_choice in openai_classic_model_list:

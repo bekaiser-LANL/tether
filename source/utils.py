@@ -3,33 +3,32 @@ import os
 import numpy as np
 import argparse
 
-def get_parser(script="generate"):
-    parser = argparse.ArgumentParser(
-        description="Generate a benchmark dataset."
-    )
+data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
-    if script == "run":
-        parser.add_argument(
-            "exam_name",
-            help="Name of the benchmark to generate"
-        )
+def get_parser(script):
+    parser = argparse.ArgumentParser(
+        description="Parse terminal input for tether"
+    )
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=data_path,
+        help=f"Directory path to /benchmarks/ (default: {data_path})"
+    )
+    parser.add_argument(
+        "exam_name",
+        help="Name of the benchmark"
+    )
+    if script == 'run':
         parser.add_argument(
             "model",
-            help="Name of model to use"
+            help="Name of LLM to use"
         )
         parser.add_argument(
-            "path",
-            help="Directory path to /benchmarks/"
-        )
-    if script == "generate":
-        parser.add_argument(
-            "exam_name",
-            help="Name of the benchmark to generate"
-        )
-        parser.add_argument(
-            "path",
-            help="Directory path to /benchmarks/"
-        )
+            "--model_path",
+            type=str,
+            help="Optional path for locally downloaded model"
+        )        
     parser.add_argument(
         "--n_problems",
         type=int,
@@ -54,10 +53,10 @@ def get_parser(script="generate"):
         help="Index for multiple benchmarks of the same type"
     )
     parser.add_argument(
-        "--model_path",
-        type=str,
-        help="Optional path for locally downloaded model"
-    )
+        "--verbose",
+        action="store_true",
+        help="Print to terminal"
+    )    
     return parser
 
 def strip_after_second_underscore(s):
@@ -152,6 +151,7 @@ def is_divisible_by_3(number):
     return number % 3 == 0
 
 class ReadSavedBenchmarkNpz():
+    # THIS CLASS IS LIKELY DEPRECATED
     def __init__(self, read_path  ):
         self.read_path = read_path
   
@@ -230,7 +230,6 @@ class QuestionBank:
         }
 
         bin_list.append(entry)
-        print(entry)
         return True
 
     def count(self):

@@ -1,7 +1,6 @@
 """ Mediated causality (front-door criterion) benchmarks """
 import numpy as np
 import pandas as pd
-from source.utils import create_missing_directory
 from source.utils import is_divisible_by_9
 from source.utils import check_probability
 from source.utils import QuestionBank
@@ -225,8 +224,8 @@ def estimate_p_y1_do_x1_dataframe(df):
 
 def generate_dataset(
     size=8,
-    sum_target_range=(0.7, 0.9),
-    probability_of_pattern=0.90,
+    sum_target_range=(0.7, 0.9), # try expanding range
+    probability_of_pattern=0.9, # try reducing
 ):
     """ Randomly generate frequencies for the frequency table """
 
@@ -236,8 +235,11 @@ def generate_dataset(
         array = np.random.uniform(0, 1, size)
         array = array / np.sum(array)
     else:
+        # A single float is drawn from the range defined by sum_target_range:
         two_sample_sum = np.random.uniform(sum_target_range[0], sum_target_range[1])
-        two_samples = np.random.uniform(0.4, 0.6, 2)
+        # Generate 2 random values from (0.3, 0.7)
+        two_samples = np.random.uniform(0.4, 0.6, 2) # try expanding range
+        # Normalize and scale them to match the target sum
         two_samples = two_samples / np.sum(two_samples) * two_sample_sum
 
         remaining_samples = np.random.uniform(0, 1, size-2)
@@ -277,25 +279,6 @@ def get_table():
                     [1,1,0],
                     [1,1,1]])
     return xyz
-
-def get_dictionaries(): # SHOULD BE A NEW CLASS. ANSWER COUNTERS. DATA.
-    """ dictionary of counters and data for each problem """
-    easy = {
-        "n_problems": 0, # number of problems at this difficulty
-        "n_A": 0, # number of problems at this difficulty with answer A
-        "n_B": 0, # number of problems at this difficulty with answer B
-        "n_C": 0, # number of problems at this difficulty with answer C
-        "n_samples": np.empty((), dtype=object), # total number of easy samples 
-        "questions": np.empty((), dtype=object),
-        "answers": np.empty((), dtype=object),
-        "p_diff": np.empty((), dtype=object),
-        "p_diff_ci_upper": np.empty((), dtype=object),
-        "p_diff_ci_lower": np.empty((), dtype=object),
-        "table": []
-    }
-    medm = easy.copy()
-    hard = easy.copy()
-    return easy, medm, hard
 
 def get_names(exam_name):
     """ Variable names for prompt"""
@@ -338,9 +321,9 @@ class MediatedCausality():
             'max_power10_sample_size', 
             4
         )
-        self.difficulty_thresholds = kwargs.get(
+        self.difficulty_thresholds = kwargs.get( # NEED TO INPUT FROM COMMAND LINE
             'difficulty_thresholds', 
-            np.array([0.05,0.25])
+            np.array([0.05,0.25]) # np.array([0.05,0.25]) for tdist
         )
         self.ci_method = (exam_name).split('_')[1]
         # n_samples = number of sample sizes generated per causal example
@@ -364,20 +347,25 @@ class MediatedCausality():
             self.y_name_noun,
         ) = get_names(self.exam_name)
 
+        if self.verbose:
+            print(f"\n Generating {self.n_problems} problems")
+
         if self.generate_flag: # necessary for testing
             self.make_problems()
 
     def make_problems(self):
         """ Generate mediated causality problems """
 
-        #easy, medm, hard = get_dictionaries()
         qb = QuestionBank(target_per_bin=int(self.n_problems/9))
         xyz = get_table()
 
         test_complete = False
         example_idx = 0
         while not test_complete:
-            #print(' New problem generated ')
+            if self.verbose:
+                print('\n New problem generated ')  
+            factor_tmp = []
+            factor = []
 
             # flag to control whether we continue the while loop
             # (this expedites the random guessing of new problems)
@@ -392,6 +380,7 @@ class MediatedCausality():
                 num=200,
                 endpoint=True,
                 )
+                # could make random_subset less random!
                 random_subset = np.random.choice(
                     factor_tmp, 
                     size=self.n_samples, 
@@ -438,11 +427,15 @@ class MediatedCausality():
                     )
                     check_answers = check_answers_tmp[1]
                     if np.isnan(check_results[0]):
+                        if self.verbose:
+                            print('\n p_diff is NaN')
                         skip_to_next = True
                         break  # break only the for loop over self.n_samples
                     check_difficulty = self.assign_difficulty(np.abs(check_results[0]))
                     fixed_value = int(self.n_problems/9)
                     if qb.count()[check_answers][check_difficulty] == fixed_value:
+                        if self.verbose:
+                            print('\n Already have enough of ',check_answers,check_difficulty)
                         skip_to_next = True
                         break  # break only the for loop over self.n_samples
 
@@ -471,7 +464,8 @@ class MediatedCausality():
 
             if skip_to_next:
                 # immediately go to next while-loop iteration. 
-                # This is done merely to speed things up.
+                # This is done merely to speed things up 
+                # for bootstrap generation.
                 continue  
 
             # Randomly select one case from the generated causal examples
@@ -516,7 +510,9 @@ class MediatedCausality():
             # print('\n question = ',problem["question"])
             # print('\n solution = ',problem["solution"])
             # print('\n difficulty = ',problem["difficulty"])
-
+            if self.verbose:
+                print('\n p_diff = ',problem["p_diff"])
+            
             if qb.add_question(
                 problem["question"],
                 problem["solution"],
@@ -547,7 +543,7 @@ class MediatedCausality():
 
             else:
                 if self.verbose:
-                    print("Still building test. Current count:", qb.count())
+                    print("\n Still building test. Current count:", qb.count())
                 example_idx += 1 # loop over examples 
 
         print(' Done! ')

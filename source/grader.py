@@ -1,9 +1,8 @@
-import torch
-from PIL import Image
-import csv
+""" Classes and functions for grading LLM responses """
 import os
-from sentence_transformers import SentenceTransformer, util
 import re
+
+# NEEDS TO BE LINTED
 
 class Grader():
 
@@ -57,8 +56,8 @@ class Grader():
                     if len(parts) >= 2:
                         filename = parts[0].strip()
                         keywords = [kw.strip() for kw in parts[1].split(",")]  # assuming comma-separated labels
-                       # print(f"✅ File: {filename}")
-                       # print(f"✅ Keywords for this row: {keywords}")
+                       # print(f" File: {filename}")
+                       # print(f" Keywords for this row: {keywords}")
                     # Convert keywords to a readable sentence
                     if len(keywords) == 1:
                         caption = f"A photo of {keywords[0]}."
@@ -146,24 +145,76 @@ class Grader():
         last_line = lines[-1].strip() if lines else ""
 
         # Regular expressions to detect explicit answer declarations
+        # explicit_answer_patterns = [
+        #     rf"\bThe final answer is:?\s*{solution}\b",
+        #     rf"\bThe correct answer is:?\s*{solution}\b",
+        #     rf"\bThe answer is:?\s*{solution}\b",
+        #     rf"\bAnswer:\s*{solution}\b",
+        #     rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",
+        #     rf"\*\*?Answer:?\s*{solution}",
+        #     rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.", 
+        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",
+        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",
+        #     rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",
+        #     rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",
+        #     rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",
+        #     rf"\*\*Answer:\s*{solution}\*\*",
+        #     rf"\banswer:\s*\n+\s*\*\*{solution}\b",
+        #     rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",
+        #     rf"\n+\s*\*\*Answer:\s*{solution}\b",
+        #     rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b", 
+        # ]
+        # explicit_answer_patterns = [
+        #     rf"\bThe final answer is:?\s*{solution}\b",
+        #     rf"\bThe correct answer is:?\s*{solution}\b",
+        #     rf"\bThe answer is:?\s*{solution}\b",
+        #     rf"\bAnswer:\s*{solution}\b",
+        #     rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",             # **Final answer:** **B**
+        #     rf"\*\*?Answer:?\s*{solution}",                              # **Answer: A
+        #     rf"\*\*\s*\n+\s*\*\*{solution}\.",                           # **\n\n**A.
+        #     rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.",             # The answer is:**\n\n**A.
+        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",                 # Final Answer\n\n**C
+        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",               # Final Answer\n\n**A**
+        #     rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",               # **Final answer:** \nC
+        #     rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",                # \n\n**Final Answer: A**
+        #     rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final answer:**  \n**B**
+        #     rf"\*\*Final Answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final Answer:**  \n**B**
+        #     rf"\*\*Answer:\s*{solution}\*\*",                            # **Answer: C**
+        #     rf"\banswer:\s*\n+\s*\*\*{solution}\b",                      # answer:\n\n**A
+        #     rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",                 # answer is:**\n\n**C
+        #     rf"\n+\s*\*\*Answer:\s*{solution}\b",                        # \n\n**Answer: A
+        #     rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",         # correct answer is:**\n\n**C
+        #     rf"\*\*\s*\n\s*\*\*{solution}\*\*",                          # **  \n**A**
+        # ]
         explicit_answer_patterns = [
+            # Simple sentence-style answer declarations
             rf"\bThe final answer is:?\s*{solution}\b",
             rf"\bThe correct answer is:?\s*{solution}\b",
             rf"\bThe answer is:?\s*{solution}\b",
             rf"\bAnswer:\s*{solution}\b",
-            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",
-            rf"\*\*?Answer:?\s*{solution}",
-            rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.", 
-            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",
-            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",
-            rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",
-            rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",
-            rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",
-            rf"\*\*Answer:\s*{solution}\*\*",
-            rf"\banswer:\s*\n+\s*\*\*{solution}\b",
-            rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",
-            rf"\n+\s*\*\*Answer:\s*{solution}\b",
-            rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b", 
+
+            # Bolded answer declarations
+            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",             # e.g. **Final answer:** **B**
+            rf"\*\*?Answer:?\s*{solution}",                              # e.g. **Answer: A
+
+            # Bolded answers on a new line after bolded intro
+            rf"\*\*\s*\n+\s*\*\*{solution}\.",                           # **\n\n**A.
+            rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.",             # The answer is:**\n\n**A.
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",                 # Final Answer\n\n**C
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",               # Final Answer\n\n**A**
+            rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",               # **Final answer:** \nC
+            rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",                # \n\n**Final Answer: A**
+            rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final answer:**  \n**B**
+            rf"\*\*Final Answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final Answer:**  \n**B**
+            rf"\*\*Answer:\s*{solution}\*\*",                            # **Answer: C**
+            rf"\banswer:\s*\n+\s*\*\*{solution}\b",                      # answer:\n\n**A
+            rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",                 # answer is:**\n\n**C
+            rf"\n+\s*\*\*Answer:\s*{solution}\b",                        # \n\n**Answer: A
+            rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",         # correct answer is:**\n\n**C
+            rf"\*\*\s*\n\s*\*\*{solution}\*\*",                          # **  \n**A**
+            
+            # Bold answer declarations with explanation in parentheses
+            rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*",             # **\n\n**Answer: A (yes/no/...)
         ]
 
         # Check if the last line explicitly declares the answer

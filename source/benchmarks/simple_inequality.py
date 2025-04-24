@@ -1,20 +1,13 @@
 import numpy as np
-import math as ma
 import random
-import sys
 from scipy.stats import t
-from .mediated_causality import MediatedCausality
 from source.utils import QuestionBank
-from source.utils import create_missing_directory
 from source.utils import is_divisible_by_9
-from source.utils import check_probability
 
-class simpleInequality():
-
+class SimpleInequality():
 
     def __init__(self, exam_name, n_numbers = 100, **kwargs):
 
-        #self.plot_path = plot_path
         self.exam_name = exam_name
         #generation parameters:
         self.n_problems = kwargs.get('n_problems', 18) #length of test

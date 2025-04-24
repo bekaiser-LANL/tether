@@ -1,10 +1,10 @@
 """ Randomly generates and saves benchmarks as .npz files """
+import time
 import os
 from .utils import create_missing_directory, SaveBenchmark
 from .benchmarks.mediated_causality import MediatedCausality
 from .benchmarks.standard_deviation import StandardDeviation
-from .benchmarks.significant_figures import SignificantFigures
-from .benchmarks.simpleInequality import simpleInequality
+from .benchmarks.simple_inequality import SimpleInequality
 
 def generate_benchmarks(path, exam_name, **kwargs):
     """ Randomly generates and saves benchmarks as .npz files """
@@ -36,8 +36,9 @@ def generate_benchmarks(path, exam_name, **kwargs):
     # save blank benchmarks for repeated use:
     save_path = os.path.join(path, 'saved')
     # save figures path for extra generated benchmark data:
-    #plot_path = os.path.join(save_path , exam_name , '_figures')
     plot_path = os.path.join(save_path, f"{exam_name}_figures")
+    # terminal output:
+    verbose = kwargs.get("verbose", False)
 
     create_missing_directory(path)
     create_missing_directory(save_path)
@@ -64,17 +65,18 @@ def generate_benchmarks(path, exam_name, **kwargs):
         #     exam_name=self.exam_name,
         #     exam_idx=self.exam_idx
         # )
-    elif exam_name_wo_ci_method == 'simpleInequality':
+
+    elif exam_name_wo_ci_method == 'SimpleInequality':
 
         # Generate all of the problems in the benchmark:
-        problems = simpleInequality(
+        problems = SimpleInequality(
             n_numbers=n_numbers,
             n_problems=n_problems,
             plot_flag=plot_flag,
             exam_name=exam_name
         )
 
-        # # Save the benchmark as an .npz
+        # Save the benchmark as an .npz
         saver = SaveBenchmark.from_simple_inequality(
              source=problems,
              path=save_path,
@@ -100,16 +102,19 @@ def generate_benchmarks(path, exam_name, **kwargs):
 
     elif exam_name_wo_ci_method in ('MediatedCausalitySmoking',
                                     'MediatedCausality',
-                                    'MediatedCausalityWithMethod'
-                                    ):
+                                    'MediatedCausalityWithMethod'):
 
         # Generate all of the problems in the benchmark:
+        start = time.time()
         problems = MediatedCausality(
             plot_path=plot_path,
             exam_name=exam_name,
             plot_flag=plot_flag,
             n_problems=n_problems,
+            verbose=verbose,
         )
+        end = time.time()
+        print(f"\n MediatedCausality took {end - start:.4f} seconds")
 
         # Save the benchmark as an .npz
         saver = SaveBenchmark.from_mediated_causality(

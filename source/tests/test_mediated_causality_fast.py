@@ -1,7 +1,7 @@
 """ Fast Tests for Mediated Causality """
-import re
+#import re
 import numpy as np
-from pytest import approx
+#from pytest import approx
 from source.benchmarks.mediated_causality import causality_from_table
 
 def test_causality_from_table_tdist():

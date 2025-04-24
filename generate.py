@@ -20,17 +20,18 @@ def main():
         plot_flag=args.make_plots,
         exam_idx=args.exam_idx,
         n_numbers=args.n_numbers,
-        model_path=args.model_path
+        verbose=args.verbose
     )
     
-    model_path=args.model_path
-    if model_path:
-        if not os.path.isdir(model_path):
-            print(f"The directory '{model_path}' does not exist.")
-        else:
-            print(f"Using locally downloaded model")
-    else:
-        print("Using API.")
+    # # Model is not needed for generation (it's needed for run.py):
+    # model_path=args.model_path
+    # if model_path:
+    #     if not os.path.isdir(model_path):
+    #         print(f"The directory '{model_path}' does not exist.")
+    #     else:
+    #         print(f"Using locally downloaded model")
+    # else:
+    #     print("Using API.")
 
     print(f"\n {args.exam_name} benchmark generated at {args.path}!\n")
 
