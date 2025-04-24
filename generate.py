@@ -1,6 +1,5 @@
 """ Randomly generate new benchmarks """
 import os
-import argparse
 from source.generator import generate_benchmarks
 from source.utils import get_parser
 
@@ -10,6 +9,7 @@ from source.utils import get_parser
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
 def main():
+    """ Generate benchmarks """
     parser = get_parser(script="generate")
     args = parser.parse_args()
 
@@ -22,7 +22,7 @@ def main():
         n_numbers=args.n_numbers,
         verbose=args.verbose
     )
-    
+
     # # Model is not needed for generation (it's needed for run.py):
     # model_path=args.model_path
     # if model_path:

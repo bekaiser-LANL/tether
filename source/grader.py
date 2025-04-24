@@ -3,10 +3,14 @@ import os
 import re
 
 # NEEDS TO BE LINTED
+# HARD-CODED PATHS MUST BE REMOVED
 
 class Grader():
 
     def __init__(self, benchmark, responses):
+
+        # NEEDS TO BE MOVED OUTSIDE OF THIS SCRIPT (export / .bashrc, .zshrc)
+        self.path = "/lustre/scratch5/dmperez/Tether/source/benchmarks/equations/"
 
         exam_name = benchmark['name'][0]
 
@@ -21,7 +25,10 @@ class Grader():
                     choices=['A', 'B', 'C']
                 )
             elif exam_name == 'equations':
-                correct = self.grader.grade_images(self.solutions[index],response)
+                correct = self.grader.grade_images(
+                    self.solutions[index],
+                    response
+                )
                 continue
             else:
                 correct = self.grade_string_exactly(
@@ -32,7 +39,7 @@ class Grader():
                 grade[i] = 1.0
             else:
                 grade[i] = 0.0
-        
+      
         self.grade = grade
         self.responses = responses
 
@@ -42,11 +49,9 @@ class Grader():
     def get_responses(self):
         return self.responses
 
-    def assertEqualImageDescriptions(self, solution,response):
+    def assert_equal_image_descriptions(self, solution,response):
         # Load CLIP for text embeddings
         model = SentenceTransformer("/lustre/scratch5/dmperez/LLMs/local_all_MiniLM_L6_v2")
-        self.path = "/lustre/scratch5/dmperez/Tether/source/benchmarks/equations/"
-
         reference_file = "/lustre/scratch5/dmperez/Tether/source/benchmarks/equation_labels.txt"
         reference_dict = {}
         with open(reference_file, "r") as f:
@@ -92,13 +97,13 @@ class Grader():
 
             return similarity
 
-    def assertExactlyEqualStrings(self, first, second):
+    def assert_exactly_equal_strings(self, first, second):
         if first == second:
             return True
         else:
             return False
 
-    def assertAlmostEqualNumbers(self, first, second, places=1):
+    def assert_almost_equal_numbers(self, first, second, places=1):
         """
         False if the two objects are unequal as determined by their rounded difference
         to the given number of decimal places (default 7) and compare them as equal.
@@ -111,16 +116,16 @@ class Grader():
         return msg
 
     def grade_images(self,solution,response):
-        return self.assertEqualImageDescriptions(solution,response)
+        return self.assert_equal_image_descriptions(solution,response)
 
     def grade_numerical(self,solution,response):
-        return self.assertAlmostEqual(solution,response, places=10) #  (default tolerance is places=7 decimal places)
+        return self.assert_almost_equal_numbers(solution,response, places=10) #  (default tolerance is places=7 decimal places)
 
     def grade_string_exactly(self,solution,response):
-        return self.assertExactlyEqualStrings(solution,response)
+        return self.assert_exactly_equal_strings(solution,response)
 
-    def grade_string_multiple_choice(self,solution,response,choices):
-        return self.assertExactlyEqualStrings(solution,response)
+    def grade_string_multiple_choice(self,solution,response):
+        return self.assert_exactly_equal_strings(solution,response)
 
     def grade_string_multiple_choice(self, solution, response, choices=['A', 'B', 'C']):
         """
@@ -145,47 +150,6 @@ class Grader():
         last_line = lines[-1].strip() if lines else ""
 
         # Regular expressions to detect explicit answer declarations
-        # explicit_answer_patterns = [
-        #     rf"\bThe final answer is:?\s*{solution}\b",
-        #     rf"\bThe correct answer is:?\s*{solution}\b",
-        #     rf"\bThe answer is:?\s*{solution}\b",
-        #     rf"\bAnswer:\s*{solution}\b",
-        #     rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",
-        #     rf"\*\*?Answer:?\s*{solution}",
-        #     rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.", 
-        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",
-        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",
-        #     rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",
-        #     rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",
-        #     rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",
-        #     rf"\*\*Answer:\s*{solution}\*\*",
-        #     rf"\banswer:\s*\n+\s*\*\*{solution}\b",
-        #     rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",
-        #     rf"\n+\s*\*\*Answer:\s*{solution}\b",
-        #     rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b", 
-        # ]
-        # explicit_answer_patterns = [
-        #     rf"\bThe final answer is:?\s*{solution}\b",
-        #     rf"\bThe correct answer is:?\s*{solution}\b",
-        #     rf"\bThe answer is:?\s*{solution}\b",
-        #     rf"\bAnswer:\s*{solution}\b",
-        #     rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",             # **Final answer:** **B**
-        #     rf"\*\*?Answer:?\s*{solution}",                              # **Answer: A
-        #     rf"\*\*\s*\n+\s*\*\*{solution}\.",                           # **\n\n**A.
-        #     rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.",             # The answer is:**\n\n**A.
-        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",                 # Final Answer\n\n**C
-        #     rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",               # Final Answer\n\n**A**
-        #     rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",               # **Final answer:** \nC
-        #     rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",                # \n\n**Final Answer: A**
-        #     rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final answer:**  \n**B**
-        #     rf"\*\*Final Answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final Answer:**  \n**B**
-        #     rf"\*\*Answer:\s*{solution}\*\*",                            # **Answer: C**
-        #     rf"\banswer:\s*\n+\s*\*\*{solution}\b",                      # answer:\n\n**A
-        #     rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",                 # answer is:**\n\n**C
-        #     rf"\n+\s*\*\*Answer:\s*{solution}\b",                        # \n\n**Answer: A
-        #     rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",         # correct answer is:**\n\n**C
-        #     rf"\*\*\s*\n\s*\*\*{solution}\*\*",                          # **  \n**A**
-        # ]
         explicit_answer_patterns = [
             # Simple sentence-style answer declarations
             rf"\bThe final answer is:?\s*{solution}\b",
@@ -194,27 +158,42 @@ class Grader():
             rf"\bAnswer:\s*{solution}\b",
 
             # Bolded answer declarations
-            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",             # e.g. **Final answer:** **B**
-            rf"\*\*?Answer:?\s*{solution}",                              # e.g. **Answer: A
+            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**", # e.g. **Final answer:** **B**
+            rf"\*\*?Answer:?\s*{solution}", # e.g. **Answer: A
 
             # Bolded answers on a new line after bolded intro
-            rf"\*\*\s*\n+\s*\*\*{solution}\.",                           # **\n\n**A.
-            rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.",             # The answer is:**\n\n**A.
-            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",                 # Final Answer\n\n**C
-            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",               # Final Answer\n\n**A**
-            rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",               # **Final answer:** \nC
-            rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",                # \n\n**Final Answer: A**
-            rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final answer:**  \n**B**
-            rf"\*\*Final Answer:\*\*\s*\n\s*\*\*{solution}\*\*",         # **Final Answer:**  \n**B**
-            rf"\*\*Answer:\s*{solution}\*\*",                            # **Answer: C**
-            rf"\banswer:\s*\n+\s*\*\*{solution}\b",                      # answer:\n\n**A
-            rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",                 # answer is:**\n\n**C
-            rf"\n+\s*\*\*Answer:\s*{solution}\b",                        # \n\n**Answer: A
-            rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",         # correct answer is:**\n\n**C
-            rf"\*\*\s*\n\s*\*\*{solution}\*\*",                          # **  \n**A**
+            rf"\*\*\s*\n+\s*\*\*{solution}\.",
+            # **\n\n**A.
+            rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.",
+            # The answer is:**\n\n**A.
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",
+            # Final Answer\n\n**C
+            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",
+            # Final Answer\n\n**A**
+            rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",
+            # **Final answer:** \nC
+            rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",
+            # \n\n**Final Answer: A**
+            rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",
+            # **Final answer:**  \n**B**
+            rf"\*\*Final Answer:\*\*\s*\n\s*\*\*{solution}\*\*",
+            # **Final Answer:**  \n**B**
+            rf"\*\*Answer:\s*{solution}\*\*",
+            # **Answer: C**
+            rf"\banswer:\s*\n+\s*\*\*{solution}\b",
+            # answer:\n\n**A
+            rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",
+            # answer is:**\n\n**C
+            rf"\n+\s*\*\*Answer:\s*{solution}\b",
+            # \n\n**Answer: A
+            rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",
+            # correct answer is:**\n\n**C
+            rf"\*\*\s*\n\s*\*\*{solution}\*\*", 
+            # **  \n**A**
             
             # Bold answer declarations with explanation in parentheses
-            rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*",             # **\n\n**Answer: A (yes/no/...)
+            rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*", 
+            # **\n\n**Answer: A (yes/no/...)
         ]
 
         # Check if the last line explicitly declares the answer
