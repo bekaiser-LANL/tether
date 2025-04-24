@@ -7,9 +7,10 @@ Prior to generating, running, or analyzing benchmarks (or running pytests) you n
 
 `export PATH_TO_BENCHMARKS=/$PATH_TO_BENCHMARKS$/benchmark_results`
 
-where you need to replace the path component $PATH_TO_BENCHMARKS$ with the path to where you want the benchmarks directory to be on your machine. Alternatively, you can add the export command above into your ~/.bashrc or ~/.zshrc file and source them. In bash this looks like:
+where you need to replace the path component \$PATH_TO_BENCHMARKS\$ with the path to where you want the benchmarks directory to be on your machine. Alternatively, you can add the export command above into your ~/.bashrc or ~/.zshrc file and source them. In bash this looks like:
 
 `echo 'export PATH_TO_BENCHMARKS="/$PATH_TO_BENCHMARKS$/benchmark_results"' >> ~/.bashrc`
+
 `source ~/.bashrc`
 
 and you can check if it works with:

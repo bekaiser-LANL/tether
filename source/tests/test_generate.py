@@ -12,8 +12,8 @@ from source.generator import generate_benchmarks
 @pytest.fixture
 def user_specific_path():
     path = os.environ.get("PATH_TO_BENCHMARKS")
-    if not path:
-        pytest.skip("PATH_TO_BENCHMARKS not set in environment.")
+    if not path or not os.path.exists(path):
+        pytest.fail("PATH_TO_BENCHMARKS not set in environment.")
     return path
 
 # could test all of the benchmarks:
