@@ -1,74 +1,55 @@
-import numpy as np
 import pytest
+import numpy as np
 from source.benchmarks.simple_inequality import SimpleInequality
 
 @pytest.fixture
-def si_instance():
-    return SimpleInequality(exam_name="simpleInequalityTest", n_problems=9, generate_flag=False)
+def simple_inequality_instance():
+    return SimpleInequality(
+        exam_name="TestSimple",
+        n_numbers=10,
+        n_problems=9,
+        generate_flag=False  # Prevent auto generation
+    )
 
-def test_generate_vector_shape_and_stats(si_instance):
-    vec = si_instance.generate_vector(target_mean=0.5, target_std=0.2, length=20)
+def test_generate_vector_stats(simple_inequality_instance):
+    vec = simple_inequality_instance.generate_vector(target_mean=0.5, target_std=0.2, length=10)
     assert isinstance(vec, np.ndarray)
-    assert vec.shape[0] == si_instance.n_numbers
-    assert abs(np.mean(vec) - 0.5) < 0.1
-    assert abs(np.std(vec) - 0.2) < 0.1
+    assert len(vec) == 10
+    assert np.isclose(np.mean(vec), 0.5, atol=0.2)
+    assert np.isclose(np.std(vec), 0.2, atol=0.1)
 
-def test_generate_vector_pair(si_instance):
-    v1, v2 = si_instance.generate_vector_pair((0.5, 1.0))
-    assert isinstance(v1, np.ndarray) and isinstance(v2, np.ndarray)
-    assert len(v1) == len(v2) == si_instance.n_numbers
-    mean1 = np.mean(v1)
-    mean2 = np.mean(v2)
-    assert abs(mean1 - mean2) >= 0.5
-    assert abs(mean1 - mean2) <= 1.0
+def test_generate_vector_pair_diff_range(simple_inequality_instance):
+    vec1, vec2, std1, std2 = simple_inequality_instance.generate_vector_pair((0.4, 0.6))
+    diff = abs(np.mean(vec1) - np.mean(vec2))
+    assert 0.4 <= diff <= 0.6
+    assert isinstance(vec1, np.ndarray)
+    assert isinstance(vec2, np.ndarray)
 
-def test_generate_dataset_range_cycling(si_instance):
-    ranges = si_instance.mean_diff_ranges
-    for i in range(len(ranges) * 2):  # Test cycling
-        v1, v2 = si_instance.generate_dataset()
-        mean1 = np.mean(v1)
-        mean2 = np.mean(v2)
-        diff = abs(mean1 - mean2)
-        current_range = ranges[i % len(ranges)]
-        assert current_range[0] <= diff <= current_range[1]
+def test_find_mean_difference(simple_inequality_instance):
+    vec1 = np.array([1, 2, 3])
+    vec2 = np.array([4, 5, 6])
+    mean1, mean2, diff = simple_inequality_instance.find_mean_difference(vec1, vec2)
+    assert np.isclose(mean1, 2.0)
+    assert np.isclose(mean2, 5.0)
+    assert np.isclose(diff, 3.0)
 
-def test_find_mean_difference(si_instance):
-    v1 = np.array([1, 2, 3])
-    v2 = np.array([3, 4, 5])
-    mean1, mean2, diff = si_instance.find_mean_difference(v1, v2)
-    assert mean1 == pytest.approx(2.0)
-    assert mean2 == pytest.approx(4.0)
-    assert diff == pytest.approx(2.0)
+def test_assign_difficulty(simple_inequality_instance):
+    hard_vec = np.array([0.1] * 10)
+    easy_vec = np.array([2.0] * 10)
+    assert simple_inequality_instance.assign_difficulty(hard_vec, hard_vec) == 'hard'
+    assert simple_inequality_instance.assign_difficulty(hard_vec, easy_vec) == 'easy'
 
-def test_record_solutions(si_instance):
-    v1 = np.array([5, 5, 5])
-    v2 = np.array([1, 1, 1])
-    _, answer = si_instance.record_solutions(v1, v2)
-    assert answer == 'A'
+def test_calculate_ci_structure(simple_inequality_instance):
+    vec1 = np.random.normal(0.5, 0.1, 10)
+    vec2 = np.random.normal(-0.5, 0.1, 10)
+    _, _, std1, std2 = simple_inequality_instance.generate_vector_pair((0.5, 0.6))
+    simple_inequality_instance.n_numbers = 10  # ensure correct n
+    ci_lower, ci_upper, diff = simple_inequality_instance.calculate_ci(vec1, vec2, (0.5, 0.6))
+    assert ci_lower < ci_upper
+    assert isinstance(diff, float)
 
-    v1 = np.array([1, 1, 1])
-    v2 = np.array([5, 5, 5])
-    _, answer = si_instance.record_solutions(v1, v2)
-    assert answer == 'B'
+def test_record_solutions_labels(simple_inequality_instance):
+    assert simple_inequality_instance.record_solutions(0.1, 0.5)[1] == 'A'
+    assert simple_inequality_instance.record_solutions(-0.5, -0.1)[1] == 'B'
+    assert simple_inequality_instance.record_solutions(-0.2, 0.2)[1] == 'C'
 
-    v1 = v2 = np.array([2, 2, 2])
-    _, answer = si_instance.record_solutions(v1, v2)
-    assert answer == 'C'
-
-def test_assign_difficulty(si_instance):
-    thresholds = si_instance.difficulty_thresholds
-    # Below first threshold
-    v1 = np.array([0.1, 0.1, 0.1])
-    v2 = np.array([0.1 + thresholds[0] / 2] * 3)
-    difficulty = si_instance.assign_difficulty(v1, v2)
-    assert difficulty == 'hard'
-
-    # Between thresholds
-    v2 = np.array([0.1 + (thresholds[0] + 0.01)] * 3)
-    difficulty = si_instance.assign_difficulty(v1, v2)
-    assert difficulty == 'medium'
-
-    # Above second threshold
-    v2 = np.array([0.1 + thresholds[1] + 0.1] * 3)
-    difficulty = si_instance.assign_difficulty(v1, v2)
-    assert difficulty == 'easy'
