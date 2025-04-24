@@ -1,6 +1,5 @@
 """ Run a previously generated benchmark on an LLM """
 import os
-import argparse
 from source.proctor import Proctor
 from source.utils import get_parser
 
@@ -17,11 +16,12 @@ def main():
     benchmark = kwargs.pop("exam_name")
     model = kwargs.pop("model")
     path_to_benchmarks = kwargs.pop("path")
-    #verbose = kwargs.pop("verbose", False)
+    verbose = kwargs.pop("verbose", False)
 
-    Proctor(benchmark, model, path_to_benchmarks, verbose=True, **kwargs)
+    Proctor(benchmark, model, path_to_benchmarks, verbose=verbose, **kwargs)
 
-    print(f"\n Benchmark '{args.benchmark_name}' for model '{args.model_name}' completed at: {args.path}")
+    print(f"\n Benchmark '{benchmark}' for model '{model}' "
+          f"completed at: {path_to_benchmarks}")
 
 if __name__ == "__main__":
     main()
