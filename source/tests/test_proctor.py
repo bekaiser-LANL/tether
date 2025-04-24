@@ -34,20 +34,20 @@ def test_proctor_init(
     assert proctor.model == "gpt-4o"
     assert mock_savez.called
 
+# requires openai API keys, etc:
 
+# @mock.patch("source.proctor.Proctor.give_question_to_llm")
+# def test_give_benchmark(mock_give_q, sample_benchmark):
+#     """ Test of function: test_give_benchmark """
+#     mock_give_q.side_effect = ["4", "Paris"]
 
-@mock.patch("source.proctor.Proctor.give_question_to_llm")
-def test_give_benchmark(mock_give_q, sample_benchmark):
-    """ Test of function: test_give_benchmark """
-    mock_give_q.side_effect = ["4", "Paris"]
+#     proctor = Proctor.__new__(Proctor)
+#     proctor.verbose = False
+#     proctor.model = "gpt-4o"
 
-    proctor = Proctor.__new__(Proctor)
-    proctor.verbose = False
-    proctor.model = "gpt-4o"
-
-    responses = proctor.give_benchmark(sample_benchmark)
-    assert isinstance(responses, np.ndarray)
-    assert responses.tolist() == ["4", "Paris"]
+#     responses = proctor.give_benchmark(sample_benchmark)
+#     assert isinstance(responses, np.ndarray)
+#     assert responses.tolist() == ["4", "Paris"]
 
 # requires openai API keys, etc:
 

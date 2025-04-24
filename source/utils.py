@@ -228,7 +228,6 @@ class QuestionBank:
             'difficulty': difficulty,
             'metadata': metadata or {}
         }
-        print(entry)
         bin_list.append(entry)
         return True
 
@@ -271,8 +270,8 @@ class SaveBenchmark():
     """ Saves the benchmark (blank or completed) as a .npz"""
 
     def __init__(self, path, exam_name, **kwargs):
-        self.path = path # path including /PATH/benchmarks/saved/ 
-        # (for blank benchmark) or including /PATH/benchmarks/results/
+        self.path = path # path including /PATH/benchmark_results/blank/ 
+        # (for blank benchmark) or including /PATH/benchmark_results/completed/
         # (for benchmarked model results)
         self.exam_name = exam_name
 
@@ -284,9 +283,9 @@ class SaveBenchmark():
 
         # Determine save path based on model type
         #if self.model == 'no_model':
-        #    subfolder = 'saved'
+        #    subfolder = 'blank'
         #else: 
-        #    subfolder = os.path.join('results', self.model)
+        #    subfolder = os.path.join('completed', self.model)
         #self.save_npz_path = os.path.join(self.path, subfolder)
         self.save_npz_path = self.path       
         #create_missing_directory(self.save_npz_path)

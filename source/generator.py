@@ -32,9 +32,9 @@ def generate_benchmarks(path, exam_name, **kwargs):
     # flag for plotting extra generated benchmark data:
     plot_flag = kwargs.get("plot_flag", False)
     # path to benchmark reports:
-    results_path = os.path.join(path, 'results')
+    results_path = os.path.join(path, 'completed')
     # save blank benchmarks for repeated use:
-    save_path = os.path.join(path, 'saved')
+    save_path = os.path.join(path, 'blank')
     # save figures path for extra generated benchmark data:
     plot_path = os.path.join(save_path, f"{exam_name}_figures")
     # terminal output:

@@ -22,9 +22,9 @@ def test_generator_shuffle(user_specific_path):
     inside Generator is working properly (arrays shuffled together) """
     exam_name = 'MediatedCausalitySmoking_tdist'
     exam_idx=99999 # set to prevent overwriting other exams
-    os.makedirs(os.path.join(user_specific_path, "saved"), exist_ok=True)
+    os.makedirs(os.path.join(user_specific_path, "blank"), exist_ok=True)
     generate_benchmarks(user_specific_path, exam_name, n_problems=9, exam_idx=exam_idx)
-    filename = os.path.join(user_specific_path, "saved", f"{exam_name}_{exam_idx}.npz")
+    filename = os.path.join(user_specific_path, "blank", f"{exam_name}_{exam_idx}.npz")
     data = np.load(filename, allow_pickle=True)
     n = len(data['question'])
     for i in range(0,n):

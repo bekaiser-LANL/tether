@@ -27,7 +27,7 @@ class Proctor():
     def __init__(self, exam_name, model, benchmark_path, **kwargs):
 
         self.benchmark_path = benchmark_path
-        self.saved_benchmark_path = os.path.join(self.benchmark_path, 'saved')
+        self.saved_benchmark_path = os.path.join(self.benchmark_path, 'blank')
         if exam_name.count("_") == 2: # includes exam_idx at end
             #self.exam_name = strip_after_second_underscore(exam_name)
             self.exam_idx = int(get_after_second_underscore(exam_name))
@@ -38,7 +38,7 @@ class Proctor():
         self.model = model
         self.verbose = kwargs.get('verbose',False)
         self.modelpath = kwargs.get('model_path')
-        self.results_path = os.path.join(self.benchmark_path, 'results')
+        self.results_path = os.path.join(self.benchmark_path, 'completed')
         self.client = None
         self.npz_filename = get_npz_filename(
             self.results_path,
