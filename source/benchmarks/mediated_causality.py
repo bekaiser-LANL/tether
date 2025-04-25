@@ -5,6 +5,102 @@ from source.utils import is_divisible_by_9
 from source.utils import check_probability
 from source.utils import QuestionBank
 
+# def causality_from_frequency(array):
+#     n000,n001,n010,n011,n100,n101,n110,n111 = array
+#     A = n010*(n000+n010+n001+n011)/(n000+n010)+n110*(n100+n110+n101+n111)/(n100+n110)
+#     B = n011*(n000+n010+n001+n011)/(n001+n011)+n111*(n100+n110+n101+n111)/(n101+n111)
+#     n = np.sum(array)
+#     PdoX1 = ( (n110+n100)*A + (n111+n101)*B ) / (n*(n111+n101+n110+n100))
+#     PdoX0 = ( (n010+n000)*A + (n011+n001)*B ) / (n*(n011+n001+n010+n000))
+#     dP = PdoX1-PdoX0 # > 0 causal, <= 0 not causal
+#     return dP
+
+def causality_from_frequency(array):
+    n000, n001, n010, n011, n100, n101, n110, n111 = array
+    
+    # Protect all denominators
+    try:
+        denom1 = n000 + n010
+        denom2 = n100 + n110
+        denom3 = n001 + n011
+        denom4 = n101 + n111
+        n = np.sum(array)
+        denom5 = n111 + n101 + n110 + n100
+        denom6 = n011 + n001 + n010 + n000
+
+        if denom1 == 0 or denom2 == 0 or denom3 == 0 or denom4 == 0 or n == 0 or denom5 == 0 or denom6 == 0:
+            return np.nan  # Safe fallback
+        
+        A = n010*(n000+n010+n001+n011)/denom1 + n110*(n100+n110+n101+n111)/denom2
+        B = n011*(n000+n010+n001+n011)/denom3 + n111*(n100+n110+n101+n111)/denom4
+        
+        PdoX1 = ((n110+n100)*A + (n111+n101)*B) / (n*denom5)
+        PdoX0 = ((n010+n000)*A + (n011+n001)*B) / (n*denom6)
+        
+        dP = PdoX1 - PdoX0
+        return dP
+    
+    except ZeroDivisionError:
+        return np.nan
+
+def generate_dataset_by_difficulty( difficulty, difficulty_threshold, factor_range ):
+    """ Generates a single set of sample frequencies """
+    # 
+    # The resulting probability difference is independent of sample size.
+    # Therefore, factor range relates to whether the answer is 
+    # A/B (certain) vs. C (uncertain)
+    # Factors ~ certainty, as they increase you are more likely to get A,B answers.
+    # factors must be >10 
+    # -> hard A,B problems should have high factor
+    # -> easy uncertain problems should have low factors 
+    sample_frequencies = []
+    counter =0
+    done=False
+    #difficulty_threshold = np.array([0.05,0.25])
+    if difficulty == 'easy':
+        dP = 0.
+        while dP < difficulty_threshold[1] and not done:
+            for i in range(len(factor_range)):
+                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+                sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
+                #print(sample_frequencies)
+                dP = np.abs(causality_from_frequency(sample_frequencies))
+                counter += 1
+                if counter == int(2*len(factor_range)):
+                    sample_frequencies = sample_frequencies*np.nan
+                    done = True
+                    break
+    elif difficulty == 'hard' and not done:
+        dP = difficulty_threshold[0]+1.
+        while dP > difficulty_threshold[0]:
+            for i in range(len(factor_range)):
+                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+                sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
+                dP = np.abs(causality_from_frequency(sample_frequencies))
+                counter += 1
+                if counter == int(2*len(factor_range)):
+                    sample_frequencies = sample_frequencies*np.nan
+                    done = True
+                    break
+    elif difficulty == 'medium' and not done:
+        criteria = True
+        dP = 0.
+        while criteria:
+            for i in range(len(factor_range)):
+                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+                sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
+                dP = np.abs(causality_from_frequency(sample_frequencies))
+                if dP >= difficulty_threshold[0] and dP <= difficulty_threshold[1]:
+                    criteria = False
+                counter += 1
+                if counter == int(2*len(factor_range)):
+                    sample_frequencies = sample_frequencies*np.nan
+                    done = True
+                    break   
+    else:
+        raise ValueError(f"Invalid difficulty: {difficulty}. Must be 'easy', 'medium', or 'hard'.")
+    return sample_frequencies
+
 def probability_x(arr,var_idx,outcome_idx):
     """ Compute P(x) """
     # can change it to P_y or P_z by changing var_idx
@@ -257,6 +353,7 @@ def generate_table(xyz, generated_array, factor, number_type):
                 np.array([generated_array * factor])
             )
         )
+        samples = np.maximum(samples, 1)
     elif number_type == 'rational numbers':
         samples = np.transpose(
             np.array([generated_array * factor])
@@ -328,7 +425,7 @@ class MediatedCausality():
         self.ci_method = (exam_name).split('_')[1]
         # n_samples = number of sample sizes generated per causal example
         if self.ci_method == 'bootstrap':  
-            self.n_samples = kwargs.get('n_samples', 5)
+            self.n_samples = kwargs.get('n_samples', 50)
         else:
             self.n_samples = kwargs.get('n_samples', 50)    
         self.exam_name_wo_ci_method = (exam_name).split('_')[0]
@@ -364,38 +461,12 @@ class MediatedCausality():
         while not test_complete:
             if self.verbose:
                 print('\n New problem generated ')  
-            factor_tmp = []
+            #factor_tmp = []
             factor = []
 
             # flag to control whether we continue the while loop
             # (this expedites the random guessing of new problems)
             skip_to_next = False 
-
-            # frequency factor:
-            if self.ci_method == 'bootstrap':
-                # bootstrapping is expensive
-                factor_tmp = np.logspace(
-                self.min_power10_sample_size,
-                self.max_power10_sample_size,
-                num=200,
-                endpoint=True,
-                )
-                # could make random_subset less random!
-                random_subset = np.random.choice(
-                    factor_tmp, 
-                    size=self.n_samples, 
-                    replace=False
-                )
-                factor = np.sort(random_subset)
-            else:
-                factor = np.logspace(
-                    self.min_power10_sample_size,
-                    self.max_power10_sample_size,
-                    num=self.n_samples,
-                    endpoint=True,
-                )
-            # frequency proportions:
-            generated_array = generate_dataset()
 
             # these range over varied n_samples:
             questions_tmp = np.zeros([self.n_samples],dtype=object)
@@ -408,42 +479,127 @@ class MediatedCausality():
             causality_tmp = np.zeros([self.n_samples]) # (for plotting)
             table_tmp =  np.zeros([self.n_samples,8,4])
 
-            for i in reversed(range(self.n_samples)):
+            if self.ci_method == 'tdist':
+                
+                factor = np.logspace(
+                    self.min_power10_sample_size,
+                    self.max_power10_sample_size,
+                    num=self.n_samples,
+                    endpoint=True,
+                )
+                # frequency proportions:
+                generated_array = generate_dataset()
 
-                table = generate_table(xyz, generated_array, factor[i], 'integers')
-                table_tmp[i,:,:] = table
+                for i in reversed(range(self.n_samples)):
 
-                if self.ci_method == 'bootstrap':
-                    # quickly skip if difficulty level is not needed.
-                    # This is done to speed up bootstrap
-                    check_results = causality_from_table(
+                    table = generate_table(xyz, generated_array, factor[i], 'integers')
+                    table_tmp[i,:,:] = table
+
+                    (
+                        p_diff_tmp[i],
+                        p_diff_ci_lower_tmp[i],
+                        p_diff_ci_upper_tmp[i],
+                        n_samples_tmp[i],
+                    ) = causality_from_table(
                         table, 
-                        'tdist', 
+                        self.ci_method, 
                         self.n_bootstrap
                     )
-                    check_answers_tmp = self.record_solutions(
-                    check_results[1],
-                    check_results[2],
+
+                    # Calculate the difficulty level
+                    difficulty_tmp[i] = self.assign_difficulty(np.abs(p_diff_tmp[i]))
+
+                    # Get questions:
+                    questions_tmp[i] = self.get_prompts(table)
+
+                    # Record the solutions:
+                    causality_tmp[i], answers_tmp[i] = self.record_solutions(
+                        p_diff_ci_lower_tmp[i],
+                        p_diff_ci_upper_tmp[i],
                     )
-                    check_answers = check_answers_tmp[1]
-                    if np.isnan(check_results[0]):
-                        if self.verbose:
-                            print('\n p_diff is NaN')
-                        skip_to_next = True
-                        break  # break only the for loop over self.n_samples
-                    check_difficulty = self.assign_difficulty(np.abs(check_results[0]))
-                    fixed_value = int(self.n_problems/9)
-                    if qb.count()[check_answers][check_difficulty] == fixed_value:
-                        if self.verbose:
-                            print('\n Already have enough of ',check_answers,check_difficulty)
-                        skip_to_next = True
-                        break  # break only the for loop over self.n_samples
+
+                # Randomly select one case from the generated causal examples
+                # with different numbers of samples:
+                random_choice_of_n_samples = np.random.randint(
+                    0,
+                    high=self.n_samples,
+                    size=self.n_samples
+                )
+
+                # Make sure the random choice has a non-NaN p_diff:
+                p_diff_is_not_nan = False
+                k = 0
+                subsample_idx = 0
+                while not p_diff_is_not_nan:
+                    subsample_idx = random_choice_of_n_samples[k]
+                    if np.isnan(p_diff_tmp[subsample_idx]):
+                        k += 1
+                    else:
+                        p_diff_is_not_nan = True
+
+                problem = {
+                    "question": questions_tmp[subsample_idx],
+                    "solution": answers_tmp[subsample_idx],
+                    "difficulty": difficulty_tmp[subsample_idx],            
+                    "p_diff": p_diff_tmp[subsample_idx],
+                    "p_diff_ci_lower": p_diff_ci_lower_tmp[subsample_idx],
+                    "p_diff_ci_upper": p_diff_ci_upper_tmp[subsample_idx],
+                    "n_samples": n_samples_tmp[subsample_idx],
+                    "causality": causality_tmp[subsample_idx],                 
+                    "table": table_tmp[subsample_idx],
+                    "p_diff_all": p_diff_tmp, # all sample sizes
+                    "p_diff_ci_lower_all": p_diff_ci_lower_tmp,
+                    "p_diff_ci_upper_all": p_diff_ci_upper_tmp,
+                    "n_samples_all": n_samples_tmp, 
+                    "causality_all": causality_tmp,               
+                    "subsample_idx": subsample_idx,
+                    "example_idx": example_idx,
+                    "name": self.exam_name
+                }
+
+            elif self.ci_method == 'bootstrap':
+
+                # generates only hard or easy problems where needed:
+                if qb.count()['C']['medium'] < int(self.n_problems/9):
+                    if self.verbose:
+                        print('\n Trying to make C medium ')
+                    factored_array = generate_dataset_by_difficulty( 'medium', self.difficulty_thresholds, np.logspace(0.1, 1., num=self.n_samples, endpoint=True) )
+                elif qb.count()['C']['easy'] < int(self.n_problems/9):
+                    if self.verbose:
+                        print('\n Trying to make C easy ')
+                        #low,high = np.random.uniform(0.1, 1., size=2)
+                    factored_array = generate_dataset_by_difficulty( 'easy', self.difficulty_thresholds, np.logspace(0.5,1., num=self.n_samples, endpoint=True) )
+                elif qb.count()['C']['hard'] < int(self.n_problems/9):
+                    if self.verbose:
+                        print('\n Trying to make C hard ')
+                    factored_array = generate_dataset_by_difficulty( 'hard', self.difficulty_thresholds, np.logspace(1, 4, num=self.n_samples, endpoint=True) )                       
+                elif qb.count()['A']['hard'] < int(self.n_problems/9) or qb.count()['B']['hard'] < int(self.n_problems/9):
+                    if self.verbose:
+                        print('\n Trying to make A,B hard ')
+                    factored_array = generate_dataset_by_difficulty( 'hard', self.difficulty_thresholds, np.logspace(3, 4, num=self.n_samples, endpoint=True) )
+                elif qb.count()['A']['medium'] < int(self.n_problems/9) or qb.count()['B']['medium'] < int(self.n_problems/9):
+                    if self.verbose:
+                        print('\n Trying to make A,B medium ')
+                    factored_array = generate_dataset_by_difficulty( 'medium', self.difficulty_thresholds, np.logspace(1, 4, num=self.n_samples, endpoint=True) )
+                elif qb.count()['A']['easy'] < int(self.n_problems/9) or qb.count()['B']['easy'] < int(self.n_problems/9):
+                    if self.verbose:
+                        print('\n Trying to make A,B easy ')
+                    factored_array = generate_dataset_by_difficulty( 'easy', self.difficulty_thresholds, np.logspace(1, 4, num=self.n_samples, endpoint=True) )     
+
+                if np.isnan(factored_array).all():
+                    # failure to generate.
+                    # immediately go to next while-loop iteration. 
+                    # This is done merely to speed things up 
+                    # for bootstrap generation.
+                    continue  
+
+                table = generate_table(xyz, factored_array, np.ones([len(factored_array)]), 'integers')
 
                 (
-                    p_diff_tmp[i],
-                    p_diff_ci_lower_tmp[i],
-                    p_diff_ci_upper_tmp[i],
-                    n_samples_tmp[i],
+                    p_diff,
+                    p_diff_ci_lower,
+                    p_diff_ci_upper,
+                    n_samples,
                 ) = causality_from_table(
                     table, 
                     self.ci_method, 
@@ -451,68 +607,47 @@ class MediatedCausality():
                 )
 
                 # Calculate the difficulty level
-                difficulty_tmp[i] = self.assign_difficulty(np.abs(p_diff_tmp[i]))
+                difficulty = self.assign_difficulty(np.abs(p_diff))
 
                 # Get questions:
-                questions_tmp[i] = self.get_prompts(table)
+                questions = self.get_prompts(table)
 
                 # Record the solutions:
-                causality_tmp[i], answers_tmp[i] = self.record_solutions(
-                    p_diff_ci_lower_tmp[i],
-                    p_diff_ci_upper_tmp[i],
+                causality, answers = self.record_solutions(
+                    p_diff_ci_lower,
+                    p_diff_ci_upper,
                 )
 
-            if skip_to_next:
-                # immediately go to next while-loop iteration. 
-                # This is done merely to speed things up 
-                # for bootstrap generation.
-                continue  
+                problem = {
+                    "question": questions,
+                    "solution": answers,
+                    "difficulty": difficulty,            
+                    "p_diff": p_diff,
+                    "p_diff_ci_lower": p_diff_ci_lower,
+                    "p_diff_ci_upper": p_diff_ci_upper,
+                    "n_samples": n_samples,
+                    "causality": causality,                 
+                    "table": table,
+                    "p_diff_all": np.nan, # all sample sizes
+                    "p_diff_ci_lower_all": np.nan,
+                    "p_diff_ci_upper_all": np.nan,
+                    "n_samples_all": np.nan, 
+                    "causality_all": np.nan,               
+                    "subsample_idx": np.nan,
+                    "example_idx": example_idx,
+                    "name": self.exam_name
+                }
 
-            # Randomly select one case from the generated causal examples
-            # with different numbers of samples:
-            random_choice_of_n_samples = np.random.randint(
-                0,
-                high=self.n_samples,
-                size=self.n_samples
-            )
-
-            # Make sure the random choice has a non-NaN p_diff:
-            p_diff_is_not_nan = False
-            k = 0
-            subsample_idx = 0
-            while not p_diff_is_not_nan:
-                subsample_idx = random_choice_of_n_samples[k]
-                if np.isnan(p_diff_tmp[subsample_idx]):
-                    k += 1
-                else:
-                    p_diff_is_not_nan = True
-
-            problem = {
-                "question": questions_tmp[subsample_idx],
-                "solution": answers_tmp[subsample_idx],
-                "difficulty": difficulty_tmp[subsample_idx],            
-                "p_diff": p_diff_tmp[subsample_idx],
-                "p_diff_ci_lower": p_diff_ci_lower_tmp[subsample_idx],
-                "p_diff_ci_upper": p_diff_ci_upper_tmp[subsample_idx],
-                "n_samples": n_samples_tmp[subsample_idx],
-                "causality": causality_tmp[subsample_idx],                 
-                "table": table_tmp[subsample_idx],
-                "p_diff_all": p_diff_tmp, # all sample sizes
-                "p_diff_ci_lower_all": p_diff_ci_lower_tmp,
-                "p_diff_ci_upper_all": p_diff_ci_upper_tmp,
-                "n_samples_all": n_samples_tmp, 
-                "causality_all": causality_tmp,               
-                "subsample_idx": subsample_idx,
-                "example_idx": example_idx,
-                "name": self.exam_name
-            }
-
-            # print('\n question = ',problem["question"])
-            # print('\n solution = ',problem["solution"])
-            # print('\n difficulty = ',problem["difficulty"])
             if self.verbose:
                 print('\n p_diff = ',problem["p_diff"])
-            
+                print(' difficulty = ',problem["difficulty"])
+                print(' solution = ',problem["solution"])
+                print(' table = ',problem["table"])
+                if problem["solution"] == 'A':
+                    print(' A ans. p_diff_ci_lower = ',problem["p_diff_ci_lower"])
+                if problem["solution"] == 'B':
+                    print(' B ans. p_diff_ci_upper = ',problem["p_diff_ci_upper"])
+
             if qb.add_question(
                 problem["question"],
                 problem["solution"],

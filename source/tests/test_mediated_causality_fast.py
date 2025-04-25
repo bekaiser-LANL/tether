@@ -1,8 +1,9 @@
 """ Fast Tests for Mediated Causality """
-#import re
 import numpy as np
-#from pytest import approx
+import pytest
 from source.benchmarks.mediated_causality import causality_from_table
+from source.benchmarks.mediated_causality import causality_from_frequency
+from source.benchmarks.mediated_causality import generate_dataset_by_difficulty
 
 def test_causality_from_table_tdist():
     """ Verifies the front-door criterion calculation """
@@ -37,6 +38,56 @@ def test_causality_from_table_bootstrap():
     assert np.round(p_diff,3) == np.round(0.4525 - 0.4975,3)
     assert np.round(p_diff_ci_lower,3) == np.round(-0.05151729437221199,3)
     assert np.round(p_diff_ci_upper,3) == np.round(-0.03808042079620048,3)
+
+def test_causality_known_input():
+    # Simple known input where causality is easy to compute
+    array = np.array([10, 10, 10, 10, 10, 10, 10, 10])
+    dP = causality_from_frequency(array)
+    assert isinstance(dP, float), "Output should be a float"
+    assert np.isfinite(dP), "Output should be a finite number"
+
+def test_causality_random_input():
+    # Random positive numbers
+    array = np.random.randint(1, 100, size=8)
+    dP = causality_from_frequency(array)
+    assert isinstance(dP, float)
+    assert np.isfinite(dP)
+
+def test_causality_zero_input():
+    # Example array that would cause div by zero
+    array = np.array([0, 0, 0, 1, 0, 0, 0, 1])  
+    dP = causality_from_frequency(array)
+    assert np.isnan(dP), "Should return np.nan when division by zero would occur"
+
+
+def test_generate_easy():
+    difficulty_threshold = np.array([0.05, 0.25])
+    factor_range = np.linspace(10, 20, 5)
+    result = generate_dataset_by_difficulty('easy', difficulty_threshold, factor_range)
+    assert result.shape == (8,), "Result should have 8 elements"
+    assert np.all((np.isnan(result)) | (result >= 1)), "All values should be >= 1 or NaN"
+
+def test_generate_hard():
+    difficulty_threshold = np.array([0.05, 0.25])
+    factor_range = np.linspace(10, 20, 5)
+    result = generate_dataset_by_difficulty('hard', difficulty_threshold, factor_range)
+    assert result.shape == (8,), "Result should have 8 elements"
+    assert np.all((np.isnan(result)) | (result >= 1)), "All values should be >= 1 or NaN"
+
+def test_generate_medium():
+    difficulty_threshold = np.array([0.05, 0.25])
+    factor_range = np.linspace(10, 20, 5)
+    result = generate_dataset_by_difficulty('medium', difficulty_threshold, factor_range)
+    assert result.shape == (8,), "Result should have 8 elements"
+    assert np.all((np.isnan(result)) | (result >= 1)), "All values should be >= 1 or NaN"
+
+def test_generate_invalid_difficulty():
+    difficulty_threshold = np.array([0.05, 0.25])
+    factor_range = np.linspace(10, 20, 5)
+    # Should probably not crash even if difficulty is unknown
+    with pytest.raises(Exception):
+        generate_dataset_by_difficulty('unknown', difficulty_threshold, factor_range)
+
 
 # def test_arithmetic():
 #     """
