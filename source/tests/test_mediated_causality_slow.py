@@ -25,6 +25,25 @@ def get_method(name: str) -> str:
 def get_prefix(s: str) -> str:
     return s.split('_', 1)[0]
 
+def test_no_duplicate_table_slices():
+    exam_name = 'MediatedCausality_bootstrap'
+    n_problems = 9
+    plot_path = "./figures/"
+    exam = MediatedCausality(
+        plot_path, 
+        exam_name, 
+        n_problems=n_problems,
+        verbose=True
+    )
+    table_data = exam.get_tables()
+    n_rows = np.shape(table_data)[0]
+    # Collect all slices
+    slices = [tuple(table_data[i, :, 3]) for i in range(n_rows)]
+    # Convert list of slices into a set (sets automatically remove duplicates)
+    unique_slices = set(slices)
+    # Test that number of unique slices == number of rows
+    assert len(unique_slices) == n_rows, "Duplicate slices found!"
+
 @pytest.mark.parametrize("exam_name", exam_names)
 def test_prompts_nans_and_output_dims(exam_name):
     """

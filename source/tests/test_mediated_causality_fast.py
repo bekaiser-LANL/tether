@@ -5,6 +5,16 @@ from source.benchmarks.mediated_causality import causality_from_table
 from source.benchmarks.mediated_causality import causality_from_frequency
 from source.benchmarks.mediated_causality import generate_dataset_by_difficulty
 
+# def causality_from_frequency(array):
+#     n000,n001,n010,n011,n100,n101,n110,n111 = array
+#     A = n010*(n000+n010+n001+n011)/(n000+n010)+n110*(n100+n110+n101+n111)/(n100+n110)
+#     B = n011*(n000+n010+n001+n011)/(n001+n011)+n111*(n100+n110+n101+n111)/(n101+n111)
+#     n = np.sum(array)
+#     PdoX1 = ( (n110+n100)*A + (n111+n101)*B ) / (n*(n111+n101+n110+n100))
+#     PdoX0 = ( (n010+n000)*A + (n011+n001)*B ) / (n*(n011+n001+n010+n000))
+#     dP = PdoX1-PdoX0 # > 0 causal, <= 0 not causal
+#     return dP
+
 def test_causality_from_table_tdist():
     """ Verifies the front-door criterion calculation """
     # This table is equivalent to the table on p.84 of Pearl "Causality":
@@ -52,6 +62,23 @@ def test_causality_random_input():
     dP = causality_from_frequency(array)
     assert isinstance(dP, float)
     assert np.isfinite(dP)
+
+def test_causality_aginst_equation_input():
+    # Random positive numbers
+    array = np.array([285., 97., 216., 200., 211., 57., 94., 97.])
+    dP1 = causality_from_frequency(array)
+    n000,n001,n010,n011,n100,n101,n110,n111 = array
+    A1 = n010*(n000+n010+n001+n011)/(n000+n010)
+    A2 = n110*(n100+n110+n101+n111)/(n100+n110)
+    A = A1 + A2    
+    B1 = n011*(n000+n010+n001+n011)/(n001+n011)
+    B2 = n111*(n100+n110+n101+n111)/(n101+n111)
+    B = B1 + B2    
+    n = np.sum(array)
+    PdoX1 = ( (n110+n100)*A + (n111+n101)*B ) / (n*(n111+n101+n110+n100))
+    PdoX0 = ( (n010+n000)*A + (n011+n001)*B ) / (n*(n011+n001+n010+n000))
+    dP2 = PdoX1-PdoX0 # 
+    assert dP1 == dP2
 
 def test_causality_zero_input():
     # Example array that would cause div by zero
