@@ -1,5 +1,7 @@
 # Uncertainty Quantification by LLMs
 
+While we refer to each examination as a benchmark, the goal is to characterize behavior (UQ approach, judgement) rather than to compare LLM results to ground truth.
+
 # How to use this code
 
 ## Set your path for benchmark data
@@ -43,7 +45,7 @@ Be sure to include the index of the benchmark in BENCHMARK. For example, Mediate
 
 ## OpenAI models
 
-'o1' 'gpt-4o' 'o3-mini' 'gpt-4.5-preview'
+o1 gpt-4o o3-mini gpt-4.5-preview
 
 ## Ollama models
 
@@ -91,7 +93,9 @@ Example prompt:
 #### MediatedCausalityWithMethod_bootstrap
 #### MediatedCausalityWithMethod_tdist
 
+# Testing
 
+Running the complete suite of unit tests (36) with pytest takes about 5 minutes and 40 seconds.
 
 # Licenses
 This project is licensed under the [MIT License](LICENSE.md).
