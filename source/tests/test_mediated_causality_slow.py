@@ -10,9 +10,9 @@ exam_names = [
     "MediatedCausalitySmoking_tdist",
     "MediatedCausality_tdist",
     "MediatedCausalityWithMethod_tdist",
-    # "MediatedCausalitySmoking_bootstrap",
-    # "MediatedCausalityWithMethod_bootstrap",
-    # "MediatedCausality_bootstrap",
+    "MediatedCausalitySmoking_bootstrap",
+    "MediatedCausalityWithMethod_bootstrap",
+    "MediatedCausality_bootstrap",
 ]
 
 def get_method(name: str) -> str:
@@ -55,18 +55,17 @@ def test_prompts_nans_and_output_dims(exam_name):
     """
     n_problems = 9
     plot_path = "./figures/"
- 
     exam = MediatedCausality(
         plot_path, 
         exam_name, 
         n_problems=n_problems,
         verbose=True
-    ) #plot_flag=True  n_bootstrap=200
+    )
     p_diff = exam.get_p_diff()
     solutions = np.array(exam.get_solutions())
     questions = exam.get_questions()
 
-    # Verify the prompt & answer match
+    # Verify the prompt & answer match:
     xyz = get_table()
     for i in range(len(questions)):
         numbers = [int(num) for num in re.findall(r"\d+", questions[i])]
@@ -78,7 +77,6 @@ def test_prompts_nans_and_output_dims(exam_name):
         assert np.allclose(p_diff[i], p_diff_verify, atol=1e-4)
 
     # Check for NaNs in p_diff
-    #p_diff = np.array(metadata["p_diff"], dtype=float)
     assert not np.any(np.isnan(p_diff))
 
     # Check output dimensions
