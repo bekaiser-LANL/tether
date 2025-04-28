@@ -231,6 +231,27 @@ class QuestionBank:
         bin_list.append(entry)
         return True
 
+    def get_all_tables(self):
+        """
+        Extract all 'table' entries if available,
+        fallback to searching through self.data if needed.
+        """
+        if hasattr(self, 'table'):
+            return self.table
+        else:
+            # fallback: try to extract from data structure
+            tables = []
+            for choice in self.data:
+                for difficulty in self.data[choice]:
+                    for entry in self.data[choice][difficulty]:
+                        metadata = entry.get('metadata', {})
+                        if 'table' in metadata:
+                            tables.append(metadata['table'])
+            if tables:
+                return np.array(tables)
+            else:
+                raise AttributeError("No tables found in metadata either.")
+
     def count(self):
         """
         Returns a nested count of how many questions are in each bin.

@@ -2,21 +2,40 @@ import numpy as np
 import math as ma
 
 class StandardDeviation():
+    """ Biased (sample) standard deviation test """
 
-    def __init__(self, range=[-100,100], n_numbers = 20, decimal_places=4, n_problems=100):
-        self.n_problems = n_problems # all tests need this
-        self.decimal_places = decimal_places
-        self.range = range
-        self.n_numbers = n_numbers
-        self.metadata = {
-            "Name": 'standardDeviation',
-            "n_problems": self.n_problems            
-        }
-        self.make_problems() # all tests need this
+    def __init__(self, plot_path, exam_name, **kwargs):
+        
+        # let's not tell it to use the biased (N) or unbiased 
+        # estimator (N-1) and grade relative to both.
+
+        self.plot_path = plot_path # plotting is not set up
+        self.exam_name = exam_name
+
+        self.plot_flag = kwargs.get('plot_flag', False)
+        self.generate_flag = kwargs.get('generate_flag', True)
+        self.verbose = kwargs.get('verbose', False)
+        self.n_problems = kwargs.get('n_problems', 100)
+        self.number_range = kwargs.get('number_range', [-100.,100.])
+        self.n_numbers = kwargs.get('n_numbers', 20)
+        # decimal_places=4,
+        #self.decimal_places = decimal_places
+ 
+        # self.metadata = {
+        #     "Name": 'standardDeviation',
+        #     "n_problems": self.n_problems            
+        # }
+
+        if self.generate_flag: # necessary for testing
+            self.make_problems()
 
     def make_problems(self): # all tests need this
-        self.questions = [] # all tests need this
-        self.solutions = [] # all tests need this
+        self.questions = []
+        self.biased_solutions = []
+        self.unbiased_solutions = []
+
+        # STOPPED HERE
+    
         for i in range(0,self.n_problems): # all tests need this
 
             random_numbers, q_str = self.generate_question()

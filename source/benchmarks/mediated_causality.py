@@ -5,17 +5,27 @@ from source.utils import is_divisible_by_9
 from source.utils import check_probability
 from source.utils import QuestionBank
 
-# def causality_from_frequency(array):
-#     n000,n001,n010,n011,n100,n101,n110,n111 = array
-#     A = n010*(n000+n010+n001+n011)/(n000+n010)+n110*(n100+n110+n101+n111)/(n100+n110)
-#     B = n011*(n000+n010+n001+n011)/(n001+n011)+n111*(n100+n110+n101+n111)/(n101+n111)
-#     n = np.sum(array)
-#     PdoX1 = ( (n110+n100)*A + (n111+n101)*B ) / (n*(n111+n101+n110+n100))
-#     PdoX0 = ( (n010+n000)*A + (n011+n001)*B ) / (n*(n011+n001+n010+n000))
-#     dP = PdoX1-PdoX0 # > 0 causal, <= 0 not causal
-#     return dP
+def duplicate_tables(table_data):
+    """
+    Determines if there are any duplicate frequency tables.
+    Expects table_data to be of shape (n_problems, 8).
+    
+    Returns:
+        True if duplicates exist, False otherwise.
+    """
+    n_rows = table_data.shape[0]
+
+    # Convert each row (length 8 array) into a tuple
+    slices = [tuple(table_data[i, :]) for i in range(n_rows)]
+    
+    # Put slices into a set (sets remove duplicates automatically)
+    unique_slices = set(slices)
+    
+    # If number of unique slices is less than total rows, we have duplicates
+    return len(unique_slices) != n_rows
 
 def causality_from_frequency(array):
+    """ Compute front-door criterion from frequency table """
     n000, n001, n010, n011, n100, n101, n110, n111 = array
     
     # Protect all denominators
@@ -73,9 +83,12 @@ def generate_dataset_by_difficulty( difficulty, difficulty_threshold, factor_ran
         np.random.shuffle(factor_range)
         while dP < difficulty_threshold[1] and not done:
             for i in range(len(factor_range)):
-                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+                # have the multiplers also vary in scale:
+                exponents = np.random.uniform(0, factor_range[i], size=8)
+                powers_of_10 = np.power(10, exponents)
+                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*powers_of_10
                 sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
-                #print(sample_frequencies)
+                #print('\n sample_frequencies = ',sample_frequencies)
                 dP = np.abs(causality_from_frequency(sample_frequencies))
                 counter += 1
                 if counter == int(2*len(factor_range)):
@@ -87,7 +100,9 @@ def generate_dataset_by_difficulty( difficulty, difficulty_threshold, factor_ran
         np.random.shuffle(factor_range)
         while dP > difficulty_threshold[0]:
             for i in range(len(factor_range)):
-                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+                exponents = np.random.uniform(0, factor_range[i], size=8)
+                powers_of_10 = np.power(10, exponents)
+                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*powers_of_10
                 sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
                 dP = np.abs(causality_from_frequency(sample_frequencies))
                 counter += 1
@@ -101,7 +116,9 @@ def generate_dataset_by_difficulty( difficulty, difficulty_threshold, factor_ran
         np.random.shuffle(factor_range)
         while criteria:   
             for i in range(len(factor_range)):
-                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+                exponents = np.random.uniform(0, factor_range[i], size=8)
+                powers_of_10 = np.power(10, exponents)
+                sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*powers_of_10
                 sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
                 dP = np.abs(causality_from_frequency(sample_frequencies))
                 if dP >= difficulty_threshold[0] and dP <= difficulty_threshold[1]:
@@ -119,6 +136,73 @@ def generate_dataset_by_difficulty( difficulty, difficulty_threshold, factor_ran
         sample_frequencies = sample_frequencies*np.nan
         print(' generate was unsuccessful ')
     return sample_frequencies
+
+
+# def generate_dataset_by_difficulty( difficulty, difficulty_threshold, factor_range ):
+#     """ Generates a single set of sample frequencies """
+#     # 
+#     # The resulting probability difference is independent of sample size.
+#     # Therefore, factor range relates to whether the answer is 
+#     # A/B (certain) vs. C (uncertain)
+#     # Factors ~ certainty, as they increase you are more likely to get A,B answers.
+#     # factors must be >10 
+#     # -> hard A,B problems should have high factor
+#     # -> easy uncertain problems should have low factors 
+#     sample_frequencies = []
+#     counter =0
+#     done=False
+#     #difficulty_threshold = np.array([0.05,0.25])
+#     if difficulty == 'easy':
+#         dP = 0.
+#         np.random.shuffle(factor_range)
+#         while dP < difficulty_threshold[1] and not done:
+#             for i in range(len(factor_range)):
+#                 sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+#                 sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
+#                 #print('\n sample_frequencies = ',sample_frequencies)
+#                 dP = np.abs(causality_from_frequency(sample_frequencies))
+#                 counter += 1
+#                 if counter == int(2*len(factor_range)):
+#                     sample_frequencies = sample_frequencies*np.nan
+#                     done = True # tried two loops, stil not working.
+#                     break
+#     elif difficulty == 'hard' and not done:
+#         dP = difficulty_threshold[0]+1.
+#         np.random.shuffle(factor_range)
+#         while dP > difficulty_threshold[0]:
+#             for i in range(len(factor_range)):
+#                 sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+#                 sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
+#                 dP = np.abs(causality_from_frequency(sample_frequencies))
+#                 counter += 1
+#                 if counter == int(2*len(factor_range)):
+#                     sample_frequencies = sample_frequencies*np.nan
+#                     done = True # tried two loops, stil not working.
+#                     break
+#     elif difficulty == 'medium' and not done:
+#         criteria = True
+#         dP = 0.
+#         np.random.shuffle(factor_range)
+#         while criteria:   
+#             for i in range(len(factor_range)):
+#                 sample_frequencies = np.random.uniform(low=np.nextafter(0, 1), high=1, size=8)*factor_range[i]
+#                 sample_frequencies = np.round(np.maximum(sample_frequencies, 1))
+#                 dP = np.abs(causality_from_frequency(sample_frequencies))
+#                 if dP >= difficulty_threshold[0] and dP <= difficulty_threshold[1]:
+#                     criteria = False
+#                 counter += 1
+#                 if counter == int(2*len(factor_range)):
+#                     sample_frequencies = sample_frequencies*np.nan
+#                     done = True # tried two loops, stil not working.
+#                     break   
+#     else:
+#         raise ValueError(f"Invalid difficulty: {difficulty}. Must be 'easy', 'medium', or 'hard'.")
+#     if done:
+#         print(' generate was unsuccessful ')
+#     if np.sum(sample_frequencies) == 8.0:
+#         sample_frequencies = sample_frequencies*np.nan
+#         print(' generate was unsuccessful ')
+#     return sample_frequencies
 
 def probability_x(arr,var_idx,outcome_idx):
     """ Compute P(x) """
@@ -450,7 +534,7 @@ class MediatedCausality():
         self.ci_method = (exam_name).split('_')[1]
         # n_samples = number of sample sizes generated per causal example
         if self.ci_method == 'bootstrap':  
-            self.n_samples = kwargs.get('n_samples', 50)
+            self.n_samples = kwargs.get('n_samples', 1000)
         else:
             self.n_samples = kwargs.get('n_samples', 50)    
         self.exam_name_wo_ci_method = (exam_name).split('_')[0]
@@ -489,9 +573,9 @@ class MediatedCausality():
             #factor_tmp = []
             factor = []
 
-            # flag to control whether we continue the while loop
-            # (this expedites the random guessing of new problems)
-            skip_to_next = False 
+            # # flag to control whether we continue the while loop
+            # # (this expedites the random guessing of new problems)
+            # skip_to_next = False 
 
             # these range over varied n_samples:
             questions_tmp = np.zeros([self.n_samples],dtype=object)
@@ -594,26 +678,41 @@ class MediatedCausality():
                 hard_C = qb.count()['C']['hard']
                 med_C = qb.count()['C']['medium']                
                 easy_C = qb.count()['C']['easy']
+                total = easy_A + med_A + hard_A
+                total += easy_B + med_B + hard_B
+                total += easy_C + med_C + hard_C
+
 
                 if easy_C < int(self.n_problems/9):
                     if self.verbose:
                         print('\n Trying to make C easy ')
+                        print(qb.count())
                     low = 1 # works, don't change
                     high = 3 # works, don't change
                     factored_array = generate_dataset_by_difficulty(
-                        'easy', 
+                        'easy',
                         self.difficulty_thresholds, 
-                        np.logspace(low,1., num=self.n_samples, endpoint=True)
+                        np.linspace(low,high, num=self.n_samples, endpoint=True)
                     )
+                elif easy_A < int(self.n_problems/9) or easy_B < int(self.n_problems/9):
+                    if self.verbose:
+                        print('\n Trying to make A,B easy ')
+                    low = 2 # works, don't change
+                    high = 5 # works, don't change
+                    factored_array = generate_dataset_by_difficulty(
+                        'easy',
+                        self.difficulty_thresholds,
+                        np.linspace(low, high, num=self.n_samples, endpoint=True)
+                    )    
                 elif med_C < int(self.n_problems/9):
                     if self.verbose:
                         print('\n Trying to make C medium ')
-                    low = 0.5 # works, don't change
+                    low = 1 # works, don't change
                     high = 2 # works, don't change
                     factored_array = generate_dataset_by_difficulty(
                         'medium',
                         self.difficulty_thresholds,
-                        np.logspace(low, high, num=self.n_samples, endpoint=True)
+                        np.linspace(low, high, num=self.n_samples, endpoint=True)
                     )
                 elif hard_A < int(self.n_problems/9) or hard_B < int(self.n_problems/9):
                     if self.verbose:
@@ -623,7 +722,7 @@ class MediatedCausality():
                     factored_array = generate_dataset_by_difficulty(
                         'hard',
                         self.difficulty_thresholds,
-                        np.logspace(low, high, num=self.n_samples, endpoint=True)
+                        np.linspace(low, high, num=self.n_samples, endpoint=True)
                     )
                 elif med_A < int(self.n_problems/9) or med_B < int(self.n_problems/9):
                     if self.verbose:
@@ -633,18 +732,8 @@ class MediatedCausality():
                     factored_array = generate_dataset_by_difficulty(
                         'medium',
                         self.difficulty_thresholds,
-                        np.logspace(low, high, num=self.n_samples, endpoint=True)
-                    )
-                elif easy_A < int(self.n_problems/9) or easy_B < int(self.n_problems/9):
-                    if self.verbose:
-                        print('\n Trying to make A,B easy ')
-                    low = 1 # works, don't change
-                    high = 4 # works, don't change
-                    factored_array = generate_dataset_by_difficulty(
-                        'easy',
-                        self.difficulty_thresholds,
-                        np.logspace(low, high, num=self.n_samples, endpoint=True)
-                    )    
+                        np.linspace(low, high, num=self.n_samples, endpoint=True)
+                    )  
                 elif hard_C < int(self.n_problems/9):
                     if self.verbose:
                         print('\n Trying to make C hard ')
@@ -653,17 +742,29 @@ class MediatedCausality():
                     factored_array = generate_dataset_by_difficulty(
                         'hard',
                         self.difficulty_thresholds,
-                        np.logspace(low, high, num=self.n_samples, endpoint=True)
+                        np.linspace(low, high, num=self.n_samples, endpoint=True)
                     )                       
 
                 if np.isnan(factored_array).all():
-                    # failure to generate.
-                    # immediately go to next while-loop iteration. 
-                    # This is done merely to speed things up 
-                    # for bootstrap generation.
+                    # Failure to generate a table w/o NaNs:
+                    # Immediately go to next while-loop iteration. 
                     continue
 
                 table = generate_table(xyz, factored_array, np.ones([len(factored_array)]), 'integers')
+
+                # verify that the generated table is unique:
+                if total >= 1:
+                    factored_array_expanded = np.expand_dims(factored_array, axis=0) # (1,8)
+                    tables = qb.get_all_tables()[:,:,3]
+                    combined = np.concatenate((tables, factored_array_expanded), axis=0)
+                    # print(np.shape(factored_array_expanded))
+                    # print(np.shape(tables))
+                    # print(np.shape(combined))
+                    if duplicate_tables(combined):
+                        # Immediately go to next while-loop iteration. 
+                        if self.verbose:
+                            print('\n Found duplicate frequency table: Skipping')
+                        continue
 
                 (
                     p_diff,
@@ -770,7 +871,13 @@ class MediatedCausality():
             if self.verbose:
                 print("\n Still building test. Current count:", qb.count())
 
-        print(' Done! ')
+        tables = qb.get_all_tables()[:,:,3]
+        if duplicate_tables(tables):
+            print('\n Duplicate tables detected.')
+        else:
+            print('\n No duplicate tables')    
+
+        print('\n Done! ')
 
     def get_prompts(self, table):
         """ Get questions for different tests """

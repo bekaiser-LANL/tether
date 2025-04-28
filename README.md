@@ -19,7 +19,7 @@ and you can check if it works with:
 
 `echo $PATH_TO_BENCHMARKS`
 
-## Generate a benchmark
+## Generate a UQ benchmark
 
 `python3 generate.py BENCHMARK`
 
