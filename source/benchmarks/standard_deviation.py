@@ -1,73 +1,57 @@
+""" Standard deviation calculation benchmark """
 import numpy as np
-import math as ma
 
 class StandardDeviation():
     """ Biased (sample) standard deviation test """
 
-    def __init__(self, plot_path, exam_name, **kwargs):
-        
-        # let's not tell it to use the biased (N) or unbiased 
-        # estimator (N-1) and grade relative to both.
-
-        self.plot_path = plot_path # plotting is not set up
-        self.exam_name = exam_name
-
-        self.plot_flag = kwargs.get('plot_flag', False)
+    def __init__(self, **kwargs):
+        """ Set up the exam """
+    
+        self.name = kwargs.get('exam_name')
         self.generate_flag = kwargs.get('generate_flag', True)
         self.verbose = kwargs.get('verbose', False)
         self.n_problems = kwargs.get('n_problems', 100)
         self.number_range = kwargs.get('number_range', [-100.,100.])
-        self.n_numbers = kwargs.get('n_numbers', 20)
-        # decimal_places=4,
-        #self.decimal_places = decimal_places
- 
-        # self.metadata = {
-        #     "Name": 'standardDeviation',
-        #     "n_problems": self.n_problems            
-        # }
+        self.n_numbers = kwargs.get('n_numbers', 10)
 
-        if self.generate_flag: # necessary for testing
+        if self.generate_flag:
             self.make_problems()
 
-    def make_problems(self): # all tests need this
-        self.questions = []
-        self.biased_solutions = []
-        self.unbiased_solutions = []
-
-        # STOPPED HERE
-    
-        for i in range(0,self.n_problems): # all tests need this
-
+    def make_problems(self):
+        """ Generate the problems """
+        self.question = []
+        self.biased_solution = []
+        self.unbiased_solution = []
+        self.example_idx = []
+        for i in range(0,self.n_problems):
             random_numbers, q_str = self.generate_question()
-            self.questions = np.append(self.questions,q_str)
-
-            ans_str = '{:.{}f}'.format(np.round(np.std(random_numbers),self.decimal_places), int(self.decimal_places))
-            self.solutions = np.append(self.solutions,ans_str)
-
+            self.question = np.append(self.question,q_str)
+            biased_ans = '{:.{}f}'.format(np.std(random_numbers), 10)
+            self.biased_solution = np.append(self.biased_solution,biased_ans)
+            unbiased_ans = '{:.{}f}'.format(np.std(random_numbers,ddof=1), 10)
+            self.unbiased_solution = np.append(self.unbiased_solution,unbiased_ans)
+            self.example_idx = np.append(self.example_idx,i)
+            self.name = np.append(self.name,self.name[0])
 
     def generate_question(self):
-        # Generate random numbers
-        random_numbers = np.random.randint(self.range[0], self.range[1] + 1, self.n_numbers)
-
+        """ Generate random numbers """
+        random_numbers = np.random.randint(
+            self.number_range[0],
+            self.number_range[1] + 1,
+            self.n_numbers
+        )
         # Convert the list of numbers to a space-separated string
         numbers_str = " ".join(map(str, random_numbers))
-
         # Construct the formatted question string
-        q_str = f"What is the standard deviation of {numbers_str} to {self.decimal_places} decimal places? Only answer with the number."
-
+        q_str = f"What is the standard deviation of {numbers_str}?"
         return random_numbers, q_str
 
-    def print_problems(self): # all tests need this
+    def print_problems(self):
         for i in range(0,self.n_problems):
             print('\n')
-            print(self.questions[i])
-            print(self.solutions[i])
+            print(self.question[i])
+            print(self.unbiased_solution[i])
+            print(self.biased_solution[i])
 
-    def get_questions(self): # all tests need this
-        return self.questions
-
-    def get_solutions(self): # all tests need this
-        return self.solutions
-
-    def get_metadata(self): # all tests need this
-        return self.metadata
+    def get_questions(self):
+        return self.question

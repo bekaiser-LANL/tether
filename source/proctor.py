@@ -217,14 +217,14 @@ class Proctor():
                 responses.append(response)
             responses = np.array(responses)
             return responses
-            try:
-                request = requests.post(url, json=payload, timeout=60)
-                if request.status_code == 200:
-                    return request.json()["response"]
-                else:
-                    print("Error:", request.status_code, request.text)
-            except requests.exceptions.RequestException as e:
-                print("Request failed:", e)
+            # try:
+            #     request = requests.post(url, json=payload, timeout=60)
+            #     if request.status_code == 200:
+            #         return request.json()["response"]
+            #     else:
+            #         print("Error:", request.status_code, request.text)
+            # except requests.exceptions.RequestException as e:
+            #     print("Request failed:", e)
 
         # openai model:
         #if self.model in openai_all_model_list:

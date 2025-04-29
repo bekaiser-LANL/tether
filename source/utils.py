@@ -57,7 +57,7 @@ def get_parser(script):
     parser.add_argument(
         "--n_numbers",
         type=int,
-        default=20,
+        default=10,
         help="Number of integers for standard deviation benchmark"
     )
     parser.add_argument(
@@ -359,6 +359,8 @@ class SaveBenchmark():
         self.name = None
         self.response = None
         self.grade = None
+        self.unbiased_solutions = None
+        self.biased_solutions = None        
 
     @classmethod
     def from_simple_inequality(cls, source, path, exam_name, exam_idx):
@@ -391,8 +393,6 @@ class SaveBenchmark():
         #instance.table = np.array(source.table)[perm]
         instance.name = np.array(source.name)[perm]
         return instance        
-        # TO DO        
-        #return cls(name=source.name, age=source.age) # <-
 
     @classmethod
     def from_complex_inequality(cls, source, path, exam_name):
@@ -402,18 +402,29 @@ class SaveBenchmark():
         return cls(name=source.name, age=source.age) # <-
 
     @classmethod
-    def from_significant_figures(cls, source, path, exam_name):
-        """ Constructs a new instance from the class SaveBenchmark and then
-        set the source (SignificantFigures) attributes on the instance """
-        # TO DO        
-        return cls(name=source.name, age=source.age) # <-
-
-    @classmethod
-    def from_standard_deviation(cls, source, path, exam_name):
+    def from_standard_deviation(cls, source, path, exam_name, exam_idx):
         """ Constructs a new instance from the class SaveBenchmark and then
         set the source (StandardDeviation) attributes on the instance """
-        # TO DO
-        return cls(title=source.title)
+        instance = cls(path, exam_name)
+        instance.exam_idx = exam_idx
+        instance.save_npz_path = path
+        # Build filename
+        if exam_idx != 'unset':
+            filename = f"{exam_name}_{exam_idx}.npz"
+        else:
+            filename = f"{exam_name}.npz"
+        instance.npz_filename = os.path.join(instance.save_npz_path, filename)
+        # Shuffle the questions:
+        # Get number of samples (assumes all arrays are the same length)
+        n = len(source.question)
+        # Generate a random permutation of indices
+        perm = np.random.permutation(n)
+        # Apply the permutation to all arrays
+        instance.question = np.array(source.question)[perm]
+        instance.biased_solution = np.array(source.biased_solution)[perm]
+        instance.unbiased_solution = np.array(source.unbiased_solution)[perm]
+        instance.name = np.array(source.name)[perm]
+        return instance  
 
     @classmethod
     def from_mediated_causality(cls, source, path, exam_name, exam_idx):
@@ -471,6 +482,13 @@ class SaveBenchmark():
                 "question",
                 "solution",
                 "difficulty",
+                "name"
+            ]
+        elif self.exam_name_wo_ci_method in ('StandardDeviation'):
+            self.attributes_to_save = [
+                "question",
+                "biased_solution",
+                "unbiased_solution",
                 "name"
             ]
         else:

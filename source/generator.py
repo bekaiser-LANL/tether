@@ -1,5 +1,4 @@
 """ Randomly generates and saves benchmarks as .npz files """
-import time
 import os
 from .utils import create_missing_directory, SaveBenchmark
 from .benchmarks.mediated_causality import MediatedCausality
@@ -24,11 +23,9 @@ def generate_benchmarks(path, exam_name, **kwargs):
     # record_txt = kwargs.get('record_txt', False)
 
     # number of numbers for standard deviation benchmark:
-    n_numbers = kwargs.get('n_numbers',20)
+    n_numbers = kwargs.get('n_numbers',10)
     # index for repeated benchmarks:
     exam_idx = kwargs.get('exam_idx', 'unset')
-    # number of problems in the benchmark
-    n_problems = kwargs.get('n_problems', 18)
     # flag for plotting extra generated benchmark data:
     plot_flag = kwargs.get("plot_flag", False)
     # path to benchmark reports:
@@ -39,6 +36,11 @@ def generate_benchmarks(path, exam_name, **kwargs):
     plot_path = os.path.join(save_path, f"{exam_name}_figures")
     # terminal output:
     verbose = kwargs.get("verbose", False)
+    # number of problems in the benchmark
+    if exam_name == 'StandardDeviation':
+        n_problems = kwargs.get('n_problems', 100)
+    else:
+        n_problems = kwargs.get('n_problems', 180)
 
     create_missing_directory(path)
     create_missing_directory(save_path)
@@ -51,22 +53,7 @@ def generate_benchmarks(path, exam_name, **kwargs):
         exam_name_wo_ci_method = exam_name
 
     saver = None
-    if exam_name_wo_ci_method == 'SignificantFigures':
-
-        # Generate all of the problems in the benchmark:
-        problems = SignificantFigures(
-            n_problems=n_problems
-        )
-
-        # # Save the benchmark as an .npz
-        # saver = SaveBenchmark.from_mediated_causality(
-        #     source=problems,
-        #     path=self.path,
-        #     exam_name=self.exam_name,
-        #     exam_idx=self.exam_idx
-        # )
-
-    elif exam_name_wo_ci_method == 'SimpleInequality':
+    if exam_name_wo_ci_method == 'SimpleInequality':
 
         # Generate all of the problems in the benchmark:
         problems = SimpleInequality(
@@ -88,24 +75,25 @@ def generate_benchmarks(path, exam_name, **kwargs):
 
         # Generate all of the problems in the benchmark:
         problems = StandardDeviation(
+            exam_idx=exam_idx,
             n_numbers=n_numbers,
-            n_problems=n_problems
+            n_problems=n_problems,
+            exam_name=exam_name
         )
 
-        # # Save the benchmark as an .npz
-        # saver = SaveBenchmark.from_mediated_causality(
-        #     source=problems,
-        #     path=self.path,
-        #     exam_name=self.exam_name,
-        #     exam_idx=self.exam_idx
-        # )
+        # Save the benchmark as an .npz
+        saver = SaveBenchmark.from_standard_deviation(
+            source=problems,
+            path=save_path,
+            exam_name=exam_name,
+            exam_idx=exam_idx
+        )
 
     elif exam_name_wo_ci_method in ('MediatedCausalitySmoking',
                                     'MediatedCausality',
                                     'MediatedCausalityWithMethod'):
 
         # Generate all of the problems in the benchmark:
-        start = time.time()
         problems = MediatedCausality(
             plot_path=plot_path,
             exam_name=exam_name,
@@ -113,8 +101,6 @@ def generate_benchmarks(path, exam_name, **kwargs):
             n_problems=n_problems,
             verbose=verbose,
         )
-        end = time.time()
-        print(f"\n MediatedCausality took {end - start:.4f} seconds")
 
         # Save the benchmark as an .npz
         saver = SaveBenchmark.from_mediated_causality(
