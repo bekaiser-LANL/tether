@@ -157,7 +157,7 @@ def probability_y_given_x_and_z(data, x, y, z):
         return (numerator / denominator)[0]
     return np.nan
 
-def causality_from_table(data, test, n_bootstrap):
+def causality_from_table(data, test, n_bootstrap=1000):
     """ Compute P(Y=1|do(X=1))-P(Y=1|do(X=0)) from frequency table"""
 
     n = np.sum(data[:,3])
