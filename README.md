@@ -77,9 +77,11 @@ Randomly generates sets of 20 integers, then asks the LLM to compute the standar
 
 ## MediatedCausality 
 
-### No UQ method in prompt, no ontology (does X cause Y)
-#### MediatedCausality_tdist
-#### MediatedCausality_bootstrap
+### No UQ method, no ontology 
+No uncertainty quantification method specified in the prompt and no ontology specified in the prompt. There are two of these benchmarks, one for confidence intervals estimated from student's t distribution applied to the final probability difference (MediatedCausality_tdist) and one for confidence intervals estimated from bootstrapping the final probability difference (MediatedCausality_bootstrap).
+An example prompt:
+
+"Consider the following causal inference problem. The number of samples that do not X, do not Y, and do not Z is 1. 2 samples do not X, do not Y, and do Z. 1 samples do not X, do Y, and do not Z. 16 samples do not X, do Y, and do Z. 17 samples do X, do not Y, and do not Z. 1 samples do X, do not Y, and do Z. 1 samples do X, do Y, and do not Z. 1 samples do X, do Y, and do Z. Does doing X cause Y? Please answer 'A' for yes, 'B' for no, or 'C' for uncertain. Please use only the data provided here and the 95% confidence level."
 
 ### No UQ method in prompt, with ontology (does smoking cause lung cancer)
 

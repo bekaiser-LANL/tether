@@ -8,7 +8,8 @@ from source.utils import is_divisible_by_9
 
 
 class SimpleInequality():
-    """Generates questions about the simple inequality case to be saved and then fed to LLMs"""
+    """Generates questions about the simple inequality case to be saved 
+    and then fed to LLMs"""
 
     def __init__(self, exam_name, n_numbers = 100, **kwargs):
 
@@ -29,9 +30,15 @@ class SimpleInequality():
             "answer_proportions",
             [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
         )
-        self.n_per_range = kwargs.get('n_per_range', self.n_problems/len(self.answer_proportions))
+        self.n_per_range = kwargs.get(
+            'n_per_range',
+            self.n_problems/len(self.answer_proportions)
+        )
         self.n_per_range = int(self.n_per_range)
-        self.n_samples = kwargs.get('n_samples', self.n_problems/len(self.answer_proportions))
+        self.n_samples = kwargs.get(
+            'n_samples',
+            self.n_problems/len(self.answer_proportions)
+        )
         self.n_samples = int(self.n_samples)
         self.difficulty_thresholds = kwargs.get(
             'difficulty_thresholds',

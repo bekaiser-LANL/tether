@@ -7,12 +7,12 @@ class StandardDeviation():
     def __init__(self, **kwargs):
         """ Set up the exam """
     
-        self.name = kwargs.get('exam_name')
         self.generate_flag = kwargs.get('generate_flag', True)
         self.verbose = kwargs.get('verbose', False)
         self.n_problems = kwargs.get('n_problems', 100)
         self.number_range = kwargs.get('number_range', [-100.,100.])
         self.n_numbers = kwargs.get('n_numbers', 10)
+        self.name = np.array([kwargs.get('exam_name')] * self.n_problems)
 
         if self.generate_flag:
             self.make_problems()
@@ -31,7 +31,6 @@ class StandardDeviation():
             unbiased_ans = '{:.{}f}'.format(np.std(random_numbers,ddof=1), 10)
             self.unbiased_solution = np.append(self.unbiased_solution,unbiased_ans)
             self.example_idx = np.append(self.example_idx,i)
-            self.name = np.append(self.name,self.name[0])
 
     def generate_question(self):
         """ Generate random numbers """

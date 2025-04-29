@@ -71,6 +71,7 @@ def main():
     for i in range(0,n_problems):
         print('\n question = ',data["question"][i])
         print(' responses = ',data["responses"][i])
+        print(' solution = ',data["solution"][i])
 
 if __name__ == "__main__":
     main()
