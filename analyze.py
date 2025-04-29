@@ -2,6 +2,7 @@
 import os
 import argparse
 from source.analyzer import Analyzer
+from source.utils import detect_duplicate_tables, load_saved_benchmark
 
 # Prior to running pytest, you need to set your path with:
 # export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE
@@ -31,9 +32,24 @@ def main():
 
     args = parser.parse_args()
 
-    Analyzer(args.path, args.model_name, args.benchmark_name)
+    # Analyzer(args.path, args.model_name, args.benchmark_name)
+    # print(f"\n Analyses of benchmark '{args.benchmark_name}' for model '{args.model_name}' completed at: {args.path}")
 
-    print(f"\n Analyses of benchmark '{args.benchmark_name}' for model '{args.model_name}' completed at: {args.path}")
+    # Verify that each mediated causality benchmark has no duplicate problems:
+    exam_names = ['MediatedCausality_bootstrap',
+                  'MediatedCausality_tdist',
+                  'MediatedCausalitySmoking_tdist', # <- has a 
+                  'MediatedCausalityWithMethod_tdist'
+                  ]
+    for i in range(0,len(exam_names)):
+        data = load_saved_benchmark(data_path + '/blank/',exam_names[i],0)
+        has_duplicates, duplicate_pairs, n_problems = detect_duplicate_tables(data['table'])
+        print(f"\n Benchmark: {exam_names[i]}"
+            f"\n Duplicate tables detected: {has_duplicates}"
+            f"\n Number of problems: {n_problems}")
+        if has_duplicates:
+            print(f" {duplicate_pairs} duplicate pairs found")
+
 
 if __name__ == "__main__":
     main()

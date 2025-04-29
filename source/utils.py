@@ -5,6 +5,20 @@ import argparse
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
+def detect_duplicate_tables(table_data):
+    n_rows = np.shape(table_data)[0]
+    slices = [tuple(table_data[i, :, 3]) for i in range(n_rows)]  
+    seen = set()
+    duplicate_pairs = 0
+    for i in range(n_rows):
+        for j in range(i + 1, n_rows):
+            if slices[i] == slices[j]:
+                duplicate_pairs += 1
+                seen.add(i)
+                seen.add(j)
+    has_duplicates = duplicate_pairs > 0
+    return has_duplicates, duplicate_pairs, n_rows
+
 def get_parser(script):
     parser = argparse.ArgumentParser(
         description="Parse terminal input for tether"
