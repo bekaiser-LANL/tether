@@ -31,7 +31,7 @@ def test_find_mean_difference(simple_inequality_instance):
     mean1, mean2, diff = simple_inequality_instance.find_mean_difference(vec1, vec2)
     assert np.isclose(mean1, 2.0)
     assert np.isclose(mean2, 5.0)
-    assert np.isclose(diff, 3.0)
+    assert np.isclose(diff, -3.0)
 
 def test_assign_difficulty(simple_inequality_instance):
     hard_vec = np.array([0.1] * 10)
@@ -44,7 +44,7 @@ def test_calculate_ci_structure(simple_inequality_instance):
     vec2 = np.random.normal(-0.5, 0.1, 10)
     _, _, std1, std2 = simple_inequality_instance.generate_vector_pair((0.5, 0.6))
     simple_inequality_instance.n_numbers = 10  # ensure correct n
-    ci_lower, ci_upper, diff = simple_inequality_instance.calculate_ci(vec1, vec2, (0.5, 0.6))
+    ci_lower, ci_upper, diff = simple_inequality_instance.calculate_ci(vec1, vec2, std1, std2)
     assert ci_lower < ci_upper
     assert isinstance(diff, float)
 
