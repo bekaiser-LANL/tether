@@ -861,7 +861,6 @@ class MediatedCausality():
         elif self.exam_name == 'MediatedCausalityWithMethod_bootstrap':
             q = (
             f"Consider the following causal inference problem. "
-            f"Please answer only with 'A', 'B', or 'C'. "
             f"The number of samples that do not {self.x_name}, do not "
             f"{self.y_name}, and do not {self.z_name} is {int(table[0,3]):d}. "
             f"{int(table[1,3]):d} samples do not {self.x_name}, do not "
@@ -884,7 +883,7 @@ class MediatedCausality():
             f"calculate 95% confidence level by numerically estimating " 
             f"cumulative probabilities. Use the the 95% confidence levels to " 
             f"answer 'A' for yes, 'B' for no, or 'C' for uncertain. "
-            f"Please use only the data provided here."
+            f"Use only the data provided here."
             )
         return q
 

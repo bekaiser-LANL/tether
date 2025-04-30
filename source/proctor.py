@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor, MllamaForConditionalGeneration
 
-ollama_model_list = ["llama3","llama3.2"]
+ollama_model_list = ["llama3","llama3.2","mistral"]
 openai_reasoning_model_list = ['o3-mini','o1','o3']
 openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
@@ -128,12 +128,12 @@ class Proctor():
         """ Method for prompting & recording LLMs """
         response = None
         local_models = os.listdir(self.modelpath)
-        ollama_model_list = []
-        openai_all_model_list = [] 
+        #ollama_model_list = []
+        #openai_all_model_list = [] 
         if self.model in ollama_model_list:
-            print(" Ollama is broken ")
-            # This will work — as long as you manually run `ollama run llama3'
-            # in one terminal, and then execute this Python script from another.
+            print("\n Ollama model:", self.model)
+            # This will work — as long as you have 'ollama serve' running
+            # in one terminal and the model is on the list.
             #ensure_ollama_running()
             url = "http://localhost:11434/api/generate"
             payload = {
@@ -142,7 +142,7 @@ class Proctor():
                 "stream": False
             }
             # Send the request to the API
-            request = requests.post(tmp, json=payload, timeout=120)
+            request = requests.post(url, json=payload, timeout=120)
             if request.status_code == 200:
                 # This is the standard HTTP status code for a successful request.
                 # Successful response from the Ollama API
@@ -151,12 +151,12 @@ class Proctor():
                 print("Error:", request.status_code, request.text)
             return response
         elif self.model in openai_all_model_list:
-            print("Model selected:", self.model)
+            print("\n OpenAI model:", self.model)
             response = self.ask_openai(prompt,self.model)
             return response
         # locally downloaded LLMs
         elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
-            print("Model selected:", self.model)
+            print("\n Local model:", self.model)
             responses = []
             # Load the model and tokenizer
             model = AutoModelForCausalLM.from_pretrained(self.modelpath + self.model)
@@ -180,7 +180,11 @@ class Proctor():
                     #max_length=max_length
                     max_new_tokens=max_new_tokens
                 )
-                response = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+                response = tokenizer.batch_decode(
+                    generate_ids,
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=False
+                )[0]
                 if self.verbose:
                     print('\n Question ',i)
                     print(prompt)
@@ -225,8 +229,9 @@ class Proctor():
             #         print("Error:", request.status_code, request.text)
             # except requests.exceptions.RequestException as e:
             #     print("Request failed:", e)
+        else:
+            return '\n Model not available'
 
-        # openai model:
-        #if self.model in openai_all_model_list:
-        response = self.ask_openai(prompt,self.model)
-        return response
+# openai model:
+# response = self.ask_openai(prompt,self.model)
+# return response
