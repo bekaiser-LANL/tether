@@ -63,15 +63,23 @@ def main():
         print(' unbiased solution = ',data["unbiased_solution"][i])
         print(' biased solution = ',data["biased_solution"][i])
 
-    # Verify a completed benchmark:
+    # Verify a completed benchmarks:
     exam_idx = 0
-    exam_name = 'MediatedCausality_bootstrap_gpt-4.1'
-    data = load_saved_benchmark(data_path + '/completed/',exam_name, exam_idx)
-    n_problems = len(data["question"])
-    for i in range(0,n_problems):
-        print('\n question = ',data["question"][i])
-        print(' responses = ',data["responses"][i])
-        print(' solution = ',data["solution"][i])
+    # exam_names = ['MediatedCausality_bootstrap_0_gpt-4.1',
+    #               'MediatedCausality_tdist_0_gpt-4.1']
+    # exam_names = ['MediatedCausality_bootstrap_0_o3',
+    #               'MediatedCausality_tdist_0_o3']
+    # exam_names = ['MediatedCausality_tdist_0_mistral']
+    exam_names = ['MediatedCausalityWithMethod_bootstrap_0_gpt-4.1',
+                  'MediatedCausalityWithMethod_tdist_0_gpt-4.1']    
+    for i in range(0,len(exam_names)):
+        data = load_saved_benchmark(data_path + '/completed/',exam_names[i], exam_idx)
+        n_problems = len(data["question"])
+        print('\n\n',exam_names[i])
+        for j in range(0,3):
+            print('\n question =',data["question"][j])
+            print(' responses =',data["responses"][j])
+            print(' solution =',data["solution"][j])
 
 if __name__ == "__main__":
     main()

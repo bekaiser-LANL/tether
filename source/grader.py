@@ -151,16 +151,20 @@ class Grader():
 
         # Regular expressions to detect explicit answer declarations
         explicit_answer_patterns = [
+            rf"^\s*\*\*{solution}\*\*\s*$",
+            rf"\\\[\s*\\boxed\{{\s*{solution}\s*\}}\s*\\\]",
+            rf"^\s*{solution}\s*$",
             # Simple sentence-style answer declarations
             rf"\bThe final answer is:?\s*{solution}\b",
             rf"\bThe correct answer is:?\s*{solution}\b",
             rf"\bThe answer is:?\s*{solution}\b",
             rf"\bAnswer:\s*{solution}\b",
-
+            rf"^\s*{solution}\s*\(.*?\)\s*$",
             # Bolded answer declarations
             rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**", # e.g. **Final answer:** **B**
-            rf"\*\*?Answer:?\s*{solution}", # e.g. **Answer: A
-
+            rf"\*\*Answer:\s*{solution}\*\*?",  # **Answer: A or **Answer: A**
+            rf"\*\*{solution}\s*\(.*?\)\*\*",  # **C (uncertain)**
+            rf"\*\*Answer:\s*{solution}\s*\(.*?\)\.\*\*"
             # Bolded answers on a new line after bolded intro
             rf"\*\*\s*\n+\s*\*\*{solution}\.",
             # **\n\n**A.
@@ -189,8 +193,7 @@ class Grader():
             rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",
             # correct answer is:**\n\n**C
             rf"\*\*\s*\n\s*\*\*{solution}\*\*", 
-            # **  \n**A**
-            
+            # **  \n**A**    
             # Bold answer declarations with explanation in parentheses
             rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*", 
             # **\n\n**Answer: A (yes/no/...)
