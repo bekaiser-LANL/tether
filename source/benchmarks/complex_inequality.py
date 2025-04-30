@@ -416,11 +416,11 @@ class ComplexInequality():
     def assign_difficulty(self, vector_1, vector_2):
         """Assign difficulty of problem based on mean differences"""
         _, _, diff_value = self.find_mean_difference(vector_1, vector_2)
-        if diff_value <= self.difficulty_thresholds[0]:
+        if abs(diff_value) <= self.difficulty_thresholds[0]:
             difficulty = 'hard'
-        elif diff_value <= self.difficulty_thresholds[1]:
+        elif abs(diff_value) <= self.difficulty_thresholds[1]:
             difficulty = 'medium'
-        elif diff_value > self.difficulty_thresholds[1]:
+        elif abs(diff_value) > self.difficulty_thresholds[1]:
             difficulty = 'easy'
         else: # diff_value = NaN
             difficulty = 'N/A'
@@ -522,7 +522,7 @@ class ComplexInequality():
 
     def prob_greater_than_from_pdf(self, x_vec, pdf_values, x0_vec):
         mask = x_vec > x0_vec
-        return np.trapz(pdf_values[mask], x_vec[mask])
+        return trapezoid(pdf_values[mask], x_vec[mask])
 
     def rejection_sample(self, pdf_func, x_min, x_max, y_max, n_samples):
         """ We know our pdf as a function of x. We don't know if
