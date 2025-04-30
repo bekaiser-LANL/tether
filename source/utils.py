@@ -1,13 +1,13 @@
 """ General purpose benchmark functions & classes """
 import os
-import numpy as np
 import argparse
+import numpy as np
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
 def detect_duplicate_tables(table_data):
     n_rows = np.shape(table_data)[0]
-    slices = [tuple(table_data[i, :, 3]) for i in range(n_rows)]  
+    slices = [tuple(table_data[i, :, 3]) for i in range(n_rows)]
     seen = set()
     duplicate_pairs = 0
     for i in range(n_rows):
@@ -42,7 +42,7 @@ def get_parser(script):
             "--model_path",
             type=str,
             help="Optional path for locally downloaded model"
-        )        
+        )
     parser.add_argument(
         "--n_problems",
         type=int,
@@ -70,7 +70,7 @@ def get_parser(script):
         "--verbose",
         action="store_true",
         help="Print to terminal"
-    )    
+    )
     return parser
 
 def strip_after_second_underscore(s):
@@ -92,25 +92,25 @@ def get_after_second_underscore(s):
     return ""
 
 def get_npz_filename_no_model(save_npz_path, exam_name, exam_idx):
-    """ Determine filename """
+    """ Determine filename for blank benchmarks """
     if exam_idx != 'unset':
-        filename = f"{exam_name}_{exam_idx}.npz"  
+        filename = f"{exam_name}_{exam_idx}.npz"
     else:
         filename = f"{exam_name}.npz"
     npz_filename = os.path.join(
-        save_npz_path, 
+        save_npz_path,
         filename
     )
     return npz_filename
 
 def get_npz_filename(save_npz_path, exam_name, exam_idx, model):
-    """ Determine filename """
+    """ Determine filename for completed benchmarks """
     if exam_idx != 'unset':
-        filename = f"{exam_name}_{model}_{exam_idx}.npz"  
+        filename = f"{exam_name}_{model}_{exam_idx}.npz"
     else:
         filename = f"{exam_name}_{model}.npz"
     npz_filename = os.path.join(
-        save_npz_path, 
+        save_npz_path,
         filename
     )
     return npz_filename
@@ -120,31 +120,37 @@ def load_saved_benchmark(benchmark_path, exam_name, exam_idx):
     if exam_idx != 'unset':
         filename = os.path.join(benchmark_path, f"{exam_name}_{exam_idx}.npz")
     else:
-        filename = os.path.join(benchmark_path, f"{exam_name}.npz") 
+        filename = os.path.join(benchmark_path, f"{exam_name}.npz")
     data = np.load(filename, allow_pickle=True)
     return data
 
 def is_integer(value):
+    """ Is value an integer """
     return isinstance(value, int)
 
-def get_95_CI_tdist(P,N):
-    # t distribution to estimate standard error
-    se = standard_error_for_proportion(P,N) 
-    return P+1.96*se,P-1.96*se
+def get_95_CI_tdist(proportion,n_samples):
+    """ t distribution to estimate standard error """
+    se = standard_error_for_proportion(proportion,n_samples)
+    return proportion+1.96*se,proportion-1.96*se
 
 def standard_error_for_proportion(P,N):
-    # Brayer, Edward F. "Calculating the standard error of a proportion." 
-    # Journal of the Royal Statistical Society Series C: Applied Statistics 6.1 (1957): 67-68.
-    return np.sqrt((P*(1.-P))/N) 
+    """ Standard error for proportion (probabilities from frequency tabel) """
+    # Reference:
+    # Brayer, Edward F. "Calculating the standard error of a proportion."
+    # Journal of the Royal Statistical Society Series C:
+    # Applied Statistics 6.1 (1957): 67-68.
+    return np.sqrt((P*(1.-P))/N)
 
-def check_probability(P):
-    if P > 1.:
+def check_probability(probability):
+    """ Verify probability range """
+    if probability > 1.:
         print('\n ERROR: Probability > 1')
-    elif P < 0.:
+    elif probability < 0.:
         print('\n ERROR: Probability < 0')
     return
 
 def enforce_probability_bounds(var):
+    """ Enforce probability range """
     if var > 1.:
         var = 1.
     elif var < 0.:
@@ -164,49 +170,9 @@ def is_divisible_by_3(number):
     """ Checks if divisible by 3 """
     return number % 3 == 0
 
-class ReadSavedBenchmarkNpz():
-    # THIS CLASS IS LIKELY DEPRECATED
-    def __init__(self, read_path  ):
-        self.read_path = read_path
-  
-        data = np.load(read_path,allow_pickle=True)
-        self.exam_name = data['exam_name']
-        self.questions = data['questions']
-        self.solutions = data['solutions']
-        self.model_str = data['model_str']
-        self.exam_str = data['exam_str']
-        self.n_problems = data['n_problems']
-
-        # FIX THIS:
-        if self.exam_name == 'significantFigures' or self.exam_name == 'standardDeviation':
-            self.metadata = {
-                "Name": self.exam_name,
-                "n_problems": self.n_problems
-            }
-        elif self.exam_name == 'mediatedCausalitySmoking' or self.exam_name == 'mediatedCausalitySmokingWithMethod':
-            self.metadata = {
-                "Name": self.exam_name,
-                "dP": data['dP'],
-                "P_Y1doX1": data['P_Y1doX1'],
-                "P_Y1doX0": data['P_Y1doX0'],
-                "P_Y1doX1_CI": data['P_Y1doX1_CI'],
-                "P_Y1doX0_CI": data['P_Y1doX0_CI'],
-                "A_count": data['C_count'],
-                "B_count": data['C_count'],
-                "C_count": data['C_count'],
-                "n_problems": self.n_problems
-            }
-
-    def get_questions(self): # all tests need this
-        return self.questions
-
-    def get_solutions(self): # all tests need this
-        return self.solutions
-
-    def get_metadata(self): # all tests need this
-        return self.metadata
-    
 class QuestionBank:
+    """ Saves and counts questions/solutions for A,B,C multiple choice """
+
     def __init__(self, target_per_bin=1):
         """
         Initialize a tracker for question generation.
@@ -263,8 +229,8 @@ class QuestionBank:
                             tables.append(metadata['table'])
             if tables:
                 return np.array(tables)
-            else:
-                raise AttributeError("No tables found in metadata either.")
+            raise AttributeError("No tables found in metadata either.")
+
 
     def count(self):
         """
@@ -301,29 +267,23 @@ class QuestionBank:
                 all_qs.extend(self.data[choice][difficulty])
         return all_qs
 
+# pylint: disable=too-many-instance-attributes
 class SaveBenchmark():
     """ Saves the benchmark (blank or completed) as a .npz"""
 
     def __init__(self, path, exam_name, **kwargs):
-        self.path = path # path including /PATH/benchmark_results/blank/ 
+        self.path = path # path including /PATH/benchmark_results/blank/
         # (for blank benchmark) or including /PATH/benchmark_results/completed/
         # (for benchmarked model results)
         self.exam_name = exam_name
-
         self.checkpoint_freq = kwargs.get('checkpoint_freq','unset')
         self.restart_idx = kwargs.get('restart_idx','unset')
         self.model = kwargs.get('model', 'no_model')
         self.exam_idx = kwargs.get('exam_idx') or 'unset' #,'unset')
         #self.responses = kwargs.get('model', 'no_model')
-
-        # Determine save path based on model type
-        #if self.model == 'no_model':
-        #    subfolder = 'blank'
-        #else: 
-        #    subfolder = os.path.join('completed', self.model)
-        #self.save_npz_path = os.path.join(self.path, subfolder)
-        self.save_npz_path = self.path       
+        self.save_npz_path = self.path
         #create_missing_directory(self.save_npz_path)
+        self.attributes_to_save = []
 
         # Determine filename 
         self.npz_filename = get_npz_filename_no_model(
@@ -331,14 +291,6 @@ class SaveBenchmark():
             self.exam_name,
             self.exam_idx
         )
-        # if self.exam_idx != 'unset':
-        #     filename = f"{self.exam_name}_{self.exam_idx}.npz"  
-        # else:
-        #     filename = f"{self.exam_name}.npz"
-        # self.npz_filename = os.path.join(
-        #     self.save_npz_path, 
-        #     filename
-        # )
 
         if '_' in self.exam_name:
             self.ci_method = (self.exam_name).split('_')[1]
@@ -359,8 +311,8 @@ class SaveBenchmark():
         self.name = None
         self.response = None
         self.grade = None
-        self.unbiased_solutions = None
-        self.biased_solutions = None        
+        self.unbiased_solution = None
+        self.biased_solution = None        
 
     @classmethod
     def from_simple_inequality(cls, source, path, exam_name, exam_idx):
@@ -503,10 +455,10 @@ class SaveBenchmark():
         #    np.savez(self.npz_filename, **data)
         data = {}
         for key in self.attributes_to_save:
-           value = getattr(self, key, None)
-           if value is None:
-               print(f" Warning: '{key}' is None and will not be saved.")
-           else:
-               data[key] = value
+            value = getattr(self, key, None)
+            if value is None:
+                print(f" Warning: '{key}' is None and will not be saved.")
+            else:
+                data[key] = value
         np.savez(self.npz_filename, **data)
 

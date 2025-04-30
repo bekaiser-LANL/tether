@@ -69,7 +69,7 @@ and let it hang. This runs a server process that listens for API requests.
 
 # Benchmarks 
 
-## 'StandardDeviation'
+## StandardDeviation
 Since the standard deviation appears in many confidence interval estimates, we provide a benchmark for it. Randomly generates sets of 10 integers selected from within -100 to 100 by default, then asks for the standard deviation. Population vs. sample standard deviation is not indicated, nor is the necessary precision. An example prompt:
 
 "What is the standard deviation of -72 -25 -26 -51 -77 -67 15 -28 23 5?"
