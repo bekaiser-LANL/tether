@@ -4,6 +4,7 @@ from .utils import create_missing_directory, SaveBenchmark
 from .benchmarks.mediated_causality import MediatedCausality
 from .benchmarks.standard_deviation import StandardDeviation
 from .benchmarks.simple_inequality import SimpleInequality
+from .benchmarks.complex_inequality import ComplexInequality
 
 def generate_benchmarks(path, exam_name, **kwargs):
     """ Randomly generates and saves benchmarks as .npz files """
@@ -69,7 +70,7 @@ def generate_benchmarks(path, exam_name, **kwargs):
         #     exam_idx=self.exam_idx
         # )
 
-    elif exam_name_wo_ci_method in ('SimpleInequality','ComplexInequality'):
+    elif exam_name_wo_ci_method == 'SimpleInequality':
 
         # Generate all of the problems in the benchmark:
         problems = SimpleInequality(
@@ -81,6 +82,24 @@ def generate_benchmarks(path, exam_name, **kwargs):
 
         # Save the benchmark as an .npz
         saver = SaveBenchmark.from_simple_inequality(
+             source=problems,
+             path=save_path,
+             exam_name=exam_name,
+             exam_idx=exam_idx
+        )
+
+    elif exam_name_wo_ci_method == 'ComplexInequality':
+
+        # Generate all of the problems in the benchmark:
+        problems = ComplexInequality(
+            n_numbers=n_numbers,
+            n_problems=n_problems,
+            plot_flag=plot_flag,
+            exam_name=exam_name
+        )
+
+        # Save the benchmark as an .npz
+        saver = SaveBenchmark.from_complex_inequality(
              source=problems,
              path=save_path,
              exam_name=exam_name,
