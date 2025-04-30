@@ -44,8 +44,8 @@ class SimpleInequality():
             'difficulty_thresholds',
             np.array([0.66,1.33])
         )
-        #self.ci_method = (exam_name).split('_')[1]
-        #self.exam_name_wo_ci_method = (exam_name).split('_')[0]
+        self.ci_method = (exam_name).split('_')[1]
+        self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
         self.range_index=0
         if not is_divisible_by_9(self.n_problems):
@@ -58,18 +58,33 @@ class SimpleInequality():
 
     def get_prompts(self):
         """ Get questions for different kinds of inequality tests """
-        chosen_range, vector_1, vector_2, _, _ = self.generate_dataset()
+        chosen_range, vector_1, vector_2, std1, std2 = self.generate_dataset()
 
         # Convert the list of numbers to a space-separated string
         v1numbers_str = " ".join(map(str, vector_1))
         v2numbers_str = " ".join(map(str, vector_2))
         question = []
-        question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
-        Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
-        Answer 'A' for yes, 'B' for no, or 'C' for uncertain. 
-        Use only the data provided here and the 95% confidence level. 
-        Do not repeat the prompt. Answer:"""
-        return vector_1, vector_2, question, chosen_range
+        if self.exam_name_wo_ci_method == 'SimpleInequality':
+            question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
+            Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
+            Answer 'A' for yes, 'B' for no, or 'C' for uncertain. 
+            Use only the data provided here and the 95% confidence level. 
+            Do not repeat the prompt. Answer:"""
+        if self.exam_name == 'SimpleInequalityWithMethod_tdist':
+            question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
+            Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
+            Calculate the 95% confidence level intervals. Use the 95% confidence intervals
+            to answer 'A' for yes, 'B' for no, or 'C' for uncertain.
+            Use only the data provided here and the 95% confidence level. 
+            Do not repeat the prompt. Answer:"""
+        if self.exam_name == 'SimpleInequalityWithMethod_bootstrap':
+            question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
+            Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
+            Use bootstrap resampling to calculate the 95% confidence levels.
+            Use the 95% confidence intervals to answer 'A' for yes, 'B' for no,
+            or 'C' for uncertain. Use only the data provided here and the 95% confidence level. 
+            Do not repeat the prompt. Answer:"""
+        return vector_1, vector_2, question, chosen_range, std1, std2
 
     def make_plot(self,count,vector_1,vector_2):
         """ Plot the causal example for varied n_samples """
@@ -84,7 +99,7 @@ class SimpleInequality():
             plot_name = f"distribution_plot_{count}.png"
             plt.savefig(plot_name)
 
-    def old_make_problems(self):
+    def make_problems(self):
         """ Generate simple Inequality questions for the LLMs """
 
         qb = QuestionBank(target_per_bin =int(self.n_problems/9))
@@ -110,23 +125,45 @@ class SimpleInequality():
                         self.get_prompts()[1]
                         )
                 #get CI bounds
-                mean_diff_tmp[i] = self.calculate_ci(
+                if self.ci_method == 'tdist':
+                    mean_diff_tmp[i] = self.calculate_ci(
                         self.get_prompts()[0],
                         self.get_prompts()[1],
-                        self.get_prompts()[3]
+                        self.get_prompts()[4],
+                        self.get_prompts()[5]
                         )[2]
-                ci_lower_tmp[i] = self.calculate_ci(
+                    ci_lower_tmp[i] = self.calculate_ci(
                         self.get_prompts()[0],
                         self.get_prompts()[1],
-                        self.get_prompts()[3]
+                        self.get_prompts()[4],
+                        self.get_prompts()[5]
                         )[0]
-                ci_upper_tmp[i] = self.calculate_ci(
+                    ci_upper_tmp[i] = self.calculate_ci(
                         self.get_prompts()[0],
                         self.get_prompts()[1],
-                        self.get_prompts()[3]
+                        self.get_prompts()[4],
+                        self.get_prompts()[5]
                         )[1]
-                #record the solutions:
-                answers_tmp[i] = self.record_solutions(
+                    #record the solutions:
+                    answers_tmp[i] = self.record_solutions(
+                        ci_lower_tmp[i],
+                        ci_upper_tmp[i]
+                        )[1]
+                if self.ci_method == 'bootstrap':
+                    mean_diff_tmp[i] = self.bootstrap_ci(
+                        self.get_prompts()[0],
+                        self.get_prompts()[1]
+                        )[2]
+                    ci_lower_tmp[i] = self.bootstrap_ci(
+                        self.get_prompts()[0],
+                        self.get_prompts()[1]
+                        )[0]
+                    ci_upper_tmp[i] = self.bootstrap_ci(
+                        self.get_prompts()[0],
+                        self.get_prompts()[1]
+                        )[1]
+                    #record the solutions:
+                    answers_tmp[i] = self.record_solutions(
                         ci_lower_tmp[i],
                         ci_upper_tmp[i]
                         )[1]
@@ -180,7 +217,7 @@ class SimpleInequality():
                 ):
                 self.make_plot(count,self.get_prompts()[0],self.get_prompts()[1])
                 count = count + 1
-
+            print(qb.count())
             # Check if ready:
             if qb.is_full():
                 final_set = qb.get_balanced_set()
@@ -188,86 +225,15 @@ class SimpleInequality():
                     print("Test is complete:", len(final_set), "questions")
                 test_complete = True
                 #Pull attributes from qb
-                qb.n_samples = np.array(
-                        [q['metadata']['n_samples'] for q in qb.get_balanced_set()]
-                        )
-                qb.name = np.array(
-                        [q['metadata']['name'] for q in qb.get_balanced_set()]
-                        )
-                qb.example_idx = np.array(
-                        [q['metadata']['example_idx'] for q in qb.get_balanced_set()]
-                        )
-                qb.solution = [q['solution'] for q in qb.get_balanced_set()]
-                qb.question = [q['question'] for q in qb.get_balanced_set()]
-                qb.difficulty = [q['difficulty'] for q in qb.get_balanced_set()]
-                for name, value in qb.__dict__.items():
-                    setattr(self, name, value)
-            else:
-                if self.verbose:
-                    print("Still building test. Current count:", qb.count())
-                example_idx += 1 # loop over examples
-        print('Done!')
-
-    def make_problems(self):
-        qb = QuestionBank(target_per_bin=int(self.n_problems / 9))
-        test_complete = False
-        count = 0
-        example_idx = 0
-
-        hard, medium, easy = self.fast_generate_dataset(target_per_bin=qb.target_per_bin)
-
-        for bin_data in (hard, medium, easy):
-            for (vector_1, vector_2, mean1, mean2, diff, chosen_range, std1, std2) in bin_data:
-
-                ci_lower, ci_upper, _ = self.calculate_ci(vector_1, vector_2, chosen_range)
-                plot_val, answer = self.record_solutions(ci_lower, ci_upper)
-                difficulty = self.assign_difficulty(vector_1, vector_2)
-
-                v1_str = " ".join(map(str, vector_1))
-                v2_str = " ".join(map(str, vector_2))
-
-                question = (
-                    f"Vector 1: {v1_str} Vector 2: {v2_str}\n"
-                    "Is it more probable that a sample from Vector 1 is greater than sample from Vector 2?\n"
-                    "Answer 'A' for yes, 'B' for no, or 'C' for uncertain.\n"
-                    "Use 95% confidence.\nAnswer:"
+                qb.mean_diff = np.array([
+                    q['metadata']['mean_diff'] for q in qb.get_balanced_set()]
                 )
-
-                problem = {
-                    "question": question,
-                    "solution": answer,
-                    "difficulty": difficulty,
-                    "mean_diff": diff,
-                    "ci_lower": ci_lower,
-                    "ci_upper": ci_upper,
-                    "n_samples": self.n_numbers,
-                    "std1": std1,
-                    "std2": std2,
-                    "example_idx": example_idx,
-                    "name": self.exam_name
-                }
-
-                if self.verbose:
-                    print(f"\nAdded: {difficulty.upper()} — Mean diff: {diff:.3f}, CI: [{ci_lower:.3f}, {ci_upper:.3f}]")
-
-                if qb.add_question(
-                    problem["question"],
-                    problem["solution"],
-                    problem["difficulty"],
-                    metadata={k: v for k, v in problem.items() if k not in {"question", "solution", "difficulty"}}
-                ):
-                    self.make_plot(count, vector_1, vector_2)
-                    count += 1
-
-                example_idx += 1
-
-            # Check if ready:
-            if qb.is_full():
-                final_set = qb.get_balanced_set()
-                if self.verbose:
-                    print("Test is complete:", len(final_set), "questions")
-                test_complete = True
-                #Pull attributes from qb
+                qb.ci_lower = np.array([
+                    q['metadata']['ci_lower'] for q in qb.get_balanced_set()]
+                )
+                qb.ci_upper = np.array([
+                    q['metadata']['ci_upper'] for q in qb.get_balanced_set()]
+                )
                 qb.n_samples = np.array(
                         [q['metadata']['n_samples'] for q in qb.get_balanced_set()]
                         )
@@ -287,7 +253,6 @@ class SimpleInequality():
                     print("Still building test. Current count:", qb.count())
                 example_idx += 1 # loop over examples
         print('Done!')
-
 
     def generate_vector(self, target_mean, target_std, length):
         """Generate vector with gaussian centered about mean with std"""
@@ -319,43 +284,6 @@ class SimpleInequality():
                 vec2 = self.generate_vector(mean2, std2, length)
                 return vec1, vec2, std1, std2
 
-    def fast_generate_dataset(self, target_per_bin=20):
-        """Fast generate vectors classified by difficulty."""
-        hard = []
-        medium = []
-        easy = []
-
-        attempts = 0
-        max_attempts = 10000  # stop if we try too long
-
-        while (len(hard) < target_per_bin or
-                len(medium) < target_per_bin or
-                len(easy) < target_per_bin) and attempts < max_attempts:
-
-            chosen_range = self.mean_diff_ranges[self.range_index]
-            self.range_index = (self.range_index + 1) % len(self.mean_diff_ranges)
-
-            vector_1, vector_2, std1, std2 = self.generate_vector_pair(chosen_range)
-            mean1, mean2, diff = self.find_mean_difference(vector_1, vector_2)
-
-            difficulty = self.assign_difficulty(vector_1, vector_2)
-
-            data = (vector_1, vector_2, mean1, mean2, diff, chosen_range, std1, std2)
-
-            if difficulty == 'hard' and len(hard) < target_per_bin:
-                hard.append(data)
-            elif difficulty == 'medium' and len(medium) < target_per_bin:
-                medium.append(data)
-            elif difficulty == 'easy' and len(easy) < target_per_bin:
-                easy.append(data)
-
-            attempts += 1
-
-        print(f"Finished fast generation:\n" 
-              "{len(hard)} hard, {len(medium)} medium,\n" 
-              "{len(easy)} easy samples.\n")
-        return hard, medium, easy
-
 
     def generate_dataset(self):
         """Generate vector pairs with mean differences in ranges specified"""
@@ -365,14 +293,45 @@ class SimpleInequality():
         vector_1, vector_2, std1, std2 = self.generate_vector_pair(chosen_range)
         return chosen_range, vector_1, vector_2, std1, std2
 
-    def calculate_ci(self, vector_1, vector_2, mean_diff_range):
+    def calculate_ci(self, vector_1, vector_2, std1, std2):
         """Calculate the 95% confidence intervals around the means"""
         _, _, diff = self.find_mean_difference(vector_1, vector_2)
-        _, _, std1, std2 = self.generate_vector_pair(mean_diff_range)
         std_error = np.sqrt(std1**2 / self.n_numbers + std2**2 / self.n_numbers)
         ci_upper = diff + 1.96*std_error
         ci_lower = diff - 1.96*std_error
         return ci_lower, ci_upper, diff
+
+    def bootstrap_ci(self, vector_1, vector_2, n_bootstrap=1000, ci=95):
+        """
+        Bootstrap the mean differences to estimate confidence intervals.
+
+            Args:
+                vector_1 (np.ndarray): First sample.
+                vector_2 (np.ndarray): Second sample.
+                n_bootstrap (int): Number of bootstrap resamples.
+                ci (float): Confidence level (default 95).
+
+            Returns:
+                (ci_lower, ci_upper, observed_diff)
+        """
+        rng = np.random.default_rng()  # Faster random generator (numpy 1.17+)
+        diffs = np.zeros(n_bootstrap)
+
+        for i in range(n_bootstrap):
+            sample_1 = rng.choice(vector_1, size=len(vector_1), replace=True)
+            sample_2 = rng.choice(vector_2, size=len(vector_2), replace=True)
+            diffs[i] = np.mean(sample_1) - np.mean(sample_2)
+
+        # Compute observed difference
+        observed_diff = np.mean(vector_1) - np.mean(vector_2)
+
+        # Get percentiles
+        lower_percentile = (100 - ci) / 2
+        upper_percentile = 100 - lower_percentile
+
+        ci_lower = np.percentile(diffs, lower_percentile)
+        ci_upper = np.percentile(diffs, upper_percentile)
+        return ci_lower, ci_upper, observed_diff
 
     def record_solutions(self, ci_lower, ci_upper):
         """ Determine if answer is A, B, or C """
@@ -391,7 +350,7 @@ class SimpleInequality():
         """Calculate the difference between each vector mean"""
         mean1 = np.mean(vector_1)
         mean2 = np.mean(vector_2)
-        diff = abs(mean1 - mean2)
+        diff = mean1 - mean2
         return mean1, mean2, diff
 
     def assign_difficulty(self, vector_1, vector_2):
