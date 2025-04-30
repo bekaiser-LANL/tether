@@ -44,7 +44,10 @@ class SimpleInequality():
             'difficulty_thresholds',
             np.array([0.66,1.33])
         )
-        self.ci_method = (exam_name).split('_')[1]
+        try:
+            self.ci_method = (exam_name).split('_')[1]
+        except IndexError:
+            self.ci_method = None
         self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
         self.range_index=0
