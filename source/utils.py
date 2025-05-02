@@ -71,6 +71,11 @@ def get_parser(script):
         action="store_true",
         help="Print to terminal"
     )
+    parser.add_argument(
+        "--grade",
+        action="store_true",
+        help="Analyzer will grade"
+    )
     return parser
 
 def strip_after_second_underscore(s):
