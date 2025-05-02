@@ -1,9 +1,8 @@
 """ Tools for analyzing saved benchmarks """
 import os
 import numpy as np
-from .utils import get_npz_filename
-from .utils import get_after_second_underscore
-from source.utils import detect_duplicate_tables, load_saved_benchmark
+from source.utils import get_model_and_indices
+#from source.utils import load_saved_benchmark
 #import numpy as np
 #import matplotlib
 # matplotlib.use('Agg')
@@ -16,41 +15,69 @@ data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 class Analyzer():
     """ Tools for analyzing saved benchmarks """
 
-    def __init__(self, model, exam_name, **kwargs):
+    def __init__(self, npz_filename, **kwargs):
+        """ The benchmark name is the full name of the .npz file 
+        without the suffix """
  
-        self.model = model
+        self.exam_name = get_model_and_indices(npz_filename)[0]
+        self.ci_method = get_model_and_indices(npz_filename)[1]
+        self.exam_idx  = get_model_and_indices(npz_filename)[2]       
+        self.model     = get_model_and_indices(npz_filename)[3]
+        self.run_idx   = get_model_and_indices(npz_filename)[4]
         self.verbose = kwargs.get('verbose', False)
-        if self.verbose:
-            print('True!')
-
-        #self.benchmark_path = data_path
-        self.completed_path = os.path.join(data_path, 'completed')
-        if exam_name.count("_") == 2: # includes exam_idx at end
-            #self.exam_name = strip_after_second_underscore(exam_name)
-            self.exam_idx = int(get_after_second_underscore(exam_name))
-        else:
-            #self.exam_name = exam_name
-            self.exam_idx = kwargs.get('exam_idx','unset')
-        self.exam_name = exam_name
-        self.model = model
-        self.verbose = kwargs.get('verbose',False)
-        self.completed_path = os.path.join(data_path, 'results')
-        self.npz_filename = get_npz_filename(
+        self.completed_path = os.path.join(data_path, 'completed',self.model)
+        self.npz_filepath = os.path.join(
             self.completed_path,
-            self.exam_name,
-            self.exam_idx,
-            self.model
+            npz_filename + '.npz'
         )
 
         # Load the .npz file
-        data = np.load(self.npz_filename, allow_pickle=True)
+        self.data = np.load(self.npz_filepath, allow_pickle=True)
 
-        # List all keys stored in the file
-        #if self.verbose:
-        print("\n Keys:\n", data.files)
-        print("\n response:\n ", data["responses"])
+        self.print_data_keys()
 
-    def grade_with_openai():
+    def print_data_keys(self):
+            """ List all keys stored in the file """
+            print("\n Keys:\n", self.data.files)
+            #print("\n response:\n ", self.data["responses"])
+
+    def print_completed_benchmark(self):
+        a=1
+        # TO ADD: 
+        # # Verify the blank standard deviation benchmark:
+        # exam_idx = 0
+        # exam_name = 'StandardDeviation'
+        # data = load_saved_benchmark(data_path + '/blank/',exam_name, exam_idx)
+        # n_problems = len(data["question"])
+        # for i in range(0,2):
+        #     print('\n question = ',data["question"][i])
+        #     print(' unbiased solution = ',data["unbiased_solution"][i])
+        #     print(' biased solution = ',data["biased_solution"][i])
+
+    def verify_no_duplicates(self):
+        a=1
+        # TO ADD: 
+        # # Verify that each mediated causality benchmark has no duplicate problems:
+        # exam_idx = 0
+        # exam_names = ['MediatedCausality_bootstrap',
+        #               'MediatedCausalitySmoking_bootstrap',
+        #               'MediatedCausalityWithMethod_bootstrap',
+        #               'MediatedCausality_tdist',
+        #               'MediatedCausalitySmoking_tdist', # <- has a duplicate
+        #               'MediatedCausalityWithMethod_tdist'
+        #               ]
+        # for i in range(0,len(exam_names)):
+        #     data = load_saved_benchmark(data_path + '/blank/',exam_names[i], exam_idx)
+        #     has_duplicates, duplicate_pairs, n_problems = detect_duplicate_tables(data['table'])
+        #     print(f"\n Benchmark: {exam_names[i]}"
+        #         f"\n Duplicate tables detected: {has_duplicates}"
+        #         f"\n Number of problems: {n_problems}")
+        #     if has_duplicates:
+        #         print(f" {duplicate_pairs} duplicate pairs found")
+
+    def grade_with_openai(self):
+        # TO ADD: GRADE WITH OPENAI: 
+
         from openai import OpenAI # pylint: disable=import-outside-toplevel
         openai_api_key = os.getenv("OPENAI_API_KEY")
         client = OpenAI(api_key=openai_api_key)

@@ -5,6 +5,11 @@ import numpy as np
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
+def get_model_and_indices(string):
+    """ Split up the filename of a completed benchmark """
+    parts = string.split('_')
+    return parts
+
 def detect_duplicate_tables(table_data):
     n_rows = np.shape(table_data)[0]
     slices = [tuple(table_data[i, :, 3]) for i in range(n_rows)]
@@ -43,6 +48,12 @@ def get_parser(script):
             type=str,
             help="Optional path for locally downloaded model"
         )
+    if script == 'analyze':    
+        parser.add_argument(
+            "--grade",
+            action="store_true",
+            help="Analyzer will grade"
+        )
     parser.add_argument(
         "--n_problems",
         type=int,
@@ -70,11 +81,6 @@ def get_parser(script):
         "--verbose",
         action="store_true",
         help="Print to terminal"
-    )
-    parser.add_argument(
-        "--grade",
-        action="store_true",
-        help="Analyzer will grade"
     )
     return parser
 

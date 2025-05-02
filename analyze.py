@@ -2,7 +2,8 @@
 import os
 import argparse
 from source.analyzer import Analyzer
-from source.utils import detect_duplicate_tables, load_saved_benchmark
+#from source.utils import detect_duplicate_tables, load_saved_benchmark
+from source.utils import get_parser
 
 # Prior to running pytest, you need to set your path with:
 # export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE
@@ -44,30 +45,15 @@ def ask_openai(question, client, model_choice):
         return print("\n Model choice not available ")
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Analyze the completed benchmark for a specified model."
-    )
-    parser.add_argument(
-        "benchmark_name",
-        help="Name of the benchmark to run, including its index (e.g., MediatedCausality_tdist_0)"
-    )
-    parser.add_argument(
-        "model_name",
-        help="Name of the model to test (e.g., gpt-4o)"
-    )
-    parser.add_argument(
-        "--path",
-        default=data_path,
-        help=f"Path to the benchmarks directory (default: from PATH_TO_BENCHMARKS or '{data_path}')"
-    )
-    # add options to do Analyzer.duplicate_check()
-    # add option to do Analyzer.print_benchmark()
-    # add option to do Analyzer.grade_with_openai()
-
+    """ Analyze the benchmark """
+    parser = get_parser(script="analyze")
     args = parser.parse_args()
+    kwargs = vars(args)
+    npz_filename = kwargs.pop("exam_name")
+    verbose = kwargs.pop("verbose", False)
+    grade = kwargs.pop("grade", False)
 
-    Analyzer(args.path, args.model_name, args.benchmark_name)
-    print(f"\n Analyses of benchmark '{args.benchmark_name}' for model '{args.model_name}' completed at: {args.path}")
+    Analyzer(npz_filename, verbose=verbose, grade=grade, **kwargs)
 
 
     # # Verify that each mediated causality benchmark has no duplicate problems:
