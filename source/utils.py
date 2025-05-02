@@ -474,7 +474,7 @@ class SaveBenchmark():
             ]
             data = {key: getattr(self, key) for key in self.attributes_to_save}
             np.savez(self.npz_filename, **data)
-        elif self.exam_name_wo_ci_method in ('SimpleInequality', 'ComplexInequality'):
+        elif self.exam_name_wo_ci_method in ('SimpleInequality', 'SimpleInequalityWithMethod', 'ComplexInequality', 'ComplexInequalityWithMethod'):
             self.attributes_to_save = [
                 "question",
                 "solution",

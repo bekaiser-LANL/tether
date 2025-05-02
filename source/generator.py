@@ -70,11 +70,12 @@ def generate_benchmarks(path, exam_name, **kwargs):
         #     exam_idx=self.exam_idx
         # )
 
-    elif exam_name_wo_ci_method == 'SimpleInequality':
+    elif exam_name_wo_ci_method in ('SimpleInequality', 'SimpleInequalityWithMethod'):
 
         # Generate all of the problems in the benchmark:
         problems = SimpleInequality(
             n_numbers=n_numbers,
+            plot_path=plot_path,
             n_problems=n_problems,
             plot_flag=plot_flag,
             exam_name=exam_name
@@ -88,11 +89,12 @@ def generate_benchmarks(path, exam_name, **kwargs):
              exam_idx=exam_idx
         )
 
-    elif exam_name_wo_ci_method == 'ComplexInequality':
+    elif exam_name_wo_ci_method in ('ComplexInequality', 'ComplexInequalityWithMethod'):
 
         # Generate all of the problems in the benchmark:
         problems = ComplexInequality(
             n_numbers=n_numbers,
+            plot_path=plot_path,
             n_problems=n_problems,
             plot_flag=plot_flag,
             exam_name=exam_name
