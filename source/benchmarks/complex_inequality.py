@@ -514,11 +514,13 @@ class ComplexInequality():
         for i in range(n_bootstrap):
             sample_1 = rng.choice(vector_1, size=len(vector_1), replace=True)
             sample_2 = rng.choice(vector_2, size=len(vector_2), replace=True)
-            diffs[i] = np.mean(sample_1) - np.mean(sample_2)
-
-        # Compute observed difference
-        observed_diff = np.mean(vector_1) - np.mean(vector_2)
-
+            mode_1 = stats.mode(np.round(sample_1, 2), keepdims=True).mode[0]
+            mode_2 = stats.mode(np.round(sample_2, 2), keepdims=True).mode[0]
+            diffs[i] = mode_1 - mode_2
+    
+        mode_1 = stats.mode(np.round(vector_1, 2), keepdims=True).mode[0]
+        mode_2 = stats.mode(np.round(vector_2, 2), keepdims=True).mode[0]
+        observed_diff = mode_1 - mode_2
         # Get percentiles
         lower_percentile = (100 - conf_int) / 2
         upper_percentile = 100 - lower_percentile
