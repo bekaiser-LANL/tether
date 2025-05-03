@@ -3,9 +3,10 @@ generates two vector from a gaussian distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import norm
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
-from scipy.stats import norm
 
 class SimpleInequality():
     """Generates questions about the simple inequality case to be saved
@@ -92,7 +93,6 @@ class SimpleInequality():
     def make_plot(self,problem, vector_1,vector_2):
         """ Plot the causal example for varied n_samples """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            import seaborn as sns
             fig = plt.figure(figsize=(6, 5))
             mean_1 = np.mean(vector_1)
             std_1 = np.std(vector_1)
@@ -285,7 +285,7 @@ class SimpleInequality():
         ci_lower = diff - 1.96*std_error
         return ci_lower, ci_upper, diff
 
-    def bootstrap_ci(self, vector_1, vector_2, n_bootstrap=1000, ci=95):
+    def bootstrap_ci(self, vector_1, vector_2, n_bootstrap=2000, ci=95):
         """
         Bootstrap the mean differences to estimate confidence intervals.
 
@@ -298,24 +298,26 @@ class SimpleInequality():
             Returns:
                 (ci_lower, ci_upper, observed_diff)
         """
-        rng = np.random.default_rng()  # Faster random generator (numpy 1.17+)
-        diffs = np.zeros(n_bootstrap)
+        rng = np.random.default_rng()
 
-        for i in range(n_bootstrap):
-            sample_1 = rng.choice(vector_1, size=len(vector_1), replace=True)
-            sample_2 = rng.choice(vector_2, size=len(vector_2), replace=True)
-            diffs[i] = np.mean(sample_1) - np.mean(sample_2)
+        # Preallocate resampling indices
+        idx_1 = rng.integers(0, len(vector_1), size=(n_bootstrap, len(vector_1)))
+        idx_2 = rng.integers(0, len(vector_2), size=(n_bootstrap, len(vector_2)))
 
-        # Compute observed difference
+        # Use indexing to generate resampled arrays
+        resampled_1 = vector_1[idx_1]
+        resampled_2 = vector_2[idx_2]
+
+        # Compute mean differences all at once
+        diffs = resampled_1.mean(axis=1) - resampled_2.mean(axis=1)
+
+        # Observed diff
         observed_diff = np.mean(vector_1) - np.mean(vector_2)
 
-        # Get percentiles
-        lower_percentile = (100 - ci) / 2
-        upper_percentile = 100 - lower_percentile
+        # Confidence interval
+        lower, upper = np.percentile(diffs, [(100 - ci) / 2, 100 - (100 - ci) / 2])
+        return lower, upper, observed_diff
 
-        ci_lower = np.percentile(diffs, lower_percentile)
-        ci_upper = np.percentile(diffs, upper_percentile)
-        return ci_lower, ci_upper, observed_diff
 
     def record_solutions(self, ci_lower, ci_upper):
         """ Determine if answer is A, B, or C """
@@ -338,6 +340,7 @@ class SimpleInequality():
         return mean1, mean2, diff
 
     def assign_difficulty(self, diff_value):
+        """Assign difficulty of problem based on mean differences"""
         if abs(diff_value) <= self.difficulty_thresholds[0]:
             difficulty = 'hard'
         elif abs(diff_value) <= self.difficulty_thresholds[1]:

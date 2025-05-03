@@ -2,15 +2,15 @@
 generates two vector from a multimodel distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
+import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use('Agg')
 from scipy.integrate import trapezoid
 from scipy.ndimage import gaussian_filter1d
 from scipy.stats import norm, stats
-from scipy.interpolate import interp1d
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
+matplotlib.use('Agg')
 
 class ComplexInequality():
     """Generates questions about the complex inequality case to be saved and then fed to LLMs"""
@@ -59,7 +59,8 @@ class ComplexInequality():
 
     def get_prompts(self):
         """ Get questions for different kinds of inequality tests """
-        chosen_range, vector_1, vector_2, std1, std2, xvec_1, yvec_1, xvec_2, yvec_2 = self.generate_dataset()
+        chosen_range, vector_1, vector_2, std1, std2, xvec_1, \
+        yvec_1, xvec_2, yvec_2 = self.generate_dataset()
 
         # Convert the list of numbers to a space-separated string
         v1numbers_str = " ".join(map(str, vector_1))
@@ -85,17 +86,18 @@ class ComplexInequality():
             Use the 95% confidence intervals to answer 'A' for yes, 'B' for no,
             or 'C' for uncertain. Use only the data provided here and the 95% confidence level. 
             Do not repeat the prompt. Answer:"""
-        return vector_1, vector_2, question, chosen_range, std1, std2, xvec_1, yvec_1, xvec_2, yvec_2
+        return (vector_1, vector_2, question, chosen_range,
+                std1, std2, xvec_1, yvec_1, xvec_2, yvec_2
+                )
 
     def make_plot(self, problem, vector_1, vector_2, xvec_1, yvec_1, xvec_2, yvec_2):
+        """Generate a plot of the sample histogram and the pdfs from which they were sampled
+        """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            import seaborn as sns
-            from scipy import stats
-            from scipy.ndimage import gaussian_filter1d
             # Get sample modes
             #mode_1 = stats.mode(np.round(vector_1, 2), keepdims=True).mode[0]
             #mode_2 = stats.mode(np.round(vector_2, 2), keepdims=True).mode[0]
-            
+
             # Optional smoothing (if not already applied)
             yvec_1 = gaussian_filter1d(yvec_1, sigma=2)
             yvec_2 = gaussian_filter1d(yvec_2, sigma=2)
@@ -133,27 +135,28 @@ class ComplexInequality():
             shift_2 = mode_2 - pdf_mode_2
 
             xvec_1_shifted = xvec_1 + shift_1
-            xvec_2_shifted = xvec_2 + shift_2 
+            xvec_2_shifted = xvec_2 + shift_2
             # Plot
             fig, ax = plt.subplots(figsize=(7, 5))
 
             sns.histplot(vector_1, bins=30, color='blue', label='Sample 1')
             sns.histplot(vector_2, bins=30, color='orange', label='Sample 2')
 
-            plt.plot(xvec_1_shifted, yvec_1_scaled, color='blue', label='Population Distribution 1')
-            plt.plot(xvec_2_shifted, yvec_2_scaled, color='orange', label='Population Distribution 2')
+            plt.plot(xvec_1_shifted, yvec_1_scaled,
+                     color='blue', label='Population Distribution 1')
+            plt.plot(xvec_2_shifted, yvec_2_scaled,
+                     color='orange', label='Population Distribution 2')
 
             plt.axvline(mode_1, color='#56B4E9', linestyle='--')
             plt.axvline(mode_2, color='#D55E00', linestyle='--')
-            ymax = max(np.max(counts_1), np.max(counts_2), np.max(yvec_1_scaled), np.max(yvec_2_scaled))
+            ymax = max(np.max(counts_1), np.max(counts_2),
+                       np.max(yvec_1_scaled), np.max(yvec_2_scaled))
 
             plt.ylim(top=ymax * 1.1)  # Add 10% padding above
             figname = f"{self.plot_path}/example_{problem['example_idx']}.png"
             plt.legend()
             plt.savefig(figname)
             plt.close(fig)
-            
-
 
     def make_problems(self):
         """ Generate simple Inequality questions for the LLMs """
@@ -176,9 +179,10 @@ class ComplexInequality():
             yvecs_1 = np.empty((self.n_samples, 1000))
             xvecs_2 = np.empty((self.n_samples, 1000))
             yvecs_2 = np.empty((self.n_samples, 1000))
- 
+
             for i in reversed(range(self.n_samples)):
-                vec1, vec2, question, chosen_range, std1, std2, xvec1, yvec1, xvec2, yvec2 = self.get_prompts()
+                vec1, vec2, question, _, std1, std2, \
+                xvec1, yvec1, xvec2, yvec2 = self.get_prompts()
 
                 vectors_1[i, :] = vec1
                 vectors_2[i, :] = vec2
@@ -252,7 +256,7 @@ class ComplexInequality():
                     for k, v in problem.items()
                     if k not in {"question", "solution", "difficulty"}}
                 ):
-                self.make_plot(problem, 
+                self.make_plot(problem,
                                 problem["vector_1"],
                                 problem["vector_2"],
                                 problem["xvec_1"],
@@ -299,7 +303,7 @@ class ComplexInequality():
     def generate_vector(self, x_low, x_high, n_points,target_mode=None, target_std=None):
         """Create vector of length n_numbers sampled from multimodal pdf with target mode&std"""
         x_vec = np.linspace(x_low, x_high, n_points)
-        y_vec = self.multimodal_pdf(x_vec, n_points)
+        y_vec = self.multimodal_pdf(x_vec)
         length = self.n_numbers
         if target_mode is not None:
             x_vec, y_vec = self.shift_pdf(x_vec, y_vec, target_mode)
@@ -310,8 +314,9 @@ class ComplexInequality():
             vec = (vec - np.mean(vec)) / np.std(vec)
             vec = vec * target_std + np.mean(vec)
         return vec, x_vec, y_vec
-    
-    def shift_pdf(self, x_vec, y_vec, target_mode):
+
+    @staticmethod
+    def shift_pdf(x_vec, y_vec, target_mode):
         """Shift PDF to center its mode at the target_mode."""
         current_mode = x_vec[np.argmax(y_vec)]
         shift = target_mode - current_mode
@@ -338,8 +343,10 @@ class ComplexInequality():
                 std2 = np.random.uniform(0.3, 8)
 
                 # Generate vectors centered and scaled exactly
-                vec1, xvec_1, yvec_1 = self.generate_vector(-10, 10, 1000, target_mode=mode1, target_std=std1)
-                vec2, xvec_2, yvec_2 = self.generate_vector(-10, 10, 1000, target_mode=mode2, target_std=std2)
+                vec1, xvec_1, yvec_1 = self.generate_vector(-10, 10, 1000,
+                                                            target_mode=mode1, target_std=std1)
+                vec2, xvec_2, yvec_2 = self.generate_vector(-10, 10, 1000,
+                                                            target_mode=mode2, target_std=std2)
                 return vec1, vec2, std1, std2, xvec_1, yvec_1, xvec_2, yvec_2
 
 
@@ -348,41 +355,14 @@ class ComplexInequality():
         chosen_range = self.mean_diff_ranges[self.range_index]
         # Cycle through 0, 1, 2, 0, 1, ...
         self.range_index = (self.range_index + 1) % len(self.mean_diff_ranges)
-        vector_1, vector_2, std1, std2, xvec_1, yvec_1, xvec_2, yvec_2 = self.generate_vector_pair(chosen_range)
+        vector_1, vector_2, std1, std2, xvec_1, yvec_1, \
+        xvec_2, yvec_2 = self.generate_vector_pair(chosen_range)
         return chosen_range, vector_1, vector_2, std1, std2, xvec_1, yvec_1, xvec_2, yvec_2
 
-    def superposed_sine_waves(self, x_vec, n_waves=3, duration=1.0, sample_rate=1000,
-                          freq_range=(0.5, 2.0), amp_range=(0.5, 1.0), seed=None):
-        """
-        Generate a superposition of sine waves with random amplitudes and frequencies.
-
-        Parameters:
-            n_waves (int): Number of sine waves to superimpose.
-            duration (float): Duration of the signal in seconds.
-            sample_rate (int): Number of samples per second.
-            freq_range (tuple): Frequency range (min, max) in Hz.
-            amp_range (tuple): Amplitude range (min, max).
-            seed (int or None): Random seed for reproducibility.
-        Returns:
-            t (np.ndarray): Time array.
-            signal (np.ndarray): Superposed sine wave signal.
-        """
-        if seed is not None:
-            np.random.seed(seed)
-
-        signal = np.zeros_like(x_vec)
-
-        for _ in range(n_waves):
-            freq = np.random.uniform(*freq_range)
-            amp = np.random.uniform(*amp_range)
-            phase = np.random.uniform(0, 2 * np.pi)
-            signal += amp * np.sin(2 * np.pi * freq * x_vec + phase)
-
-        return np.abs(signal)
-
-    def multimodal_pdf(self, x_vec, n_points):
+    @staticmethod
+    def multimodal_pdf(x_vec):
         """Create a clean, smooth multimodal PDF using a mixture of Gaussians."""
-        y = np.zeros_like(x_vec)
+        y_vec = np.zeros_like(x_vec)
 
         n_components = np.random.randint(6,11) #np.random.choice([2, 3, 4])
         centers = np.linspace(-6, 6, n_components) + np.random.normal(0, 0.3, n_components)
@@ -390,7 +370,7 @@ class ComplexInequality():
         for c in centers:
             std = np.random.uniform(0.3, 1.0)
             height = np.random.uniform(0.6, 1.2)
-            y += height * norm.pdf(x_vec, loc=c, scale=std)
+            y_vec += height * norm.pdf(x_vec, loc=c, scale=std)
 
         # Add slight undulation: low-freq sine wave
         # Add slight undulation with low-frequency wiggle
@@ -399,42 +379,11 @@ class ComplexInequality():
         #y *= (1 + wiggle)
 
         # Optional smoothing to clean sharp transitions
-        y = gaussian_filter1d(y, sigma=0.5)
-        
+        y_vec = gaussian_filter1d(y_vec, sigma=0.5)
+
         # Normalize so the PDF integrates to 1
-        area = trapezoid(y, x_vec)
-        return y / area if area > 0 else np.zeros_like(x_vec)
-
-
-    def old_multimodal_pdf(self, x_vec, n_points):
-        """Normalized multi-modal PDF with compact support"""
-        mean = np.random.uniform(-1, 1)
-        std = np.random.uniform(0.05, 1.5)
-        alpha = np.random.uniform(-20, 20)
-        raw = self.superposed_sine_waves(x_vec, sample_rate=n_points) * self.skewed_gaussian(
-                x_vec, mean=mean, std=std, alpha=alpha)
-        raw_smoothed = gaussian_filter1d(raw, sigma=4)
-        #raw = skewed_gaussian(x, mean=mean, std=std, alpha=alpha)
-        area = trapezoid(raw_smoothed, x_vec)
-        return raw_smoothed / area if area > 0 else np.zeros_like(x_vec)
-
-    def skewed_gaussian(self, x_vec, mean=0, std=1, alpha=0):
-        """
-        Returns a skewed Gaussian (skew-normal) curve.
-
-        Parameters:
-        - x: input array
-        - mean: center of the distribution
-        - std: standard deviation (spread)
-        - alpha: skewness parameter (0 = normal; >0 = right skew; <0 = left skew)
-
-        Returns:
-        - Skewed Gaussian values at x
-        """
-        t_vec = (x_vec - mean) / std
-        pdf = norm.pdf(t_vec)
-        cdf = norm.cdf(alpha * t_vec)
-        return 2 * pdf * cdf
+        area = trapezoid(y_vec, x_vec)
+        return y_vec / area if area > 0 else np.zeros_like(x_vec)
 
     def prob_greater_than_x0_from_samples(self, samples, x0_vec, bins=1000):
         # Get histogram (density=True normalizes it)
@@ -466,10 +415,6 @@ class ComplexInequality():
 
         return prob
 
-    def gaussian(self, x_vec, mean=0, std=1):
-        """construct a normal distribution"""
-        return (1 / (np.sqrt(2 * np.pi) * std)) * np.exp(-((x_vec - mean) ** 2) / (2 * std ** 2))
-
     def prob_greater_than_from_pdf(self, x_vec, pdf_values, x0_vec):
         mask = x_vec > x0_vec
         return trapezoid(pdf_values[mask], x_vec[mask])
@@ -485,7 +430,7 @@ class ComplexInequality():
             if y_vec <= pdf_func(x_vec):
                 samples.append(x_vec)
         return np.array(samples)
-    
+
     def calculate_ci(self, vector_1, vector_2, std1, std2):
         """Calculate the 95% confidence intervals around the means"""
         _, _, diff = self.find_mode_difference(vector_1, vector_2)
@@ -496,7 +441,7 @@ class ComplexInequality():
 
     def bootstrap_ci(self, vector_1, vector_2, conf_int=95):
         """
-        Bootstrap the mean differences to estimate confidence intervals.
+        Bootstrap the mode differences to estimate confidence intervals.
 
             Args:
                 vector_1 (np.ndarray): First sample.
@@ -517,7 +462,7 @@ class ComplexInequality():
             mode_1 = stats.mode(np.round(sample_1, 2), keepdims=True).mode[0]
             mode_2 = stats.mode(np.round(sample_2, 2), keepdims=True).mode[0]
             diffs[i] = mode_1 - mode_2
-    
+
         mode_1 = stats.mode(np.round(vector_1, 2), keepdims=True).mode[0]
         mode_2 = stats.mode(np.round(vector_2, 2), keepdims=True).mode[0]
         observed_diff = mode_1 - mode_2
