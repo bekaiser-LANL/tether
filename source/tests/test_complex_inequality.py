@@ -22,7 +22,7 @@ def test_generate_vector_pair_outputs(ci_instance):
 
 def test_multimodal_pdf_area(ci_instance):
     x = np.linspace(-15, 15, 1000)
-    y = ci_instance.multimodal_pdf(x, 1000)
+    y = ci_instance.multimodal_pdf(x)
     area = trapezoid(y, x)
     assert np.isclose(area, 1.0, atol=1e-2), f"PDF area is not 1 (area = {area})"
 

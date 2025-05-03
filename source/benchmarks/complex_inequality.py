@@ -7,7 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from scipy.integrate import trapezoid
 from scipy.ndimage import gaussian_filter1d
-from scipy.stats import norm, stats
+from scipy.stats import norm, mode, stats
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
 matplotlib.use('Agg')
@@ -94,9 +94,6 @@ class ComplexInequality():
         """Generate a plot of the sample histogram and the pdfs from which they were sampled
         """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            # Get sample modes
-            #mode_1 = stats.mode(np.round(vector_1, 2), keepdims=True).mode[0]
-            #mode_2 = stats.mode(np.round(vector_2, 2), keepdims=True).mode[0]
 
             # Optional smoothing (if not already applied)
             yvec_1 = gaussian_filter1d(yvec_1, sigma=2)
@@ -459,12 +456,12 @@ class ComplexInequality():
         for i in range(n_bootstrap):
             sample_1 = rng.choice(vector_1, size=len(vector_1), replace=True)
             sample_2 = rng.choice(vector_2, size=len(vector_2), replace=True)
-            mode_1 = stats.mode(np.round(sample_1, 2), keepdims=True).mode[0]
-            mode_2 = stats.mode(np.round(sample_2, 2), keepdims=True).mode[0]
+            mode_1 = mode(np.round(sample_1, 2), keepdims=True).mode[0]
+            mode_2 = mode(np.round(sample_2, 2), keepdims=True).mode[0]
             diffs[i] = mode_1 - mode_2
 
-        mode_1 = stats.mode(np.round(vector_1, 2), keepdims=True).mode[0]
-        mode_2 = stats.mode(np.round(vector_2, 2), keepdims=True).mode[0]
+        mode_1 = mode(np.round(vector_1, 2), keepdims=True).mode[0]
+        mode_2 = mode(np.round(vector_2, 2), keepdims=True).mode[0]
         observed_diff = mode_1 - mode_2
         # Get percentiles
         lower_percentile = (100 - conf_int) / 2
@@ -489,8 +486,8 @@ class ComplexInequality():
 
     def find_mode_difference(self, vector_1, vector_2):
         """Calculate the difference between each vector mean"""
-        mode1 = stats.mode(vector_1, keepdims=True).mode[0]
-        mode2 = stats.mode(vector_2, keepdims=True).mode[0]
+        mode1 = mode(vector_1, keepdims=True).mode[0]
+        mode2 = mode(vector_2, keepdims=True).mode[0]
         diff = mode1 - mode2
         return mode1, mode2, diff
 
