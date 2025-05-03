@@ -53,7 +53,23 @@ def generate_benchmarks(path, exam_name, **kwargs):
         exam_name_wo_ci_method = exam_name
 
     saver = None
-    if exam_name_wo_ci_method == 'SimpleInequality':
+    
+    if exam_name_wo_ci_method == 'SignificantFigures':
+
+        # Generate all of the problems in the benchmark:
+        problems = SignificantFigures(
+            n_problems=n_problems
+        )
+
+        # # Save the benchmark as an .npz
+        # saver = SaveBenchmark.from_mediated_causality(
+        #     source=problems,
+        #     path=self.path,
+        #     exam_name=self.exam_name,
+        #     exam_idx=self.exam_idx
+        # )
+
+    elif exam_name_wo_ci_method in ('SimpleInequality','ComplexInequality'):
 
         # Generate all of the problems in the benchmark:
         problems = SimpleInequality(

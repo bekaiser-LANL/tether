@@ -229,6 +229,7 @@ class QuestionBank:
             'difficulty': difficulty,
             'metadata': metadata or {}
         }
+        print(entry)
         bin_list.append(entry)
         return True
 

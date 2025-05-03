@@ -1,15 +1,18 @@
-"""This module defines simpleInequality benchmark that
-generates two vector from a gaussian distribution
+"""This module defines ComplexInequality benchmark that
+generates two vector from a multimodel distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from scipy.integrate import trapezoid
+from scipy.stats import norm
+from scipy.interpolate import interp1d
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
 
-
-class SimpleInequality():
-    """Generates questions about the simple inequality case to be saved 
-    and then fed to LLMs"""
+class ComplexInequality():
+    """Generates questions about the complex inequality case to be saved and then fed to LLMs"""
 
     def __init__(self, exam_name, n_numbers = 100, **kwargs):
 
@@ -30,15 +33,9 @@ class SimpleInequality():
             "answer_proportions",
             [0.333, 0.333, 0.333], # Ratios of A, B, C correct answers
         )
-        self.n_per_range = kwargs.get(
-            'n_per_range',
-            self.n_problems/len(self.answer_proportions)
-        )
+        self.n_per_range = kwargs.get('n_per_range', self.n_problems/len(self.answer_proportions))
         self.n_per_range = int(self.n_per_range)
-        self.n_samples = kwargs.get(
-            'n_samples',
-            self.n_problems/len(self.answer_proportions)
-        )
+        self.n_samples = kwargs.get('n_samples', self.n_problems/len(self.answer_proportions))
         self.n_samples = int(self.n_samples)
         self.difficulty_thresholds = kwargs.get(
             'difficulty_thresholds',
@@ -71,20 +68,75 @@ class SimpleInequality():
         Do not repeat the prompt. Answer:"""
         return vector_1, vector_2, question, chosen_range
 
-    def make_plot(self,count,vector_1,vector_2):
-        """ Plot the causal example for varied n_samples """
+    def make_plot(self):
         if self.plot_flag: # make a plot of the 95% confidence interval
-            import seaborn as sns
-            sns.histplot(vector_1, kde=True, label="Vector 1", color="blue")
-            sns.histplot(vector_2, kde=True, label="Vector 2", color="orange")
-            plt.axvline(np.mean(vector_1), color='blue', linestyle='--')
-            plt.axvline(np.mean(vector_2), color='orange', linestyle='--')
-            plt.legend()
-            plt.title("Distribution with KDE")
-            plot_name = f"distribution_plot_{count}.png"
-            plt.savefig(plot_name)
+            N = 10000
+            x_low = -15 
+            x_high = 15
+            x = np.linspace(x_low, x_high, N)
 
-    def old_make_problems(self):
+            figname = './many_dists.png'
+            fig = plt.figure(figsize=(6, 5))
+            ax1=plt.subplot(1,1,1)
+            for i in range(0,5):
+                y = multimodal_pdf(x, -5, 5, 0.5, 2., -20, 20, N)
+                #print(trapezoid(y, x))
+                plt.plot(x, y)
+            plt.title("Skewed Gaussian Distribution")
+            plt.xlabel("x")
+            plt.ylabel("Density")
+            plt.grid(True)
+            plt.xlim([-7.5, 7.5])
+            plt.subplots_adjust(top=0.95, bottom=0.14, left=0.15, right=0.985, hspace=0.4, wspace=0.35)
+            plt.savefig(figname,format="png"); plt.close(fig); 
+
+            y = multimodal_pdf(x, -5, 5, 0.5, 2., -20, 20, N)
+
+            figname = './one_dist.png'
+            fig = plt.figure(figsize=(6, 5))
+            ax1=plt.subplot(1,1,1)
+            plt.plot(x, y)
+            plt.xlabel("x")
+            plt.ylabel("Density")
+            plt.grid(True)
+            plt.xlim([-7.5, 7.5])
+            plt.subplots_adjust(top=0.95, bottom=0.14, left=0.15, right=0.985, hspace=0.4, wspace=0.35)
+            plt.savefig(figname,format="png"); plt.close(fig); 
+
+            P0 = trapezoid(self.gaussian(x),x)
+            P1 = trapezoid(y, x) 
+            P2 = self.prob_greater_than_from_pdf(x, y, -500.)
+            P3 = self.prob_greater_than_from_pdf(x, y, 0.)
+            P4 = self.prob_greater_than_from_pdf(x, self.gaussian(x), 0.)
+            print('\n a) gaussian: Should be 1 (integrate population density): ',P0)
+            print('\n b) one_dist: Should be 1 (integrate population density): ',P1)
+            print('\n c) one_dist: Should be ~1 (integrate sample density):',P2)
+            print('\n d) one_dist: Look at one_dist.png - Probability P(x>0): ',P3)
+            print('\n e) gaussian: Should be 0.5 - Probability P(x>0): ',P4)
+
+            pdf_func = interp1d(x, y, bounds_error=False, fill_value=0.0)
+            samples = rejection_sample(pdf_func, x_min=x_low, x_max=x_high, y_max=np.amax(y), n_samples=10000)
+            # samples are effectively normalized frequencies, meaning you could have 
+            # n number of samples in 0.1<x<0.2, and what is output here would be n/n_samples 
+            # where n_samples is the total number of samples.
+            # Note that y_max=np.amax(y) when we know y a priori.
+
+            figname = './one_dist_samples.png'
+            fig = plt.figure(figsize=(6, 5))
+            ax1=plt.subplot(1,1,1)
+            plt.plot(x, y)
+            plt.hist(samples, bins=50, density=True, alpha=0.6, label="Sample Histogram")
+            plt.xlabel("x")
+            plt.ylabel("Density")
+            plt.grid(True)
+            plt.xlim([-7.5, 7.5])
+            plt.subplots_adjust(top=0.95, bottom=0.14, left=0.15, right=0.985, hspace=0.4, wspace=0.35)
+            plt.savefig(figname,format="png"); plt.close(fig); 
+
+            P5 = self.prob_greater_than_x0_from_samples(samples, 0.)
+            print('\n f) one_dist: Sample integration, should be close to d) - Probability P(x>0): ',P5)
+
+    def make_problems(self):
         """ Generate simple Inequality questions for the LLMs """
 
         qb = QuestionBank(target_per_bin =int(self.n_problems/9))
@@ -208,96 +260,14 @@ class SimpleInequality():
                 example_idx += 1 # loop over examples
         print('Done!')
 
-    def make_problems(self):
-        qb = QuestionBank(target_per_bin=int(self.n_problems / 9))
-        test_complete = False
-        count = 0
-        example_idx = 0
-
-        hard, medium, easy = self.fast_generate_dataset(target_per_bin=qb.target_per_bin)
-
-        for bin_data in (hard, medium, easy):
-            for (vector_1, vector_2, mean1, mean2, diff, chosen_range, std1, std2) in bin_data:
-
-                ci_lower, ci_upper, _ = self.calculate_ci(vector_1, vector_2, chosen_range)
-                plot_val, answer = self.record_solutions(ci_lower, ci_upper)
-                difficulty = self.assign_difficulty(vector_1, vector_2)
-
-                v1_str = " ".join(map(str, vector_1))
-                v2_str = " ".join(map(str, vector_2))
-
-                question = (
-                    f"Vector 1: {v1_str} Vector 2: {v2_str}\n"
-                    "Is it more probable that a sample from Vector 1 is greater than sample from Vector 2?\n"
-                    "Answer 'A' for yes, 'B' for no, or 'C' for uncertain.\n"
-                    "Use 95% confidence.\nAnswer:"
-                )
-
-                problem = {
-                    "question": question,
-                    "solution": answer,
-                    "difficulty": difficulty,
-                    "mean_diff": diff,
-                    "ci_lower": ci_lower,
-                    "ci_upper": ci_upper,
-                    "n_samples": self.n_numbers,
-                    "std1": std1,
-                    "std2": std2,
-                    "example_idx": example_idx,
-                    "name": self.exam_name
-                }
-
-                if self.verbose:
-                    print(f"\nAdded: {difficulty.upper()} — Mean diff: {diff:.3f}, CI: [{ci_lower:.3f}, {ci_upper:.3f}]")
-
-                if qb.add_question(
-                    problem["question"],
-                    problem["solution"],
-                    problem["difficulty"],
-                    metadata={k: v for k, v in problem.items() if k not in {"question", "solution", "difficulty"}}
-                ):
-                    self.make_plot(count, vector_1, vector_2)
-                    count += 1
-
-                example_idx += 1
-
-            # Check if ready:
-            if qb.is_full():
-                final_set = qb.get_balanced_set()
-                if self.verbose:
-                    print("Test is complete:", len(final_set), "questions")
-                test_complete = True
-                #Pull attributes from qb
-                qb.n_samples = np.array(
-                        [q['metadata']['n_samples'] for q in qb.get_balanced_set()]
-                        )
-                qb.name = np.array(
-                        [q['metadata']['name'] for q in qb.get_balanced_set()]
-                        )
-                qb.example_idx = np.array(
-                        [q['metadata']['example_idx'] for q in qb.get_balanced_set()]
-                        )
-                qb.solution = [q['solution'] for q in qb.get_balanced_set()]
-                qb.question = [q['question'] for q in qb.get_balanced_set()]
-                qb.difficulty = [q['difficulty'] for q in qb.get_balanced_set()]
-                for name, value in qb.__dict__.items():
-                    setattr(self, name, value)
-            else:
-                if self.verbose:
-                    print("Still building test. Current count:", qb.count())
-                example_idx += 1 # loop over examples
-        print('Done!')
-
-
-    def generate_vector(self, target_mean, target_std, length):
-        """Generate vector with gaussian centered about mean with std"""
+    def generate_vector(self, x_low, x_high, mean_lower, mean_upper, std_lower, std_upper, alpha_lower, alpha_upper, N):
+        """Create vector of length n_numbers sampled from multimodal pdf"""
+        x = np.linspace(x_low, x_high, N)
+        for i in range(0,5):
+            y = self.multimodal_pdf(x, mean_lower, mean_upper, std_lower, std_upper, alpha_lower, alpha_upper, N)
         length = self.n_numbers
-        vec = np.random.randn(length)
-        vec -= np.mean(vec)
-        vec /= np.std(vec)
-        vec *= target_std
-        vec += target_mean
-        vec = np.round(vec, 2) #round to 2 decimal places
+        pdf_normalized = y/np.sum(y)
+        vec = np.random.choice(x,size=length,p=pdf_normalized)
         return vec
 
     def generate_vector_pair(self, mean_diff_range):
@@ -315,51 +285,15 @@ class SimpleInequality():
             if -1 <= mean2 <= 1:
                 std1 = np.random.uniform(0.05, 0.5)
                 std2 = np.random.uniform(0.05, 0.5)
-                vec1 = self.generate_vector(mean1, std1, length)
-                vec2 = self.generate_vector(mean2, std2, length)
+                #(x_low, x_high, mean_lower, mean_upper, std_lower, 
+                #std_upper, alpha_lower, alpha_upper, N)   
+                vec1 = self.generate_vector(-15, 15, -5, 5, 0.5, 2., -20, 20, 1000)
+                vec2 = self.generate_vector(-15, 15, -5, 5, 0.5, 2., -20, 20, 1000)
                 return vec1, vec2, std1, std2
-
-    def fast_generate_dataset(self, target_per_bin=20):
-        """Fast generate vectors classified by difficulty."""
-        hard = []
-        medium = []
-        easy = []
-
-        attempts = 0
-        max_attempts = 10000  # stop if we try too long
-
-        while (len(hard) < target_per_bin or
-                len(medium) < target_per_bin or
-                len(easy) < target_per_bin) and attempts < max_attempts:
-
-            chosen_range = self.mean_diff_ranges[self.range_index]
-            self.range_index = (self.range_index + 1) % len(self.mean_diff_ranges)
-
-            vector_1, vector_2, std1, std2 = self.generate_vector_pair(chosen_range)
-            mean1, mean2, diff = self.find_mean_difference(vector_1, vector_2)
-
-            difficulty = self.assign_difficulty(vector_1, vector_2)
-
-            data = (vector_1, vector_2, mean1, mean2, diff, chosen_range, std1, std2)
-
-            if difficulty == 'hard' and len(hard) < target_per_bin:
-                hard.append(data)
-            elif difficulty == 'medium' and len(medium) < target_per_bin:
-                medium.append(data)
-            elif difficulty == 'easy' and len(easy) < target_per_bin:
-                easy.append(data)
-
-            attempts += 1
-
-        print(f"Finished fast generation:\n" 
-              "{len(hard)} hard, {len(medium)} medium,\n" 
-              "{len(easy)} easy samples.\n")
-        return hard, medium, easy
-
 
     def generate_dataset(self):
         """Generate vector pairs with mean differences in ranges specified"""
-        chosen_range = self.mean_diff_ranges[self.range_index]
+        
         # Cycle through 0, 1, 2, 0, 1, ...
         self.range_index = (self.range_index + 1) % len(self.mean_diff_ranges)
         vector_1, vector_2, std1, std2 = self.generate_vector_pair(chosen_range)
@@ -398,11 +332,87 @@ class SimpleInequality():
         """Assign difficulty of problem based on mean differences"""
         _, _, diff_value = self.find_mean_difference(vector_1, vector_2)
         if diff_value <= self.difficulty_thresholds[0]:
-            difficulty = 'hard'
-        elif diff_value <= self.difficulty_thresholds[1]:
-            difficulty = 'medium'
-        elif diff_value > self.difficulty_thresholds[1]:
-            difficulty = 'easy'
-        else: # diff_value = NaN
-            difficulty = 'N/A'
-        return difficulty
+            n_waves (int): Number of sine waves to superimpose.
+            duration (float): Duration of the signal in seconds.
+            sample_rate (int): Number of samples per second.
+            freq_range (tuple): Frequency range (min, max) in Hz.
+            amp_range (tuple): Amplitude range (min, max).
+            seed (int or None): Random seed for reproducibility.
+        """
+        Returns:
+            t (np.ndarray): Time array.
+            signal (np.ndarray): Superposed sine wave signal.
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+        signal = np.zeros_like(t)
+
+        for _ in range(n_waves):
+            freq = np.random.uniform(*freq_range)
+            amp = np.random.uniform(*amp_range)
+            phase = np.random.uniform(0, 2 * np.pi)
+            signal += amp * np.sin(2 * np.pi * freq * t + phase)
+
+        return np.abs(signal)
+    
+    def multimodal_pdf(self, x, mean_lower, mean_upper, std_lower, std_upper, alpha_lower, alpha_upper, N):
+        """Normalized multi-modal PDF with compact support"""
+        mean = np.random.uniform(mean_lower, mean_upper)
+        std = np.random.uniform(std_lower, std_upper)
+        alpha = np.random.uniform(alpha_lower, alpha_upper)
+        raw = self.superposed_sine_waves(sample_rate=N) * self.skewed_gaussian(x, mean=mean, std=std, alpha=alpha)   
+        #raw = skewed_gaussian(x, mean=mean, std=std, alpha=alpha)   
+        area = trapezoid(raw, x)
+        return raw / area if area > 0 else np.zeros_like(x)
+
+    def prob_greater_than_x0_from_samples(self, samples, x0, bins=1000):
+        # Get histogram (density=True normalizes it)
+        counts, bin_edges = np.histogram(samples, bins=bins, density=True)
+        bin_widths = np.diff(bin_edges)
+
+        # Bin centers (optional)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        # Calculate the area (probability) for each bin
+        bin_probs = counts * bin_widths  # height * width = area
+
+        # Get mask of bins where upper edge > x0
+        mask = bin_edges[:-1] > x0  # lower edge of each bin is bin_edges[i]
+
+        # Handle edge case: partial bin containing x0
+        first_bin_idx = np.searchsorted(bin_edges, x0, side='right') - 1
+        if 0 <= first_bin_idx < len(bin_probs):
+            # Fractional contribution from the first bin
+            bin_start = bin_edges[first_bin_idx]
+            bin_end = bin_edges[first_bin_idx + 1]
+            fraction = (bin_end - x0) / (bin_end - bin_start)
+            partial_area = counts[first_bin_idx] * (bin_end - x0)
+        else:
+            partial_area = 0.0
+
+        # Sum up remaining full bins
+        prob = np.sum(bin_probs[mask]) + partial_area
+
+        return prob
+
+    def gaussian(self, x, mean=0, std=1):
+        """construct a normal distribution"""
+        return (1 / (np.sqrt(2 * np.pi) * std)) * np.exp(-((x - mean) ** 2) / (2 * std ** 2))
+
+    def prob_greater_than_from_pdf(self, x, pdf_values, x0):
+        mask = x > x0
+        return np.trapz(pdf_values[mask], x[mask])
+
+    def rejection_sample(self, pdf_func, x_min, x_max, y_max, n_samples):
+        """ We know our pdf as a function of x. We don't know if 
+        its cdf is invertible a priori. Therefore, let's use 
+        rejection sampling to sample it. """
+        samples = []
+        while len(samples) < n_samples:
+            x = np.random.uniform(x_min, x_max)
+            y = np.random.uniform(0, y_max)
+            if y <= pdf_func(x):
+                samples.append(x)
+        return np.array(samples)
