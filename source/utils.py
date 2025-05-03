@@ -368,7 +368,7 @@ class SaveBenchmark():
         return instance        
 
     @classmethod
-    def from_complex_inequality(cls, source, path, exam_name):
+    def from_complex_inequality(cls, source, path, exam_name, exam_idx):
         """ Constructs a new instance from the class SaveBenchmark and then
         set the source (ComplexInequality) attributes on the instance """
         instance = cls(path, exam_name)
