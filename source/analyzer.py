@@ -25,6 +25,8 @@ class Analyzer():
         self.model     = get_model_and_indices(npz_filename)[3]
         self.run_idx   = get_model_and_indices(npz_filename)[4]
         self.verbose = kwargs.get('verbose', False)
+        self.print_vars = kwargs.get('print_vars', False)
+        self.print_responses = kwargs.get('print_responses', False)
         self.completed_path = os.path.join(data_path, 'completed',self.model)
         self.npz_filepath = os.path.join(
             self.completed_path,
@@ -34,25 +36,29 @@ class Analyzer():
         # Load the .npz file
         self.data = np.load(self.npz_filepath, allow_pickle=True)
 
-        self.print_data_keys()
+        if self.print_vars:
+            self.print_keys()
+        
+        if self.print_responses:
+            self.print_completed_benchmark()
 
-    def print_data_keys(self):
+
+    def print_keys(self):
             """ List all keys stored in the file """
             print("\n Keys:\n", self.data.files)
             #print("\n response:\n ", self.data["responses"])
 
     def print_completed_benchmark(self):
-        a=1
-        # TO ADD: 
-        # # Verify the blank standard deviation benchmark:
-        # exam_idx = 0
-        # exam_name = 'StandardDeviation'
-        # data = load_saved_benchmark(data_path + '/blank/',exam_name, exam_idx)
-        # n_problems = len(data["question"])
-        # for i in range(0,2):
-        #     print('\n question = ',data["question"][i])
-        #     print(' unbiased solution = ',data["unbiased_solution"][i])
-        #     print(' biased solution = ',data["biased_solution"][i])
+        """ Print the completed benchmark Q&A """
+        n_problems = len(self.data["question"])
+        for i in range(0,2):
+            print('\n\n******************************************************')
+            print('\n question = ',self.data["question"][i])
+            print(' responses = ',self.data["responses"][i])
+            print(' solution = ',self.data["solution"][i])
+            print('\n')
+            # print(' unbiased solution = ',data["unbiased_solution"][i])
+            # print(' biased solution = ',data["biased_solution"][i])
 
     def verify_no_duplicates(self):
         a=1

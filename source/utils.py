@@ -54,6 +54,16 @@ def get_parser(script):
             action="store_true",
             help="Analyzer will grade"
         )
+        parser.add_argument(
+            "--print_vars",
+            action="store_true",
+            help="Analyzer will print all variable keys"
+        )
+        parser.add_argument(
+            "--print_responses",
+            action="store_true",
+            help="Analyzer will print the completed benchmark"
+        )      
     parser.add_argument(
         "--n_problems",
         type=int,
