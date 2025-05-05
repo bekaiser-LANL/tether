@@ -2,7 +2,7 @@
 import os
 import numpy as np
 from source.utils import get_model_and_indices
-#from source.utils import load_saved_benchmark
+from source.utils import detect_duplicate_tables
 #import numpy as np
 #import matplotlib
 # matplotlib.use('Agg')
@@ -42,6 +42,16 @@ class Analyzer():
         if self.print_responses:
             self.print_completed_benchmark()
 
+        # if grade_with_openai
+        # 1) pass through pattern recognizer
+        # 2) Any result that fits a pattern but disagrees with correct is incorrect
+        #    Otherwise, it's assumed correct.
+        # 3) Ask openai for if the correct/incorrect label for a response is correct
+        # 4) Flag any questions that don't match 
+        # 5) Save first pass
+        
+        # 5) A separate script opens and runs the questions that don't match for interactive human review
+        # 6) Save the final grade
 
     def print_keys(self):
             """ List all keys stored in the file """
@@ -61,25 +71,14 @@ class Analyzer():
             # print(' biased solution = ',data["biased_solution"][i])
 
     def verify_no_duplicates(self):
-        a=1
-        # TO ADD: 
-        # # Verify that each mediated causality benchmark has no duplicate problems:
-        # exam_idx = 0
-        # exam_names = ['MediatedCausality_bootstrap',
-        #               'MediatedCausalitySmoking_bootstrap',
-        #               'MediatedCausalityWithMethod_bootstrap',
-        #               'MediatedCausality_tdist',
-        #               'MediatedCausalitySmoking_tdist', # <- has a duplicate
-        #               'MediatedCausalityWithMethod_tdist'
-        #               ]
-        # for i in range(0,len(exam_names)):
-        #     data = load_saved_benchmark(data_path + '/blank/',exam_names[i], exam_idx)
-        #     has_duplicates, duplicate_pairs, n_problems = detect_duplicate_tables(data['table'])
-        #     print(f"\n Benchmark: {exam_names[i]}"
-        #         f"\n Duplicate tables detected: {has_duplicates}"
-        #         f"\n Number of problems: {n_problems}")
-        #     if has_duplicates:
-        #         print(f" {duplicate_pairs} duplicate pairs found")
+        if self.exam_name.startswith('MediatedCausality'):
+            has_duplicates, duplicate_pairs, n_problems = detect_duplicate_tables(self.data['table'])
+            print(f"\n Benchmark: {self.exam_name}"
+                f"\n Duplicate tables detected: {has_duplicates}"
+                f"\n Number of problems: {n_problems}")
+            if has_duplicates:
+                print(f" {duplicate_pairs} duplicate pairs found")   
+        print(f"\n Verify no duplicate problems needs to be implemented for {self.exam_name}")
 
     def grade_with_openai(self):
         # TO ADD: GRADE WITH OPENAI: 
