@@ -48,11 +48,16 @@ def get_parser(script):
             type=str,
             help="Optional path for locally downloaded model"
         )
-    if script == 'analyze':    
+    if script == 'analyze':
         parser.add_argument(
-            "--grade",
+            "--human_review",
             action="store_true",
-            help="Analyzer will grade"
+            help="Review and correct grades interactively"
+        )
+        parser.add_argument(
+            "--grade_estimate",
+            action="store_true",
+            help="Analyzer will estimate the grade"
         )
         parser.add_argument(
             "--print_vars",

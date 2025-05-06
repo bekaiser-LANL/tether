@@ -37,7 +37,31 @@ Be sure to include the index of the benchmark in BENCHMARK. For example, Mediate
 
 ## Analyze a benchmark
 
-`python3 analyze.py BENCHMARK MODEL`
+The generic command for analyzing a benchmark is:
+
+`python3 analyze.py BENCHMARK_NPZ_FILENAME_WITHOUT_SUFFIX`
+
+Calling the command above just loads the completed benchmark .npz file, nothing more. In practice you will want to do analyses called with command line arguments. For example:
+
+`python3 analyze.py MediatedCausality_tdist_0_mistral_0 --grade_estimate --verbose`
+
+This will estimate the grade of the completed benchmark saved in `MediatedCausality_tdist_0_mistral_0.npz` and will output to terminal the grades as it loops over all questions in the benchmark. Some helpful command line arguments are:
+
+`--print_vars`
+
+...prints the variables saved in the .npz file to the terminal.
+
+`--print_responses`
+
+...prints every question, LLM response, and solution for the entire benchmark to terminal.
+
+`--grade_estimate`
+
+...uses a LLM grader and deterministic pattern-recognition grader to analyze LLM responses. If the LLM grader and the deterministic grader agree that the LLM response is correct/incorrect, then that correct/incorrect value is stored. In this case, a graded benchmark file is saved with the suffix `_final_grade.npz`. If the LLM grader and the deterministic grader disagree that the LLM response is correct/incorrect, then the problem is flagged for human review and the graded benchmark file is saved with the suffix `_provisional_grade.npz`.
+
+`--human_review`
+
+...loops over all problems that were flagged for human review with `--grade_estimate` and saved with the suffix `_provisional_grade.npz`. You can then manually label problems as correct/incorrect through command line interaction until all problems flagged for human review are done. Then the graded benchmark file is saved with the suffix `_final_grade.npz`.
 
 # Models
 

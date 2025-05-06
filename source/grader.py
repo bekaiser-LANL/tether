@@ -2,15 +2,13 @@
 import os
 import re
 
-# NEEDS TO BE LINTED
-# HARD-CODED PATHS MUST BE REMOVED
+data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
 class Grader():
 
     def __init__(self, benchmark, responses):
 
-        # NEEDS TO BE MOVED OUTSIDE OF THIS SCRIPT (export / .bashrc, .zshrc)
-        self.path = "/lustre/scratch5/dmperez/Tether/source/benchmarks/equations/"
+        self.path = os.path.join(data_path,"equations")
 
         exam_name = benchmark['name'][0]
 
