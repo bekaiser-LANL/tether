@@ -3,7 +3,7 @@ generates two vector from a gaussian distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+#import seaborn as sns
 from scipy.stats import norm
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
@@ -16,7 +16,6 @@ class SimpleInequality():
 
         self.plot_path = plot_path
         self.exam_name = exam_name
-        #generation parameters:
         self.n_problems = kwargs.get('n_problems', 18) #length of test
         self.n_numbers = n_numbers #length of each vector
         self.plot_flag = kwargs.get('plot_flag', False)
@@ -102,8 +101,8 @@ class SimpleInequality():
             std_2 = np.std(vector_2)
             xaxis_2 = np.linspace(mean_2 - 4*std_2, mean_2 + 4*std_2, 1000)
             gauss_2 = norm.pdf(xaxis_2, loc=mean_2, scale=std_2)
-            ax_1 = sns.histplot(vector_1, color="blue", label='Sample 1')
-            ax_2 = sns.histplot(vector_2, color="orange", label = 'Sample 2')
+            # ax_1 = sns.histplot(vector_1, color="blue", label='Sample 1')
+            # ax_2 = sns.histplot(vector_2, color="orange", label = 'Sample 2')
             ymax_1 = max([bar.get_height() for bar in ax_1.patches])
             ymax_2 = max([bar.get_height() for bar in ax_2.patches])
             gauss_1_scaled = gauss_1 * ymax_1 / max(gauss_1)  # scale to match histogram height
@@ -112,7 +111,6 @@ class SimpleInequality():
             plt.plot(xaxis_2, gauss_2_scaled, label ='Population Distribution 2')
             plt.axvline(np.mean(vector_1), color='#56B4E9', linestyle='--')
             plt.axvline(np.mean(vector_2), color='#D55E00', linestyle='--')
-
             plt.legend()
             plot_name = f"{self.plot_path}/example_{problem['example_idx']}.png"
             plt.savefig(plot_name)

@@ -125,7 +125,7 @@ class Grader():
     def grade_string_multiple_choice(self,solution,response):
         return self.assert_exactly_equal_strings(solution,response)
 
-    def grade_string_multiple_choice(self, solution, response, choices=['A', 'B', 'C']):
+    def deterministic_grade_ABC(self, solution, response, choices=['A', 'B', 'C']):
         """
         Checks if the correct multiple-choice answer is found in the response.
 

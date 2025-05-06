@@ -2,7 +2,7 @@
 generates two vector from a multimodel distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
-import seaborn as sns
+#import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy.integrate import trapezoid
@@ -136,8 +136,8 @@ class ComplexInequality():
             # Plot
             fig, ax = plt.subplots(figsize=(7, 5))
 
-            sns.histplot(vector_1, bins=30, color='blue', label='Sample 1')
-            sns.histplot(vector_2, bins=30, color='orange', label='Sample 2')
+            # sns.histplot(vector_1, bins=30, color='blue', label='Sample 1')
+            # sns.histplot(vector_2, bins=30, color='orange', label='Sample 2')
 
             plt.plot(xvec_1_shifted, yvec_1_scaled,
                      color='blue', label='Population Distribution 1')
