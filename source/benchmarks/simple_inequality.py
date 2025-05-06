@@ -76,8 +76,8 @@ class SimpleInequality():
         if self.exam_name == 'SimpleInequalityWithMethod_tdist':
             question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
             Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
-            Calculate the 95% confidence level intervals. Use the 95% confidence intervals
-            to answer 'A' for yes, 'B' for no, or 'C' for uncertain.
+            Use the standard error of proportion and t-distribution to calculate the 95% confidence level intervals.
+            Use the 95% confidence intervals to answer 'A' for yes, 'B' for no, or 'C' for uncertain.
             Use only the data provided here and the 95% confidence level. 
             Do not repeat the prompt. Answer:"""
         if self.exam_name == 'SimpleInequalityWithMethod_bootstrap':
