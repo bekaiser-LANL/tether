@@ -218,6 +218,7 @@ class QuestionBank:
         """
         Adds a question to the appropriate bin.
         """
+        print(correct_choice)
         if correct_choice not in self.data:
             raise ValueError("Invalid correct choice. Must be 'A', 'B', or 'C'")
         if difficulty not in self.data[correct_choice]:
@@ -364,20 +365,43 @@ class SaveBenchmark():
         instance.question = np.array(source.question)[perm]
         instance.solution = np.array(source.solution)[perm]
         instance.difficulty = np.array(source.difficulty)[perm]
-        #instance.p_diff = np.array(source.p_diff)[perm]
-        #instance.p_diff_ci_lower = np.array(source.p_diff_ci_lower)[perm]
-        #instance.p_diff_ci_upper = np.array(source.p_diff_ci_upper)[perm]
-        #instance.n_samples = np.array(source.n_samples)[perm]
-        #instance.table = np.array(source.table)[perm]
+        instance.mean_diff = np.array(source.mean_diff)[perm]
+        instance.ci_lower = np.array(source.ci_lower)[perm]
+        instance.ci_upper = np.array(source.ci_upper)[perm]
+        instance.n_samples = np.array(source.n_samples)[perm]
         instance.name = np.array(source.name)[perm]
         return instance        
 
     @classmethod
-    def from_complex_inequality(cls, source, path, exam_name):
+    def from_complex_inequality(cls, source, path, exam_name, exam_idx):
         """ Constructs a new instance from the class SaveBenchmark and then
         set the source (ComplexInequality) attributes on the instance """
-        # TO DO        
-        return cls(name=source.name, age=source.age) # <-
+        instance = cls(path, exam_name)
+        instance.exam_idx = exam_idx
+        instance.save_npz_path = path
+        # Build filename
+        if exam_idx != 'unset':
+            filename = f"{exam_name}_{exam_idx}.npz"
+        #elif exam_idx == None:
+        #    filename = f"{exam_name}.npz"
+        else:
+            filename = f"{exam_name}.npz"
+        instance.npz_filename = os.path.join(instance.save_npz_path, filename)
+        # Shuffle the questions:
+        # Get number of samples (assumes all arrays are the same length)
+        n = len(source.question)
+        # Generate a random permutation of indices
+        perm = np.random.permutation(n)
+        # Apply the permutation to all arrays
+        instance.question = np.array(source.question)[perm]
+        instance.solution = np.array(source.solution)[perm]
+        instance.difficulty = np.array(source.difficulty)[perm]
+        instance.mean_diff = np.array(source.mean_diff)[perm]
+        instance.ci_lower = np.array(source.ci_lower)[perm]
+        instance.ci_upper = np.array(source.ci_upper)[perm]
+        instance.n_samples = np.array(source.n_samples)[perm]
+        instance.name = np.array(source.name)[perm]
+        return instance        
 
     @classmethod
     def from_standard_deviation(cls, source, path, exam_name, exam_idx):
@@ -455,11 +479,15 @@ class SaveBenchmark():
             ]
             data = {key: getattr(self, key) for key in self.attributes_to_save}
             np.savez(self.npz_filename, **data)
-        elif self.exam_name_wo_ci_method in ('SimpleInequality'):
+        elif self.exam_name_wo_ci_method in ('SimpleInequality', 'SimpleInequalityWithMethod', 'ComplexInequality', 'ComplexInequalityWithMethod'):
             self.attributes_to_save = [
                 "question",
                 "solution",
                 "difficulty",
+                "mean_diff",
+                "ci_lower",
+                "ci_upper",
+                "n_samples",
                 "name"
             ]
         elif self.exam_name_wo_ci_method in ('StandardDeviation'):

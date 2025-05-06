@@ -107,10 +107,19 @@ class Proctor():
 
     def give_benchmark(self, benchmark):
         """ Give all of the questions to the LLM """
+        local_models = os.listdir(self.modelpath)
         if self.model in openai_all_model_list:
             from openai import OpenAI # pylint: disable=import-outside-toplevel
             openai_api_key = os.getenv("OPENAI_API_KEY")
             self.client = OpenAI(api_key=openai_api_key)
+        elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
+            print("\n Local model:", self.model)
+            # Load the model and tokenizer
+            self.model_instance = AutoModelForCausalLM.from_pretrained(self.modelpath + self.model)
+            self.tokenizer_instance = AutoTokenizer.from_pretrained(self.modelpath + self.model)
+            # Set pad_token_id to eos_token_id if not already set
+            if self.model_instance.config.pad_token_id is None:
+                self.model_instance.config.pad_token_id = self.model_instance.config.eos_token_id
         n = len(benchmark['question'])
         responses = []
         for i in range(0,n):
@@ -126,8 +135,8 @@ class Proctor():
 
     def give_question_to_llm(self, prompt):
         """ Method for prompting & recording LLMs """
-        response = None
         local_models = os.listdir(self.modelpath)
+        response = None
         #ollama_model_list = []
         #openai_all_model_list = [] 
         if self.model in ollama_model_list:
@@ -154,73 +163,6 @@ class Proctor():
             print("\n OpenAI model:", self.model)
             response = self.ask_openai(prompt,self.model)
             return response
-        # locally downloaded LLMs
-        elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
-            print("\n Local model:", self.model)
-            responses = []
-            # Load the model and tokenizer
-            model = AutoModelForCausalLM.from_pretrained(self.modelpath + self.model)
-            tokenizer = AutoTokenizer.from_pretrained(self.modelpath + self.model)
-            # Set pad_token_id to eos_token_id if not already set
-            if model.config.pad_token_id is None:
-                model.config.pad_token_id = model.config.eos_token_id
-
-            n = len(self.questions)
-            for i in range(0,n): # length of exam
-
-                prompt = self.questions[i]
-                inputs = tokenizer(prompt, return_tensors="pt")
-
-                # Generate response
-                max_new_tokens = 200
-                #max_length = 1000
-                generate_ids = model.generate(
-                    inputs.input_ids,
-                    attention_mask=inputs.attention_mask,
-                    #max_length=max_length
-                    max_new_tokens=max_new_tokens
-                )
-                response = tokenizer.batch_decode(
-                    generate_ids,
-                    skip_special_tokens=True,
-                    clean_up_tokenization_spaces=False
-                )[0]
-                if self.verbose:
-                    print('\n Question ',i)
-                    print(prompt)
-                    print(response)
-                responses.append(response)
-            responses = np.array(responses)
-            return responses
-        #need to add multimodal models - these are only hardcoded for now; need to figure out better approach
-        elif self.model == "Llama-3.2-90B-Vision-Instruct" or self.model == "Llama-3.2-11B-Vision":    
-            # Load the model and tokenizer
-            model = MllamaForConditionalGeneration.from_pretrained(self.modelpath + self.model)
-            processor = AutoProcessor.from_pretrained(self.modelpath + self.model)
-            model.tie_weights()
-            self.path = self.imgpath
-            # Get all image files in the directory (supports PNG, JPG, JPEG)
-            image_files = [f for f in os.listdir(self.path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-            responses = []
-            # Iterate through images
-            for index, img_file in enumerate(image_files):
-                img_path = os.path.join(self.path, img_file)
-                # Read image using OpenCV
-                image = Image.open(img_path)
-                print(img_file)
-
-                # Convert back to PIL (if needed for processor)
-                prompt = self.questions[index]#"<|begin_of_text|><|image|>Describe this equation"#                inputs = processor(images=image, text=prompt, return_tensors="pt")
-
-               # Generate response from the model
-                with torch.no_grad():
-                    outputs = model.generate(**inputs, max_new_tokens=200, do_sample=True, temperature=0.9)
-
-                # Decode the generated text
-                response = processor.decode(outputs[0])
-                responses.append(response)
-            responses = np.array(responses)
-            return responses
             # try:
             #     request = requests.post(url, json=payload, timeout=60)
             #     if request.status_code == 200:
@@ -229,6 +171,19 @@ class Proctor():
             #         print("Error:", request.status_code, request.text)
             # except requests.exceptions.RequestException as e:
             #     print("Request failed:", e)
+        elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
+            inputs = self.tokenizer_instance(prompt, return_tensors="pt")
+
+            # Generate response
+            max_length = 1000
+            generate_ids = self.model_instance.generate(
+            inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+                max_length=max_length,
+            )
+            response = self.tokenizer_instance.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+
+            return response
         else:
             return '\n Model not available'
 

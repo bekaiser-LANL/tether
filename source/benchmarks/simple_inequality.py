@@ -3,17 +3,18 @@ generates two vector from a gaussian distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import norm
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
 
-
 class SimpleInequality():
-    """Generates questions about the simple inequality case to be saved 
+    """Generates questions about the simple inequality case to be saved
     and then fed to LLMs"""
 
-    def __init__(self, exam_name, n_numbers = 100, **kwargs):
+    def __init__(self, plot_path, exam_name, n_numbers = 100, **kwargs):
 
-        #self.plot_path = plot_path
+        self.plot_path = plot_path
         self.exam_name = exam_name
         #generation parameters:
         self.n_problems = kwargs.get('n_problems', 18) #length of test
@@ -44,8 +45,11 @@ class SimpleInequality():
             'difficulty_thresholds',
             np.array([0.66,1.33])
         )
-        #self.ci_method = (exam_name).split('_')[1]
-        #self.exam_name_wo_ci_method = (exam_name).split('_')[0]
+        try:
+            self.ci_method = (exam_name).split('_')[1]
+        except IndexError:
+            self.ci_method = None
+        self.exam_name_wo_ci_method = (exam_name).split('_')[0]
         self.n_bootstrap = kwargs.get('n_bootstrap', 1000)
         self.range_index=0
         if not is_divisible_by_9(self.n_problems):
@@ -58,31 +62,61 @@ class SimpleInequality():
 
     def get_prompts(self):
         """ Get questions for different kinds of inequality tests """
-        chosen_range, vector_1, vector_2, _, _ = self.generate_dataset()
+        chosen_range, vector_1, vector_2, std1, std2 = self.generate_dataset()
 
         # Convert the list of numbers to a space-separated string
         v1numbers_str = " ".join(map(str, vector_1))
         v2numbers_str = " ".join(map(str, vector_2))
         question = []
-        question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
-        Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
-        Answer 'A' for yes, 'B' for no, or 'C' for uncertain. 
-        Use only the data provided here and the 95% confidence level. 
-        Do not repeat the prompt. Answer:"""
-        return vector_1, vector_2, question, chosen_range
+        if self.exam_name_wo_ci_method == 'SimpleInequality':
+            question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
+            Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
+            Answer 'A' for yes, 'B' for no, or 'C' for uncertain. 
+            Use only the data provided here and the 95% confidence level. 
+            Do not repeat the prompt. Answer:"""
+        if self.exam_name == 'SimpleInequalityWithMethod_tdist':
+            question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
+            Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
+            Calculate the 95% confidence level intervals. Use the 95% confidence intervals
+            to answer 'A' for yes, 'B' for no, or 'C' for uncertain.
+            Use only the data provided here and the 95% confidence level. 
+            Do not repeat the prompt. Answer:"""
+        if self.exam_name == 'SimpleInequalityWithMethod_bootstrap':
+            question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
+            Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
+            Use bootstrap resampling to calculate the 95% confidence levels.
+            Use the 95% confidence intervals to answer 'A' for yes, 'B' for no,
+            or 'C' for uncertain. Use only the data provided here and the 95% confidence level. 
+            Do not repeat the prompt. Answer:"""
+        return vector_1, vector_2, question, chosen_range, std1, std2
 
-    def make_plot(self,count,vector_1,vector_2):
+    def make_plot(self,problem, vector_1,vector_2):
         """ Plot the causal example for varied n_samples """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            import seaborn as sns
-            sns.histplot(vector_1, kde=True, label="Vector 1", color="blue")
-            sns.histplot(vector_2, kde=True, label="Vector 2", color="orange")
-            plt.axvline(np.mean(vector_1), color='blue', linestyle='--')
-            plt.axvline(np.mean(vector_2), color='orange', linestyle='--')
+            fig = plt.figure(figsize=(6, 5))
+            mean_1 = np.mean(vector_1)
+            std_1 = np.std(vector_1)
+            xaxis_1 = np.linspace(mean_1 - 4*std_1, mean_1 + 4*std_1, 1000)
+            gauss_1 = norm.pdf(xaxis_1, loc=mean_1, scale=std_1)
+            mean_2 = np.mean(vector_2)
+            std_2 = np.std(vector_2)
+            xaxis_2 = np.linspace(mean_2 - 4*std_2, mean_2 + 4*std_2, 1000)
+            gauss_2 = norm.pdf(xaxis_2, loc=mean_2, scale=std_2)
+            ax_1 = sns.histplot(vector_1, color="blue", label='Sample 1')
+            ax_2 = sns.histplot(vector_2, color="orange", label = 'Sample 2')
+            ymax_1 = max([bar.get_height() for bar in ax_1.patches])
+            ymax_2 = max([bar.get_height() for bar in ax_2.patches])
+            gauss_1_scaled = gauss_1 * ymax_1 / max(gauss_1)  # scale to match histogram height
+            gauss_2_scaled = gauss_2 * ymax_2 / max(gauss_2)
+            plt.plot(xaxis_1, gauss_1_scaled, label ='Population Distribution 1')
+            plt.plot(xaxis_2, gauss_2_scaled, label ='Population Distribution 2')
+            plt.axvline(np.mean(vector_1), color='#56B4E9', linestyle='--')
+            plt.axvline(np.mean(vector_2), color='#D55E00', linestyle='--')
+
             plt.legend()
-            plt.title("Distribution with KDE")
-            plot_name = f"distribution_plot_{count}.png"
+            plot_name = f"{self.plot_path}/example_{problem['example_idx']}.png"
             plt.savefig(plot_name)
+            plt.close(fig)
 
     def make_problems(self):
         """ Generate simple Inequality questions for the LLMs """
@@ -90,7 +124,6 @@ class SimpleInequality():
         qb = QuestionBank(target_per_bin =int(self.n_problems/9))
         test_complete = False
         example_idx = 0
-        count = 0
         while not test_complete:
             # these range over varied n_samples:
             questions_tmp = np.zeros([self.n_samples],dtype=object)
@@ -100,36 +133,26 @@ class SimpleInequality():
             mean_diff_tmp = np.zeros([self.n_samples])
             ci_lower_tmp = np.zeros([self.n_samples])
             ci_upper_tmp = np.zeros([self.n_samples])
+            vectors_1 = np.empty((self.n_samples, self.n_numbers))
+            vectors_2 = np.empty((self.n_samples, self.n_numbers))
             for i in reversed(range(self.n_samples)):
+                vec1, vec2, question, chosen_range, std1, std2 = self.get_prompts()
 
-                #get questions:
-                questions_tmp[i] = self.get_prompts()[2]
-                #calculate the difficulty level
-                difficulty_tmp[i] = self.assign_difficulty(
-                        self.get_prompts()[0],
-                        self.get_prompts()[1]
-                        )
-                #get CI bounds
-                mean_diff_tmp[i] = self.calculate_ci(
-                        self.get_prompts()[0],
-                        self.get_prompts()[1],
-                        self.get_prompts()[3]
-                        )[2]
-                ci_lower_tmp[i] = self.calculate_ci(
-                        self.get_prompts()[0],
-                        self.get_prompts()[1],
-                        self.get_prompts()[3]
-                        )[0]
-                ci_upper_tmp[i] = self.calculate_ci(
-                        self.get_prompts()[0],
-                        self.get_prompts()[1],
-                        self.get_prompts()[3]
-                        )[1]
-                #record the solutions:
-                answers_tmp[i] = self.record_solutions(
-                        ci_lower_tmp[i],
-                        ci_upper_tmp[i]
-                        )[1]
+                vectors_1[i, :] = vec1
+                vectors_2[i, :] = vec2
+                questions_tmp[i] = question
+
+                if self.ci_method == 'tdist':
+                    ci_lower, ci_upper, diff = self.calculate_ci(vec1, vec2, std1, std2)
+                elif self.ci_method == 'bootstrap':
+                    ci_lower, ci_upper, diff = self.bootstrap_ci(vec1, vec2)
+
+                mean_diff_tmp[i] = diff
+                ci_lower_tmp[i] = ci_lower
+                ci_upper_tmp[i] = ci_upper
+                answers_tmp[i] = self.record_solutions(ci_lower, ci_upper)[1]
+                difficulty_tmp[i] = self.assign_difficulty(diff)
+
             # Randomly select one case from the generated examples
             # with different numbers of samples:
             random_choice_of_n_samples = np.random.randint(
@@ -163,7 +186,9 @@ class SimpleInequality():
                 "n_samples_all": n_samples_tmp,
                 "subsample_idx": subsample_idx,
                 "example_idx": example_idx,
-                "name": self.exam_name
+                "name": self.exam_name,
+                "vector_1": vectors_1[subsample_idx],
+                "vector_2": vectors_2[subsample_idx],
             }
 
             if self.verbose:
@@ -178,9 +203,10 @@ class SimpleInequality():
                     for k, v in problem.items()
                     if k not in {"question", "solution", "difficulty"}}
                 ):
-                self.make_plot(count,self.get_prompts()[0],self.get_prompts()[1])
-                count = count + 1
-
+                self.make_plot(problem,
+                               problem["vector_1"],
+                               problem["vector_2"])
+            print(qb.count())
             # Check if ready:
             if qb.is_full():
                 final_set = qb.get_balanced_set()
@@ -188,6 +214,15 @@ class SimpleInequality():
                     print("Test is complete:", len(final_set), "questions")
                 test_complete = True
                 #Pull attributes from qb
+                qb.mean_diff = np.array([
+                    q['metadata']['mean_diff'] for q in qb.get_balanced_set()]
+                )
+                qb.ci_lower = np.array([
+                    q['metadata']['ci_lower'] for q in qb.get_balanced_set()]
+                )
+                qb.ci_upper = np.array([
+                    q['metadata']['ci_upper'] for q in qb.get_balanced_set()]
+                )
                 qb.n_samples = np.array(
                         [q['metadata']['n_samples'] for q in qb.get_balanced_set()]
                         )
@@ -211,12 +246,7 @@ class SimpleInequality():
     def generate_vector(self, target_mean, target_std, length):
         """Generate vector with gaussian centered about mean with std"""
         length = self.n_numbers
-        vec = np.random.randn(length)
-        vec -= np.mean(vec)
-        vec /= np.std(vec)
-        vec *= target_std
-        vec += target_mean
-        vec = np.round(vec, 2) #round to 2 decimal places
+        vec = np.random.normal(loc=target_mean, scale=target_std, size=length)
         return vec
 
     def generate_vector_pair(self, mean_diff_range):
@@ -230,13 +260,14 @@ class SimpleInequality():
                 mean2 = mean1 + diff
             else:
                 mean2 = mean1 - diff
-            # Check both means are within [-1, 1]
+            ## Check both means are within [-1, 1]
             if -1 <= mean2 <= 1:
-                std1 = np.random.uniform(0.05, 0.5)
-                std2 = np.random.uniform(0.05, 0.5)
+                std1 = np.random.uniform(0.5, 8)
+                std2 = np.random.uniform(0.5, 8)
                 vec1 = self.generate_vector(mean1, std1, length)
                 vec2 = self.generate_vector(mean2, std2, length)
                 return vec1, vec2, std1, std2
+
 
     def generate_dataset(self):
         """Generate vector pairs with mean differences in ranges specified"""
@@ -246,14 +277,47 @@ class SimpleInequality():
         vector_1, vector_2, std1, std2 = self.generate_vector_pair(chosen_range)
         return chosen_range, vector_1, vector_2, std1, std2
 
-    def calculate_ci(self, vector_1, vector_2, mean_diff_range):
+    def calculate_ci(self, vector_1, vector_2, std1, std2):
         """Calculate the 95% confidence intervals around the means"""
         _, _, diff = self.find_mean_difference(vector_1, vector_2)
-        _, _, std1, std2 = self.generate_vector_pair(mean_diff_range)
         std_error = np.sqrt(std1**2 / self.n_numbers + std2**2 / self.n_numbers)
         ci_upper = diff + 1.96*std_error
         ci_lower = diff - 1.96*std_error
         return ci_lower, ci_upper, diff
+
+    def bootstrap_ci(self, vector_1, vector_2, n_bootstrap=2000, ci=95):
+        """
+        Bootstrap the mean differences to estimate confidence intervals.
+
+            Args:
+                vector_1 (np.ndarray): First sample.
+                vector_2 (np.ndarray): Second sample.
+                n_bootstrap (int): Number of bootstrap resamples.
+                ci (float): Confidence level (default 95).
+
+            Returns:
+                (ci_lower, ci_upper, observed_diff)
+        """
+        rng = np.random.default_rng()
+
+        # Preallocate resampling indices
+        idx_1 = rng.integers(0, len(vector_1), size=(n_bootstrap, len(vector_1)))
+        idx_2 = rng.integers(0, len(vector_2), size=(n_bootstrap, len(vector_2)))
+
+        # Use indexing to generate resampled arrays
+        resampled_1 = vector_1[idx_1]
+        resampled_2 = vector_2[idx_2]
+
+        # Compute mean differences all at once
+        diffs = resampled_1.mean(axis=1) - resampled_2.mean(axis=1)
+
+        # Observed diff
+        observed_diff = np.mean(vector_1) - np.mean(vector_2)
+
+        # Confidence interval
+        lower, upper = np.percentile(diffs, [(100 - ci) / 2, 100 - (100 - ci) / 2])
+        return lower, upper, observed_diff
+
 
     def record_solutions(self, ci_lower, ci_upper):
         """ Determine if answer is A, B, or C """
@@ -272,17 +336,16 @@ class SimpleInequality():
         """Calculate the difference between each vector mean"""
         mean1 = np.mean(vector_1)
         mean2 = np.mean(vector_2)
-        diff = abs(mean1 - mean2)
+        diff = mean1 - mean2
         return mean1, mean2, diff
 
-    def assign_difficulty(self, vector_1, vector_2):
+    def assign_difficulty(self, diff_value):
         """Assign difficulty of problem based on mean differences"""
-        _, _, diff_value = self.find_mean_difference(vector_1, vector_2)
-        if diff_value <= self.difficulty_thresholds[0]:
+        if abs(diff_value) <= self.difficulty_thresholds[0]:
             difficulty = 'hard'
-        elif diff_value <= self.difficulty_thresholds[1]:
+        elif abs(diff_value) <= self.difficulty_thresholds[1]:
             difficulty = 'medium'
-        elif diff_value > self.difficulty_thresholds[1]:
+        elif abs(diff_value) > self.difficulty_thresholds[1]:
             difficulty = 'easy'
         else: # diff_value = NaN
             difficulty = 'N/A'
