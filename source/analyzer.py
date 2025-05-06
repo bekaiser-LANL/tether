@@ -1,11 +1,44 @@
 """ Tools for analyzing saved benchmarks """
 import os
 import re
+import requests
+import json
 import numpy as np
 from source.utils import get_model_and_indices, create_missing_directory
 from source.utils import detect_duplicate_tables
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
+
+def truncate_response(text, num_start=3, num_end=3):
+    """
+    Prints the first `num_start` and last `num_end` lines of a long string.
+    """
+    lines = text.strip().splitlines()
+    total = len(lines)
+
+    if total <= num_start + num_end:
+        return '\n'.join(lines)  # Return full text if it's already short
+
+    start = lines[:num_start]
+    end = lines[-num_end:]
+
+    return '\n'.join(start + ['... (omitted middle lines) ...'] + end)
+
+def extract_boolean_result_from_response(response: str) -> bool | None:
+    """
+    Extracts the boolean value of 'result' from a JSON block in the LLM response.
+    Returns True or False if found, or None if parsing fails.
+    """
+    match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+    if match:
+        try:
+            json_str = match.group(1)
+            data = json.loads(json_str)
+            return data.get("result")
+        except json.JSONDecodeError:
+            return None
+    return None
+
 
 class Analyzer():
     """ Tools for analyzing saved benchmarks """
@@ -13,6 +46,8 @@ class Analyzer():
     def __init__(self, npz_filename, **kwargs):
         """ The benchmark name is the full name of the .npz file 
         without the suffix """
+
+        self.ai_grader_api = 'ollama' # 'openai'
 
         parts = get_model_and_indices(npz_filename)
         if len(parts) == 4:
@@ -67,7 +102,7 @@ class Analyzer():
         if self.grade_estimate:
             # --grade_estimate
             self.data = np.load(self.npz_filepath, allow_pickle=True)
-            self.provisional_grade_with_openai()
+            self.provisional_grade_with_ai()
 
         if self.human_review:
             # --human_review
@@ -190,7 +225,28 @@ class Analyzer():
         pattern = r"\bError: Connection error\."
         return re.search(pattern, text) is not None
 
-    def provisional_grade_with_openai(self):
+    def ask_ollama(self, prompt, model):
+        response = None
+        # This will work — as long as you have 'ollama serve' running
+        # in one terminal and the model is on the list.
+        #ensure_ollama_running()
+        url = "http://localhost:11434/api/generate"
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "stream": False
+        }
+        # Send the request to the API
+        request = requests.post(url, json=payload, timeout=120)
+        if request.status_code == 200:
+            # This is the standard HTTP status code for a successful request.
+            # Successful response from the Ollama API
+            response = request.json()["response"]
+        else:
+            print("Error:", request.status_code, request.text)
+        return response
+
+    def provisional_grade_with_ai(self):
         """ Estimate the grade with openai and deterministic pattern """
 
         from openai import OpenAI # pylint: disable=import-outside-toplevel
@@ -206,20 +262,32 @@ class Analyzer():
             if self.contains_connection_error(self.data['responses'][j]):
                 broken_flag = True
             if self.exam_name in self.ABC_multiple_choice_list:
+                #print('\n\n',self.data['responses'][j])
+                truncated_response = truncate_response(self.data['responses'][j])
                 prompt = (
-                f"The correct answer is {self.data['solution'][j]}, "
-                f"is the following response correct: "
-                f"{self.data['responses'][j]}? "
-                "Please just answer True or False"
+                    f"The correct answer is {self.data['solution'][j]}, "
+                    f"is the following response correct: {truncated_response}? "
+                    "Please answer True or False, and scan the end of the response in particular. Output in the following format:\n"
+                    "```json\n"
+                    "{\n"
+                    '  "result": true,\n'
+                    '  "explanation": "Because the sample size is too small."\n'
+                    "}\n"
+                    "```"
                 )
-                ai_grader = self.ask_openai(prompt, client,'gpt-4o')
+                if self.ai_grader_api == 'ollama':
+                    json_response = self.ask_ollama(prompt, 'granite3.2')
+                    ai_grader = extract_boolean_result_from_response(json_response)
+                else:
+                    ai_grader = self.ask_openai(prompt, client,'gpt-4o')
+                    print('\n NEEDS TO BE JSON RESPONSE')
                 deterministic_grader = self.deterministic_grader_ABC(
                     self.data["solution"][j],
                     self.data["responses"][j]
                 )
             elif self.exam_name == 'StandardDeviation':
                 print(' StandardDeviation needs to be set up with ')
-                print(' two prompts for ai grader and two solutions')  
+                print(' two prompts for ai grader and two solutions')
             else:
                 print(' Grader not set up')    
             if ai_grader == deterministic_grader:
@@ -230,9 +298,10 @@ class Analyzer():
                 print('\n\n**************************************************')
                 print('\n',self.exam_name)
                 print(' question: ',j)
-                print(' llm response: ',self.data["responses"][j])
+                #print(' llm response: ',self.data["responses"][j])
+                print(' truncated llm response: ',truncated_response)
                 print(' correct answer: ',self.data["solution"][j])
-                print(' gpt-4o grader: is it correct? ',ai_grader)
+                print(' AI grader: is it correct? ',ai_grader)
                 print(' deterministic grader: is it correct? ',deterministic_grader)
                 print(' correct answer? ',grade[j])
                 print(' human needed? ',human_review[j])
@@ -282,6 +351,7 @@ class Analyzer():
 
         # Regular expressions to detect explicit answer declarations
         explicit_answer_patterns = [
+            rf"The answer would be\s*['\"]{solution}['\"]",
             rf"^\s*\*\*{solution}\*\*\s*$",
             rf"\\\[\s*\\boxed\{{\s*{solution}\s*\}}\s*\\\]",
             rf"^\s*{solution}\s*$",
@@ -329,6 +399,8 @@ class Analyzer():
             rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*", 
             # **\n\n**Answer: A (yes/no/...)
             rf"^\s*{solution}\s—\s",
+            rf"we can conclude:\s*{solution}\b",
+            rf"the most appropriate answer under these conditions would be ['\"]{solution}['\"]",
         ]
 
         # Check if the last line explicitly declares the answer
