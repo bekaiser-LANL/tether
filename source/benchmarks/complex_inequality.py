@@ -2,7 +2,7 @@
 generates two vector from a multimodel distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
-#import seaborn as sns
+#import seaborn as sns # Please don't use seaborn
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy.integrate import trapezoid
