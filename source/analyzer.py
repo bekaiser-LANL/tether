@@ -411,7 +411,10 @@ class Analyzer():
             rf"\s*{solution}\s+\(Uncertain\)\.\s*",
             rf"{solution}\s*-\s*No\.\s*",
             rf"{solution}\s*-\s*Yes\.\s*",
-            rf"{solution}\s*-\s*Uncertain\.\s*"        
+            rf"{solution}\s*-\s*Uncertain\.\s*",
+            rf"is:\s*{solution}\s*-\s*No",
+            rf"is:\s*{solution}\s*-\s*Yes", 
+            rf"is:\s*{solution}\s*-\s*Uncertain"
         ]
 
         # Check if the last line explicitly declares the answer
