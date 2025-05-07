@@ -9,6 +9,9 @@ from source.utils import detect_duplicate_tables
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
+ai_grader_model = 'phi4' # 'granite3.2'
+ai_grader_api = 'ollama' # 'openai'
+
 def truncate_response(text, num_start=3, num_end=3):
     """
     Prints the first `num_start` and last `num_end` lines of a long string.
@@ -39,7 +42,6 @@ def extract_boolean_result_from_response(response: str) -> bool | None:
             return None
     return None
 
-
 class Analyzer():
     """ Tools for analyzing saved benchmarks """
 
@@ -47,7 +49,7 @@ class Analyzer():
         """ The benchmark name is the full name of the .npz file 
         without the suffix """
 
-        self.ai_grader_api = 'ollama' # 'openai'
+        self.ai_grader_api = ai_grader_api
 
         parts = get_model_and_indices(npz_filename)
         if len(parts) == 4:
@@ -139,7 +141,7 @@ class Analyzer():
             print(f'You responded y or n. Therefore human review flag = {self.data["human_review"][idx[k]]}')
             print('\n\n\n********************************************************')
 
-        #graded_npz_filename = self.npz_filename + '_final_grade.npz'
+        # save the final grades:
         if np.sum(self.data["human_review"]) == 0:
             graded_npz_filename = self.npz_filename + '_final_grade.npz'
         else:
@@ -158,7 +160,6 @@ class Analyzer():
     def print_keys(self):
             """ List all keys stored in the file """
             print("\n Keys:\n", self.data.files)
-            #print("\n response:\n ", self.data["responses"])
 
     def print_completed_benchmark(self):
         """ Print the completed benchmark Q&A """
@@ -276,11 +277,11 @@ class Analyzer():
                     "```"
                 )
                 if self.ai_grader_api == 'ollama':
-                    json_response = self.ask_ollama(prompt, 'granite3.2')
+                    json_response = self.ask_ollama(prompt, ai_grader_model)
                     ai_grader = extract_boolean_result_from_response(json_response)
                 else:
-                    ai_grader = self.ask_openai(prompt, client,'gpt-4o')
-                    print('\n NEEDS TO BE JSON RESPONSE')
+                    ai_grader = self.ask_openai(prompt, client,ai_grader_model)
+                    print('\n OPENAI MODELS NEED JSON RESPONSE CONSTRAINT')
                 deterministic_grader = self.deterministic_grader_ABC(
                     self.data["solution"][j],
                     self.data["responses"][j]

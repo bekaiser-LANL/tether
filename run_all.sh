@@ -6,7 +6,7 @@
 # Stop on error
 set -e
 
-MODEL="deepseek-r1:32b"  # Change this to whatever model you want to use
+MODEL="phi4" # "deepseek-r1:32b" # Change this to whatever model you want to use
 
 declare -a TASKS=(
   "MediatedCausality_tdist_0"
