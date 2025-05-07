@@ -414,7 +414,10 @@ class Analyzer():
             rf"{solution}\s*-\s*Uncertain\.\s*",
             rf"is:\s*{solution}\s*-\s*No",
             rf"is:\s*{solution}\s*-\s*Yes", 
-            rf"is:\s*{solution}\s*-\s*Uncertain"
+            rf"is:\s*{solution}\s*-\s*Uncertain",
+            rf"lean\s+towards\s+answering\s+['\"]{solution}['\"]",
+            rf"the\s+correct\s+answer\s+is\s+['\"]{solution}['\"]",
+            rf"the\s+answer\s+is\s+['\"]{solution}['\"]\s+for"
         ]
 
         # Check if the last line explicitly declares the answer
