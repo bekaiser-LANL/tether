@@ -1,28 +1,35 @@
 """ Test the script that runs (calls Proctor) benchmarks on LLMs """
-from unittest import mock
-import run
+from source.analyzer import truncate_response, extract_boolean_result_from_response
 
-def test_run_main(monkeypatch):
-    # Simulate CLI args like: python run.py /my/path BenchmarkName ModelName --n_problems 10
-    monkeypatch.setattr("sys.argv", [
-        "run.py",
-        "/mock/path",
-        "MockBenchmark",
-        "MockModel",
-        "--n_problems", "10",
-        "--verbose"
-    ])
+def test_truncate_response_short():
+    text = "Line1\nLine2\nLine3"
+    result = truncate_response(text)
+    assert result == text
 
-    # Patch the Proctor class to avoid real execution
-    with mock.patch("run.Proctor") as MockProctor:
-        run.main()
-        
-        # Check that Proctor was called with expected arguments
-        MockProctor.assert_called_once()
-        args, kwargs = MockProctor.call_args
+def test_truncate_response_long():
+    text = "\n".join([f"Line{i}" for i in range(10)])
+    result = truncate_response(text, num_start=2, num_end=2)
+    assert "Line0" in result and "Line9" in result
+    assert "... (omitted middle lines) ..." in result
 
-        assert args[0] == "MockBenchmark"
-        assert args[1] == "MockModel"
-        assert args[2] == "/mock/path"
-        assert kwargs["n_problems"] == 10
-        assert kwargs["verbose"] is True
+def test_extract_boolean_result_from_response_valid_true():
+    response = """```json
+    {
+      "result": true,
+      "explanation": "It matches the solution."
+    }
+    ```"""
+    assert extract_boolean_result_from_response(response) is True
+
+def test_extract_boolean_result_from_response_valid_false():
+    response = """```json
+    {
+      "result": false,
+      "explanation": "Mismatch."
+    }
+    ```"""
+    assert extract_boolean_result_from_response(response) is False
+
+def test_extract_boolean_result_from_response_invalid():
+    response = "Not a json block"
+    assert extract_boolean_result_from_response(response) is None

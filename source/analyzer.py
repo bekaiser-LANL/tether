@@ -2,6 +2,7 @@
 import os
 import re
 import requests
+import gc # for efficient RAM use
 import json
 import numpy as np
 from source.utils import get_model_and_indices, create_missing_directory
@@ -279,6 +280,7 @@ class Analyzer():
                 if self.ai_grader_api == 'ollama':
                     json_response = self.ask_ollama(prompt, ai_grader_model)
                     ai_grader = extract_boolean_result_from_response(json_response)
+                    gc.collect() # for efficient RAM use
                 else:
                     ai_grader = self.ask_openai(prompt, client,ai_grader_model)
                     print('\n OPENAI MODELS NEED JSON RESPONSE CONSTRAINT')

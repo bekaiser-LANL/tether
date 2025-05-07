@@ -2,6 +2,7 @@
 import time
 import subprocess
 import requests
+import gc # for efficient RAM use
 import os
 from .utils import load_saved_benchmark, get_npz_filename
 from .utils import create_missing_directory
@@ -10,8 +11,7 @@ import numpy as np
 from PIL import Image
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor, MllamaForConditionalGeneration
 
-ollama_model_list = ["llama3","llama3.2","mistral","granite3.2","deepseek-r1:32b","phi4"]
-# qwen3:30b
+ollama_model_list = ["llama3","llama3.2","mistral","granite3.2","deepseek-r1:32b","phi4","qwen3:30b"]
 openai_reasoning_model_list = ['o3-mini','o1','o3','o4-mini']
 openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
@@ -153,6 +153,7 @@ class Proctor():
             }
             # Send the request to the API
             request = requests.post(url, json=payload, timeout=120)
+            gc.collect() # for efficient RAM use
             if request.status_code == 200:
                 # This is the standard HTTP status code for a successful request.
                 # Successful response from the Ollama API
