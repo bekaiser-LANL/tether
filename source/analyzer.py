@@ -404,6 +404,11 @@ class Analyzer():
             rf"^\s*{solution}\s—\s",
             rf"we can conclude:\s*{solution}\b",
             rf"the most appropriate answer under these conditions would be ['\"]{solution}['\"]",
+            rf"lean\s+towards\s+['\"]{solution}['\"]",
+            rf"tentatively\s+answer\s+['\"]{solution}['\"]",
+            rf"\s*{solution}\s+\(No\)\.\s*",
+            rf"\s*{solution}\s+\(Yes\)\.\s*",
+            rf"\s*{solution}\s+\(Uncertain\)\.\s*",            
         ]
 
         # Check if the last line explicitly declares the answer

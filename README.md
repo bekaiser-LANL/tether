@@ -25,7 +25,7 @@ and you can check if it works with:
 
 For example:
 
-`python3 generate.py MediatedCausality_tdist --n_problems=9 --make_plots`
+`python3 generate.py MediatedCausality_tdist --make_plots`
 
 will generate a saved benchmark MediatedCausality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and a figure for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/MediatedCausality_tdist_figures/.
 
@@ -34,6 +34,10 @@ will generate a saved benchmark MediatedCausality_tdist_0.npz in /PATH_TO_BENCHM
 `python3 run.py BENCHMARK MODEL`
 
 Be sure to include the index of the benchmark in BENCHMARK. For example, MediatedCausality_tdist_0 for the first MediatedCausality_tdist benchmark (you can repeated generate more of the same benchmark).
+
+### Running a set of benchmarks in serial
+
+You can use `run_all.sh` to do run all the benchmarks listed in `run_all.sh` for the model specified in `run_all.sh`.
 
 ## Analyze a benchmark
 
@@ -62,6 +66,10 @@ This will estimate the grade of the completed benchmark saved in `MediatedCausal
 `--human_review`
 
 ...loops over all problems that were flagged for human review with `--grade_estimate` and saved with the suffix `_provisional_grade.npz`. You can then manually label problems as correct/incorrect through command line interaction until all problems flagged for human review are done. Then the graded benchmark file is saved with the suffix `_final_grade.npz`.
+
+### Provisional grading in serial
+
+You can use `grade_all.sh` to do `--grade_estimate` in serial over all of the benchmarks listed in `grade_all.sh` for the model specified in `grade_all.sh`.
 
 # Models
 
