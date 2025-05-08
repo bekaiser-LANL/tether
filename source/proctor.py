@@ -15,6 +15,7 @@ ollama_model_list = ["llama3","llama3.2","mistral","granite3.2","deepseek-r1:32b
 openai_reasoning_model_list = ['o3-mini','o1','o3','o4-mini']
 openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
+anthropic_model_list = ["claude-3-7-sonnet-20250219"]
 
 def ensure_ollama_running():
     try:
@@ -75,7 +76,27 @@ class Proctor():
         np.savez(self.npz_filename, **benchmark, responses=responses)
 
         self.record_txt = kwargs.get('record_txt', False) # save blank benchmark as .txt  
-      
+
+    def ask_anthropic(self, question, model_choice):
+        """ Method for prompting & recording Anthropic products """
+        if model_choice in anthropic_model_list:
+            try:
+                message = self.client.messages.create(
+                    model=model_choice,
+                    system="You are a scientist.",
+                    max_tokens=1000,
+                    messages = [
+                        {"role": "user", "content": question}
+                    ],
+                    temperature=self.temperature # 0.0 (deterministic) to 1.0 (random)
+                )
+                print(message)
+                return message.content
+            except Exception as e: # pylint: disable=broad-exception-caught
+                return f"Error: {e}"
+        else:
+            return print("\n Model choice not available ")        
+
     def ask_openai(self, question, model_choice):
         """ Method for prompting & recording OpenAI products """
         if model_choice in openai_classic_model_list:
@@ -113,6 +134,11 @@ class Proctor():
             from openai import OpenAI # pylint: disable=import-outside-toplevel
             openai_api_key = os.getenv("OPENAI_API_KEY")
             self.client = OpenAI(api_key=openai_api_key)
+        elif self.model in anthropic_model_list:
+            from anthropic import Anthropic # pylint: disable=import-outside-toplevel
+            anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+            self.client = Anthropic(api_key=anthropic_api_key)
+            #print(" Anthropic API key:", anthropic_api_key)
         elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
             print("\n Local model:", self.model)
             # Load the model and tokenizer
@@ -173,6 +199,10 @@ class Proctor():
             #         print("Error:", request.status_code, request.text)
             # except requests.exceptions.RequestException as e:
             #     print("Request failed:", e)
+        elif self.model in anthropic_model_list:
+            print("\n Anthropic model:", self.model)
+            response = self.ask_anthropic(prompt,self.model)
+            return response
         elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
             inputs = self.tokenizer_instance(prompt, return_tensors="pt")
 

@@ -129,7 +129,8 @@ class Analyzer():
             print('\n\nLLM response:\n--------------------------------\n')
             print(self.data["responses"][idx[k]])
             print('\n--------------------------------')
-            print('\nSolution: ',self.data["solution"][idx[k]])
+            print(f'\n{n_review-k} remaining to review ')#,np.round(1.-k/n_review,1)*100)
+            print('Solution: ',self.data["solution"][idx[k]])
             human = input("Is the LLM response correct? Answer `y' or `n' for yes and no, respectively. Press any other key to skip.\n")
             if human == 'n':
                 self.data["grade_estimate"][idx[k]] = False
@@ -412,12 +413,28 @@ class Analyzer():
             rf"{solution}\s*-\s*No\.\s*",
             rf"{solution}\s*-\s*Yes\.\s*",
             rf"{solution}\s*-\s*Uncertain\.\s*",
+            rf"{solution}\s*-\s*No\s*",
+            rf"{solution}\s*-\s*Yes\s*",
+            rf"{solution}\s*-\s*Uncertain\s*",
             rf"is:\s*{solution}\s*-\s*No",
             rf"is:\s*{solution}\s*-\s*Yes", 
             rf"is:\s*{solution}\s*-\s*Uncertain",
+            rf"based\s+on\s+this\s+information,\s+the\s+answer\s+is\s+['\"]{solution}['\"]\s*-\s*",
+            rf"it\s+would\s+be\s+most\s+appropriate\s+to\s+answer\s+['\"]{solution}['\"]",
             rf"lean\s+towards\s+answering\s+['\"]{solution}['\"]",
+            rf"lean\s+towards\s+saying\s+['\"]{solution}['\"]",
             rf"the\s+correct\s+answer\s+is\s+['\"]{solution}['\"]",
-            rf"the\s+answer\s+is\s+['\"]{solution}['\"]\s+for"
+            rf"the\s+answer\s+is\s+['\"]{solution}['\"]\s+for",
+            rf"our\s+answer\s+is\s+['\"]{solution}['\"]\s+for",
+            rf"I\s+would\s+have\s+to\s+respond\s+as\s+['\"]{solution}['\"]\s*-\s*",
+            rf"Therefore,\s+the\s+answer\s+is\s+['\"]{solution}['\"]\s*\(",
+            rf"the\s+most\s+accurate\s+response\s+would\s+be\s+['\"]{solution}['\"]\s+for",
+            rf"the\s+answer\s+would\s+be:\s*{solution}\s*-\s*",
+            rf"the\s+most\s+accurate\s+response\s+under\s+these\s+conditions\s+is:\s*{solution}\s*-\s*",
+            rf"the\s+most\s+accurate\s+response\s+under\s+these\s+conditions\s+is:\n\n\s*{solution}\s*-\s*(\w+)",
+            rf"the\s+most\s+accurate\s+response\s+under\s+these\s+conditions\s+is:\n\s*{solution}\s*-\s*",
+            rf"answer\s+would\s+be:\s*{solution}\s*-\s*",
+            rf"I\s+must\s+answer\s+['\"]{solution}['\"]\s+for",
         ]
 
         # Check if the last line explicitly declares the answer

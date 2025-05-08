@@ -6,18 +6,19 @@
 # Stop on error
 set -e
 
-MODEL="granite3.2"
+MODEL="o3"
+
+# "MediatedCausality_tdist_0"
+# "MediatedCausality_bootstrap_0"
+# "SimpleInequalityWithMethod_tdist_0"
+# "MediatedCausalitySmoking_bootstrap_0"
+# "MediatedCausalityWithMethod_tdist_0"
+# "SimpleInequality_tdist_0"
+# "SimpleInequality_bootstrap_0"
 
 declare -a TASKS=(
-  "MediatedCausality_tdist_0"
-  "MediatedCausality_bootstrap_0"
   "MediatedCausalitySmoking_tdist_0"
-  "MediatedCausalitySmoking_bootstrap_0"
-  "MediatedCausalityWithMethod_tdist_0"
   "MediatedCausalityWithMethod_bootstrap_0"
-  "SimpleInequality_tdist_0"
-  "SimpleInequality_bootstrap_0"
-  "SimpleInequalityWithMethod_tdist_0"
   "SimpleInequalityWithMethod_bootstrap_0"
 )
 
