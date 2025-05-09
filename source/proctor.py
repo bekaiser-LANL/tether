@@ -84,14 +84,13 @@ class Proctor():
                 message = self.client.messages.create(
                     model=model_choice,
                     system="You are a scientist.",
-                    max_tokens=1000,
+                    max_tokens=1024,
                     messages = [
                         {"role": "user", "content": question}
                     ],
                     temperature=self.temperature # 0.0 (deterministic) to 1.0 (random)
                 )
-                print(message)
-                return message.content
+                return message.content[0].text
             except Exception as e: # pylint: disable=broad-exception-caught
                 return f"Error: {e}"
         else:
@@ -136,9 +135,7 @@ class Proctor():
             self.client = OpenAI(api_key=openai_api_key)
         elif self.model in anthropic_model_list:
             from anthropic import Anthropic # pylint: disable=import-outside-toplevel
-            anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-            self.client = Anthropic(api_key=anthropic_api_key)
-            #print(" Anthropic API key:", anthropic_api_key)
+            self.client = Anthropic()
         elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
             print("\n Local model:", self.model)
             # Load the model and tokenizer
