@@ -17,7 +17,7 @@ class SimpleInequality():
         self.plot_path = plot_path
         self.exam_name = exam_name
         self.n_problems = kwargs.get('n_problems', 18) #length of test
-        self.n_numbers = n_numbers #length of each vector
+        self.n_numbers = kwargs.get('n_numbers', 10) #length of each vector
         self.plot_flag = kwargs.get('plot_flag', False)
         self.generate_flag = kwargs.get('generate_flag', True)
         self.verbose = kwargs.get('verbose', False)
