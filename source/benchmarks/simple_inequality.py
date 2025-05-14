@@ -12,7 +12,7 @@ class SimpleInequality():
     """Generates questions about the simple inequality case to be saved
     and then fed to LLMs"""
 
-    def __init__(self, plot_path, exam_name, n_numbers = 100, **kwargs):
+    def __init__(self, plot_path, exam_name, **kwargs):
 
         self.plot_path = plot_path
         self.exam_name = exam_name
