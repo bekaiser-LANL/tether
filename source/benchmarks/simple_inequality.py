@@ -3,7 +3,8 @@ generates two vector from a gaussian distribution
 with and asks LLM which vector has the largest mean with X% confidence"""
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import norm
+import matplotlib.patches as patches
+from scipy.stats import norm, t
 from source.utils import QuestionBank
 from source.utils import is_divisible_by_9
 
@@ -91,28 +92,105 @@ class SimpleInequality():
     def make_plot(self,problem, vector_1,vector_2):
         """ Plot the causal example for varied n_samples """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            fig = plt.figure(figsize=(6, 5))
+            fig = plt.figure(figsize=(8, 7))
             mean_1 = np.mean(vector_1)
             std_1 = np.std(vector_1)
+            n_1 = len(vector_1)
             xaxis_1 = np.linspace(mean_1 - 4*std_1, mean_1 + 4*std_1, 1000)
             gauss_1 = norm.pdf(xaxis_1, loc=mean_1, scale=std_1)
             mean_2 = np.mean(vector_2)
             std_2 = np.std(vector_2)
+            n_2 = len(vector_2)
             xaxis_2 = np.linspace(mean_2 - 4*std_2, mean_2 + 4*std_2, 1000)
             gauss_2 = norm.pdf(xaxis_2, loc=mean_2, scale=std_2)
             counts_1, bins_1, _ = plt.hist(vector_1, edgecolor="black", alpha=0.5, color='#56B4E9', label='Sample 1')
             counts_2, bins_2, _ = plt.hist(vector_2, edgecolor="black",alpha=0.5, color='#D55E00', label='Sample 2')
-            ymax_1 = max(counts_1)
-            ymax_2 = max(counts_2)
-            gauss_1_scaled = gauss_1 * ymax_1 / max(gauss_1)  # scale to match histogram height
-            gauss_2_scaled = gauss_2 * ymax_2 / max(gauss_2)
+            ymax = max(max(counts_1), max(counts_2))
+            gauss_1_scaled = gauss_1 * ymax / max(gauss_1)  # scale to match histogram height
+            gauss_2_scaled = gauss_2 * ymax / max(gauss_2)
             plt.plot(xaxis_1, gauss_1_scaled, color='#56B4E9', label ='Population Distribution 1')
             plt.plot(xaxis_2, gauss_2_scaled, color='#D55E00', label ='Population Distribution 2')
             plt.axvline(np.mean(vector_1), color='#56B4E9', linestyle='--')
             plt.axvline(np.mean(vector_2), color='#D55E00', linestyle='--')
             #plt.legend()
+            ax = plt.gca()
+            ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+            ax.set_ylim(0, ymax * 1.3)
+            yplot_top = ax.get_ylim()[1]
+ 
+            # === Confidence Intervals (t-distribution) ===
+            ci_1_t = t.interval(0.95, df=n_1-1, loc=mean_1, scale=std_1/np.sqrt(n_1))
+            ci_2_t = t.interval(0.95, df=n_2-1, loc=mean_2, scale=std_2/np.sqrt(n_2))
+
+            plt.fill_betweenx([0, yplot_top], ci_1_t[0], ci_1_t[1], color='#56B4E9', alpha=0.15)
+            plt.fill_betweenx([0, yplot_top], ci_2_t[0], ci_2_t[1], color='#D55E00', alpha=0.15)
+
+            # === Confidence Intervals (bootstrap) ===
+            def bootstrap_ci(data, num_bootstrap=1000, ci=0.95):
+                means = [np.mean(np.random.choice(data, size=len(data), replace=True)) for _ in range(num_bootstrap)]
+                lower = np.percentile(means, 100 * (1 - ci) / 2)
+                upper = np.percentile(means, 100 * (1 + ci) / 2)
+                return lower, upper
+
+            ci_1_boot = bootstrap_ci(vector_1)
+            ci_2_boot = bootstrap_ci(vector_2)
+            
+            # === Shaded CIs (t-distribution)
+            ax.fill_betweenx([0, yplot_top], ci_1_t[0], ci_1_t[1], color='#56B4E9', alpha=0.15, zorder=1)
+            ax.fill_betweenx([0, yplot_top], ci_2_t[0], ci_2_t[1], color='#D55E00', alpha=0.15, zorder=1)
+
+            # === Outlined CIs (bootstrap)
+            ax.add_patch(patches.Rectangle((ci_1_boot[0], 0),
+                                       ci_1_boot[1] - ci_1_boot[0], yplot_top,
+                                       linewidth=1.5, edgecolor='#08325e',
+                                       facecolor='none', linestyle='--', zorder=2))
+            ax.add_patch(patches.Rectangle((ci_2_boot[0], 0),
+                                       ci_2_boot[1] - ci_2_boot[0], yplot_top,
+                                       linewidth=1.5, edgecolor='#803300',
+                                       facecolor='none', linestyle='--', zorder=2))
+
+            # === Annotations
+            y1 = ymax * 0.7
+            y2 = ymax * 0.55
+            y3 = ymax * 0.4
+            y4 = ymax * 0.25
+            # T-distribution arrows (right)
+            ax.annotate('95% CI (t-dist) Sample 1',
+                xy=(ci_1_t[0], ymax * 0.85),  # right edge
+                xytext=(ci_1_t[0] - 0.3, ymax * 0.6 + 0.15 * ymax),
+                arrowprops=dict(arrowstyle='->', color='#56B4E9'),
+                fontsize=14, color='#1f77b4', ha='right', va='center', clip_on=True)
+
+            ax.annotate('95% CI (t-dist) Sample 2',
+                xy=(ci_2_t[1], ymax * 0.85),
+                xytext=(ci_2_t[1] + 0.3, ymax * 0.5 + 0.15 * ymax),
+                arrowprops=dict(arrowstyle='->', color='#D55E00'),
+                fontsize=14, color='#D55E00', ha='left', va='center', clip_on=True)
+
+            # Bootstrap arrows (left)
+            ax.annotate('95% CI (bootstrap) Sample 1',
+                xy=(ci_1_boot[0], ymax * 1.05),  # top-left corner
+                xytext=(ci_1_boot[0] - 0.3, ymax * 1.1),
+                arrowprops=dict(arrowstyle='->', color='#08325e', linestyle='dashed'),
+                fontsize=14, color='#08325e', ha='right', va='bottom', clip_on=True)
+
+            ax.annotate('95% CI (bootstrap) Sample 2',
+                xy=(ci_2_boot[1], ymax * 1.05),  # top-right corner
+                xytext=(ci_2_boot[1] + 0.3, ymax * 1.1),
+                arrowprops=dict(arrowstyle='->', color='#803300', linestyle='dashed'),
+                fontsize=14, color='#803300', ha='left', va='bottom', clip_on=True)
+
+            # === Plot layout
             plot_name = f"{self.plot_path}/example_{problem['example_idx']}.png"
-            plt.savefig(plot_name)
+            #plt.xlabel("Values", fontsize=20)
+            plt.ylabel("Frequency", fontsize=20)
+            plt.tight_layout()
+            # Calculate padded x-axis
+            x_min = min(np.min(vector_1), np.min(vector_2))
+            x_max = max(np.max(vector_1), np.max(vector_2))
+            x_pad = 1.45 * (x_max - x_min)
+            ax.set_xlim(x_min - x_pad, x_max + x_pad)
+            plt.savefig(plot_name, bbox_inches='tight')
             plt.close(fig)
 
     def make_problems(self):
