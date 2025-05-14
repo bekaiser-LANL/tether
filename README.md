@@ -38,17 +38,20 @@ To generate your blank tests (just questions), run the following command in the 
 `python3 generate.py BENCHMARK`
 
 The following command line arguments are available:
-`--n_problems` : specify the number of questions in the test
+`--n_problems` : specify the number of questions in the test (defaults to 18)
 
-`--n_numbers` : specify the length of the vectors in SimpleInequality tests (not used in MediatedCausality)
+`--n_numbers` : specify the length of the vectors in SimpleInequality tests (defaults to 10, not used in MediatedCausality)
 
 `--make_plots` : will generate plots of the sample distributions against the pmfs and pdfs they were sampled from
 
 For example:
 
-`python3 generate.py MediatedCausality_tdist --make_plots`
+`python3 generate.py SimpleInequality_tdist --make_plots`
 
-will generate a saved benchmark MediatedCausality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/MediatedCausality_tdist_figures/.
+will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. An example figure:
+
+<img src="example_17.png" alt="Example from the paper" width="400"/>
+
 
 ## Run a benchmark
 
