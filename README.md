@@ -50,6 +50,7 @@ For example:
 
 will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. An example figure:
 
+<img src="example_17.png" alt="Example from the paper" width="400"/>
 
 
 ## Run a benchmark
