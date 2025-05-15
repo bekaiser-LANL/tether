@@ -8,10 +8,9 @@ from .utils import load_saved_benchmark, get_npz_filename
 from .utils import create_missing_directory
 from .utils import get_after_second_underscore
 import numpy as np
-from PIL import Image
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor, MllamaForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
-ollama_model_list = ["llama3","llama3.2","mistral","granite3.2","deepseek-r1:32b","phi4","qwen3:30b"]
+ollama_model_list = ["llama3","llama3.2","mistral","granite3.2","deepseek-r1:32b","phi4","qwen3:30b","gemma3:27b-it-qat"]
 openai_reasoning_model_list = ['o3-mini','o1','o3','o4-mini']
 openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
