@@ -50,7 +50,9 @@ For example:
 
 will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. An example figure:
 
-<img src="example_142.png" alt="Example from the paper" width="400"/>
+<p align="center">
+  <img src="example_142.png" alt="Example from the paper" width="400"/>
+</p>
 
 
 ## Run a benchmark
@@ -88,35 +90,41 @@ The following command line arguments are available:
 
 You can use `grade_all.sh` to do `--grade_estimate` in serial over all of the benchmarks listed in `grade_all.sh` for the model specified at the top of `grade_all.sh`.
 
+## Plot results
+
+You can used `plot.py` to plot graded models.
+
+<p align="center">
+  <img src="SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="400"/>
+</p>
+
 # Models
 
-## Adding your own model
+## API models
 
-## OpenAI models
-
-o1 gpt-4o o3-mini gpt-4.5-preview
+If you have OpenAI, Claude, or other API keys accessible through your .bashrc or .zshrc file, then these keys are accessed using os.getenv() in proctor.py. 
 
 ## Ollama models
+
+To use ollama models:
 
 1) Download ollama: https://ollama.com/download  
 2) Open the downloaded zip, install   
 3) Enter the following terminal command for each model you plan on using, for example:  
 
-`$ ollama pull llama3`   
+`$ ollama pull deepseek-r1:32b`   
 
-4) Now enter 
+Add the model to ollama_model_list at the top of source/proctor.py if it is not already in the list.
+
+4) Once the model is downloaded, enter 
 
 `$ ollama serve` 
 
-and let it hang. This runs a server process that listens for API requests and should be left to run in the terminal.
-
-Open another terminal and check if Tether has your ollama model in proctor.py. If not, add the model to ollama_model_list on line 14 of proctor.py.
-
-6) Use `python3 run.py BENCHMARK MODEL` to run the benchmark on the specified model and follow the "Analyze a benchmark" instructions afterwards.
+This runs a server process that listens for API requests and should be left to run in the terminal. Open a new terminal and run tether command line commands in that terminal.
 
 # Testing
 
-Running the complete suite of unit tests (36) with pytest takes about 5 minutes and 40 seconds.
+Running the complete set of 57 unit tests with pytest takes roughly 3 minutes and 20 seconds on a desktop machine.
 
 # Licenses
 This project is licensed under the [MIT License](LICENSE.md).
