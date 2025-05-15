@@ -92,7 +92,7 @@ class SimpleInequality():
     def make_plot(self,problem, vector_1,vector_2):
         """ Plot the causal example for varied n_samples """
         if self.plot_flag: # make a plot of the 95% confidence interval
-            fig = plt.figure(figsize=(8, 7))
+            fig = plt.figure(figsize=(12, 8))
             mean_1 = np.mean(vector_1)
             std_1 = np.std(vector_1)
             n_1 = len(vector_1)
@@ -115,6 +115,7 @@ class SimpleInequality():
             #plt.legend()
             ax = plt.gca()
             ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+            ax.tick_params(axis='y', labelsize=16)
             ax.set_ylim(0, ymax * 1.3)
             yplot_top = ax.get_ylim()[1]
  
@@ -159,36 +160,36 @@ class SimpleInequality():
                 xy=(ci_1_t[0], ymax * 0.85),  # right edge
                 xytext=(ci_1_t[0] - 0.3, ymax * 0.6 + 0.15 * ymax),
                 arrowprops=dict(arrowstyle='->', color='#56B4E9'),
-                fontsize=14, color='#1f77b4', ha='right', va='center', clip_on=True)
+                fontsize=16, color='#1f77b4', ha='right', va='center', clip_on=True)
 
             ax.annotate('95% CI (t-dist) Sample 2',
                 xy=(ci_2_t[1], ymax * 0.85),
                 xytext=(ci_2_t[1] + 0.3, ymax * 0.5 + 0.15 * ymax),
                 arrowprops=dict(arrowstyle='->', color='#D55E00'),
-                fontsize=14, color='#D55E00', ha='left', va='center', clip_on=True)
+                fontsize=16, color='#D55E00', ha='left', va='center', clip_on=True)
 
             # Bootstrap arrows (left)
             ax.annotate('95% CI (bootstrap) Sample 1',
                 xy=(ci_1_boot[0], ymax * 1.05),  # top-left corner
                 xytext=(ci_1_boot[0] - 0.3, ymax * 1.1),
                 arrowprops=dict(arrowstyle='->', color='#08325e', linestyle='dashed'),
-                fontsize=14, color='#08325e', ha='right', va='bottom', clip_on=True)
+                fontsize=16, color='#08325e', ha='right', va='bottom', clip_on=True)
 
             ax.annotate('95% CI (bootstrap) Sample 2',
                 xy=(ci_2_boot[1], ymax * 1.05),  # top-right corner
                 xytext=(ci_2_boot[1] + 0.3, ymax * 1.1),
                 arrowprops=dict(arrowstyle='->', color='#803300', linestyle='dashed'),
-                fontsize=14, color='#803300', ha='left', va='bottom', clip_on=True)
+                fontsize=16, color='#803300', ha='left', va='bottom', clip_on=True)
 
             # === Plot layout
             plot_name = f"{self.plot_path}/example_{problem['example_idx']}.png"
-            #plt.xlabel("Values", fontsize=20)
+            plt.xlabel("Value", fontsize=20)
             plt.ylabel("Frequency", fontsize=20)
             plt.tight_layout()
             # Calculate padded x-axis
             x_min = min(np.min(vector_1), np.min(vector_2))
             x_max = max(np.max(vector_1), np.max(vector_2))
-            x_pad = 1.45 * (x_max - x_min)
+            x_pad = 0.95 * (x_max - x_min)
             ax.set_xlim(x_min - x_pad, x_max + x_pad)
             plt.savefig(plot_name, bbox_inches='tight')
             plt.close(fig)
