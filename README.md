@@ -95,7 +95,7 @@ You can use `grade_all.sh` to do `--grade_estimate` in serial over all of the be
 You can used `plot.py` to plot graded models.
 
 <p align="center">
-  <img src="SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="400"/>
+  <img src="SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="100%"/>
 </p>
 
 # Models
