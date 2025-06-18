@@ -6,19 +6,19 @@
 # Stop on error
 set -e
 
-MODEL="phi4" # Change this to whatever model you want to use
+MODEL="gpt-4o" # Change this to whatever model you want to use
 
 declare -a TASKS=(
+  "SimpleInequalityWithMethod_tdist"
+  "SimpleInequalityWithMethod_bootstrap"
+  "SimpleInequality_tdist"
+  "SimpleInequality_bootstrap"
   "MediatedCausality_tdist"
   "MediatedCausality_bootstrap"
   "MediatedCausalitySmoking_tdist"
   "MediatedCausalitySmoking_bootstrap"
   "MediatedCausalityWithMethod_tdist"
   "MediatedCausalityWithMethod_bootstrap"
-  "SimpleInequality_tdist"
-  "SimpleInequality_bootstrap"
-  "SimpleInequalityWithMethod_tdist"
-  "SimpleInequalityWithMethod_bootstrap"
 )
 
 for TASK in "${TASKS[@]}"; do
