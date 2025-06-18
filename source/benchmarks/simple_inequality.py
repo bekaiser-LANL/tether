@@ -67,6 +67,12 @@ class SimpleInequality():
         v1numbers_str = " ".join(map(str, vector_1))
         v2numbers_str = " ".join(map(str, vector_2))
         question = []
+#        if self.exam_name_wo_ci_method == 'SimpleInequalityAgent':
+#            question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
+#            Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
+#            Answer 'A' for yes, 'B' for no, or 'C' for uncertain.
+#            Use only the data provided here and the 95% confidence level.
+#            Write, run, and analyze a python code to obtain an answer. Answer:"""
         if self.exam_name_wo_ci_method == 'SimpleInequality':
             question = f"""Vector 1: {v1numbers_str} Vector 2: {v2numbers_str}
             Is it more probable that a sample from Vector 1 is greater than sample from Vector 2? 
@@ -114,6 +120,7 @@ class SimpleInequality():
             plt.axvline(np.mean(vector_2), color='#D55E00', linestyle='--')
             #plt.legend()
             ax = plt.gca()
+            ax.set_yticks([1,2,3])
             ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
             ax.tick_params(axis='y', labelsize=16)
             ax.set_ylim(0, ymax * 1.3)
@@ -156,35 +163,35 @@ class SimpleInequality():
             y3 = ymax * 0.4
             y4 = ymax * 0.25
             # T-distribution arrows (right)
-            ax.annotate('95% CI (t-dist) Sample 1',
+            ax.annotate('95% CI (t-dist) Variable 1',
                 xy=(ci_1_t[0], ymax * 0.85),  # right edge
                 xytext=(ci_1_t[0] - 0.3, ymax * 0.6 + 0.15 * ymax),
                 arrowprops=dict(arrowstyle='->', color='#56B4E9'),
-                fontsize=16, color='#1f77b4', ha='right', va='center', clip_on=True)
+                fontsize=20, color='#1f77b4', ha='right', va='center', clip_on=True)
 
-            ax.annotate('95% CI (t-dist) Sample 2',
+            ax.annotate('95% CI (t-dist) Variable 2',
                 xy=(ci_2_t[1], ymax * 0.85),
                 xytext=(ci_2_t[1] + 0.3, ymax * 0.5 + 0.15 * ymax),
                 arrowprops=dict(arrowstyle='->', color='#D55E00'),
-                fontsize=16, color='#D55E00', ha='left', va='center', clip_on=True)
+                fontsize=20, color='#D55E00', ha='left', va='center', clip_on=True)
 
             # Bootstrap arrows (left)
-            ax.annotate('95% CI (bootstrap) Sample 1',
+            ax.annotate('95% CI (bootstrap) Variable 1',
                 xy=(ci_1_boot[0], ymax * 1.05),  # top-left corner
                 xytext=(ci_1_boot[0] - 0.3, ymax * 1.1),
                 arrowprops=dict(arrowstyle='->', color='#08325e', linestyle='dashed'),
-                fontsize=16, color='#08325e', ha='right', va='bottom', clip_on=True)
+                fontsize=20, color='#08325e', ha='right', va='bottom', clip_on=True)
 
-            ax.annotate('95% CI (bootstrap) Sample 2',
+            ax.annotate('95% CI (bootstrap) Variable 2',
                 xy=(ci_2_boot[1], ymax * 1.05),  # top-right corner
                 xytext=(ci_2_boot[1] + 0.3, ymax * 1.1),
                 arrowprops=dict(arrowstyle='->', color='#803300', linestyle='dashed'),
-                fontsize=16, color='#803300', ha='left', va='bottom', clip_on=True)
+                fontsize=20, color='#803300', ha='left', va='bottom', clip_on=True)
 
             # === Plot layout
             plot_name = f"{self.plot_path}/example_{problem['example_idx']}.png"
-            plt.xlabel("Value", fontsize=20)
-            plt.ylabel("Frequency", fontsize=20)
+            plt.xlabel("Value", fontsize=24)
+            plt.ylabel("Frequency", fontsize=24)
             plt.tight_layout()
             # Calculate padded x-axis
             x_min = min(np.min(vector_1), np.min(vector_2))

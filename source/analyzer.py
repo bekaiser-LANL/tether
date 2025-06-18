@@ -1,22 +1,23 @@
 """ Tools for analyzing saved benchmarks """
 import os
 import re
-import requests
 import gc # for efficient RAM use
 import json
+import requests
 import numpy as np
 from source.utils import get_model_and_indices, create_missing_directory
 from source.utils import detect_duplicate_tables
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
-ai_grader_model = 'phi4' # 'granite3.2'
-ai_grader_api = 'ollama' # 'openai'
+AI_GRADER_MODEL = 'phi4' # 'granite3.2'
+AI_GRADER_API = 'ollama' # 'openai'
 
-def truncate_response(text, num_start=3, num_end=3):
+def truncate_response(response, num_start=3, num_end=3):
     """
     Prints the first `num_start` and last `num_end` lines of a long string.
     """
+    text = extract_output(response)
     lines = text.strip().splitlines()
     total = len(lines)
 
@@ -27,6 +28,12 @@ def truncate_response(text, num_start=3, num_end=3):
     end = lines[-num_end:]
 
     return '\n'.join(start + ['... (omitted middle lines) ...'] + end)
+
+def extract_output(response):
+    """Safely extracts output text from agent response dicts."""
+    if isinstance(response, dict):
+        return response.get('output', '')
+    return str(response) if response is not None else ''
 
 def extract_boolean_result_from_response(response: str) -> bool | None:
     """
@@ -50,29 +57,35 @@ class Analyzer():
         """ The benchmark name is the full name of the .npz file 
         without the suffix """
 
-        self.ai_grader_api = ai_grader_api
+        self.ai_grader_api = AI_GRADER_API
 
         parts = get_model_and_indices(npz_filename)
         if len(parts) == 4:
             self.exam_name = get_model_and_indices(npz_filename)[0]
-            self.exam_idx  = get_model_and_indices(npz_filename)[1]       
+            self.exam_idx  = get_model_and_indices(npz_filename)[1]
             self.model     = get_model_and_indices(npz_filename)[2]
-            self.run_idx   = get_model_and_indices(npz_filename)[3]            
+            self.run_idx   = get_model_and_indices(npz_filename)[3]
         elif len(parts) == 5:
-            self.exam_name = get_model_and_indices(npz_filename)[0]
-            self.ci_method = get_model_and_indices(npz_filename)[1]
-            self.exam_idx  = get_model_and_indices(npz_filename)[2]       
-            self.model     = get_model_and_indices(npz_filename)[3]
-            self.run_idx   = get_model_and_indices(npz_filename)[4]
+            if get_model_and_indices(npz_filename)[2] == 'agent':
+                self.exam_name = get_model_and_indices(npz_filename)[0]
+                self.ci_method = get_model_and_indices(npz_filename)[1]
+                self.model     = get_model_and_indices(npz_filename)[3]
+                self.run_idx   = get_model_and_indices(npz_filename)[4]
+            else:
+                self.exam_name = get_model_and_indices(npz_filename)[0]
+                self.ci_method = get_model_and_indices(npz_filename)[1]
+                self.exam_idx  = get_model_and_indices(npz_filename)[2]
+                self.model     = get_model_and_indices(npz_filename)[3]
+                self.run_idx   = get_model_and_indices(npz_filename)[4]
         self.verbose = kwargs.get('verbose', False)
         self.grade_estimate = kwargs.get('grade_estimate', False)
         self.human_review = kwargs.get('human_review', False)
         self.print_vars = kwargs.get('print_vars', False)
         self.print_responses = kwargs.get('print_responses', False)
-        self.completed_path = os.path.join(data_path, 'completed',self.model)
+        self.completed_path = os.path.join(data_path, 'completed')#,self.model)
         self.npz_filepath = os.path.join(
-            self.completed_path,
-            npz_filename + '.npz'
+              self.completed_path,
+              npz_filename + '.npz'
         )
         self.npz_filename = npz_filename
         self.graded_benchmark_path = os.path.join(data_path,'graded')
@@ -84,19 +97,19 @@ class Analyzer():
         create_missing_directory(self.graded_benchmark_by_model_path)
 
         # list of ABC multiple choice benchmarks:
-        self.ABC_multiple_choice_list = [
+        self.abc_multiple_choice_list = [
             'MediatedCausality',
             'MediatedCausalitySmoking',
             'MediatedCausalityWithMethod',
             'SimpleInequality',
             'SimpleInequalityWithMethod'
         ]
-        
+
         if self.print_vars:
             # --print_vars
             self.data = np.load(self.npz_filepath, allow_pickle=True)
             self.print_keys()
-        
+
         if self.print_responses:
             # --print_responses
             self.data = np.load(self.npz_filepath, allow_pickle=True)
@@ -114,7 +127,7 @@ class Analyzer():
     def final_grade_by_human(self):
         """ Assign the final grade """
         prov_file = self.npz_filename + '_provisional_grade.npz'
-        final_file = self.npz_filename + '_final_grade.npz' 
+        final_file = self.npz_filename + '_final_grade.npz'
         open_path = os.path.join(self.graded_benchmark_by_model_path, prov_file)
         save_path = os.path.join(self.graded_benchmark_by_model_path, final_file)
         if not os.path.exists(open_path):
@@ -131,16 +144,20 @@ class Analyzer():
             print('\n--------------------------------')
             print(f'\n{n_review-k} remaining to review ')#,np.round(1.-k/n_review,1)*100)
             print('Solution: ',self.data["solution"][idx[k]])
-            human = input("Is the LLM response correct? Answer `y' or `n' for yes and no, respectively. Press any other key to skip.\n")
+            human = input("Is the LLM response correct? Answer `y' or `n' for yes "
+                          "and no, respectively. Press any other key to skip.\n")
             if human == 'n':
                 self.data["grade_estimate"][idx[k]] = False
                 self.data["human_review"][idx[k]] = False
-                print(f'You said incorrect. Therefore, grade_estimate = {self.data["grade_estimate"][idx[k]]}')
+                print('You said incorrect. Therefore, '
+                        f'grade_estimate = {self.data["grade_estimate"][idx[k]]}')
             elif human == 'y':
                 self.data["grade_estimate"][idx[k]] = True
                 self.data["human_review"][idx[k]] = False
-                print(f'You said correct. Therefore, grade_estimate = {self.data["grade_estimate"][idx[k]]}')
-            print(f'You responded y or n. Therefore human review flag = {self.data["human_review"][idx[k]]}')
+                print('You said correct. Therefore, '
+                       f'grade_estimate = {self.data["grade_estimate"][idx[k]]}')
+            print('You responded y or n. Therefore '
+                   f'human review flag = {self.data["human_review"][idx[k]]}')
             print('\n\n\n********************************************************')
 
         # save the final grades:
@@ -151,17 +168,13 @@ class Analyzer():
         save_path = os.path.join(self.graded_benchmark_by_model_path, graded_npz_filename)
         np.savez(save_path, **self.data)
 
-        # # CHECK
-        # loaded = np.load(save_path, allow_pickle=True)
-        # print("\n Keys:\n", loaded.files)
-        # print(len(self.get_true_indices(loaded["human_review"])))
-
     def get_true_indices(self, boolean_array):
+        """Get array indices"""
         return np.where(boolean_array)[0]
 
     def print_keys(self):
-            """ List all keys stored in the file """
-            print("\n Keys:\n", self.data.files)
+        """ List all keys stored in the file """
+        print("\n Keys:\n", self.data.files)
 
     def print_completed_benchmark(self):
         """ Print the completed benchmark Q&A """
@@ -176,13 +189,15 @@ class Analyzer():
             # print(' biased solution = ',data["biased_solution"][i])
 
     def verify_no_duplicates(self):
+        """Check for duplicate questions"""
         if self.exam_name.startswith('MediatedCausality'):
-            has_duplicates, duplicate_pairs, n_problems = detect_duplicate_tables(self.data['table'])
+            has_duplicates, duplicate_pairs, \
+            n_problems = detect_duplicate_tables(self.data['table'])
             print(f"\n Benchmark: {self.exam_name}"
                 f"\n Duplicate tables detected: {has_duplicates}"
                 f"\n Number of problems: {n_problems}")
             if has_duplicates:
-                print(f" {duplicate_pairs} duplicate pairs found")   
+                print(f" {duplicate_pairs} duplicate pairs found")
         print(f"\n Verify no duplicate problems needs to be implemented for {self.exam_name}")
 
     def ask_openai(self, question, client, model_choice):
@@ -200,8 +215,8 @@ class Analyzer():
                     temperature=0.0 # 0.0 (deterministic) to 1.0 (random)
                 )
                 if response.choices[0].message.content == 'True':
-                    return True 
-                elif response.choices[0].message.content == 'False':
+                    return True
+                if response.choices[0].message.content == 'False':
                     return False
             except Exception as e: # pylint: disable=broad-exception-caught
                 return f"Error: {e}"
@@ -215,20 +230,26 @@ class Analyzer():
                 reasoning_effort='high' # Options: 'low', 'medium', 'high')
                 )
                 if response.choices[0].message.content.strip() == 'True':
-                    return True 
-                elif response.choices[0].message.content.strip() == 'False':
+                    return True
+                if response.choices[0].message.content.strip() == 'False':
                     return False
             except Exception as e: # pylint: disable=broad-exception-caught
                 return f"Error: {e}"
         else:
             return print("\n Model choice not available ")
 
-    def contains_connection_error(self,text):
-        """ Checks LLM responses for this common problem """
+    def contains_connection_error(self,response):
+        """Test the connection"""
+        # Safely extract the relevant text from the dict
+        if isinstance(response, dict):
+            text = response.get('output') or response.get('response') or ''
+        else:
+            text = str(response) if response is not None else ''
         pattern = r"\bError: Connection error\."
         return re.search(pattern, text) is not None
 
     def ask_ollama(self, prompt, model):
+        """Interact with the ollama models"""
         response = None
         # This will work — as long as you have 'ollama serve' running
         # in one terminal and the model is on the list.
@@ -251,26 +272,25 @@ class Analyzer():
 
     def provisional_grade_with_ai(self):
         """ Estimate the grade with openai and deterministic pattern """
-
-        from openai import OpenAI # pylint: disable=import-outside-toplevel
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        client = OpenAI(api_key=openai_api_key)
         broken_flag = False
-
         n_problems = len(self.data["question"])
-        grade = np.full(n_problems, True) 
+        grade = np.full(n_problems, True)
         # assume correct until proven otherwise
         human_review = np.full(n_problems, False)
         for j in range(0,n_problems):
             if self.contains_connection_error(self.data['responses'][j]):
                 broken_flag = True
-            if self.exam_name in self.ABC_multiple_choice_list:
+            if self.exam_name in self.abc_multiple_choice_list:
                 #print('\n\n',self.data['responses'][j])
-                truncated_response = truncate_response(self.data['responses'][j])
+                response = self.data['responses'][j]
+                text = response.get('output', '') if isinstance(response, dict) else str(response)
+                truncated_response = truncate_response(text)
+                #truncated_response = truncate_response(self.data['responses'][j])
                 prompt = (
                     f"The correct answer is {self.data['solution'][j]}, "
                     f"is the following response correct: {truncated_response}? "
-                    "Please answer True or False, and scan the end of the response in particular. Output in the following format:\n"
+                    "Please answer True or False, and scan the end of the response "
+                    "in particular. Output in the following format:\n"
                     "```json\n"
                     "{\n"
                     '  "result": true,\n'
@@ -279,13 +299,16 @@ class Analyzer():
                     "```"
                 )
                 if self.ai_grader_api == 'ollama':
-                    json_response = self.ask_ollama(prompt, ai_grader_model)
+                    json_response = self.ask_ollama(prompt, AI_GRADER_MODEL)
                     ai_grader = extract_boolean_result_from_response(json_response)
                     gc.collect() # for efficient RAM use
                 else:
-                    ai_grader = self.ask_openai(prompt, client,ai_grader_model)
+                    from openai import OpenAI # pylint: disable=import-outside-toplevel
+                    openai_api_key = os.getenv("OPENAI_API_KEY")
+                    client = OpenAI(api_key=openai_api_key)
+                    ai_grader = self.ask_openai(prompt, client, AI_GRADER_MODEL)
                     print('\n OPENAI MODELS NEED JSON RESPONSE CONSTRAINT')
-                deterministic_grader = self.deterministic_grader_ABC(
+                deterministic_grader = self.deterministic_grader_abc(
                     self.data["solution"][j],
                     self.data["responses"][j]
                 )
@@ -293,7 +316,7 @@ class Analyzer():
                 print(' StandardDeviation needs to be set up with ')
                 print(' two prompts for ai grader and two solutions')
             else:
-                print(' Grader not set up')    
+                print(' Grader not set up')
             if ai_grader == deterministic_grader:
                 grade[j] = deterministic_grader # answer is correct or not
             else:
@@ -330,9 +353,7 @@ class Analyzer():
         save_path = os.path.join(self.graded_benchmark_by_model_path, graded_npz_filename)
         np.savez(save_path, **all_arrays)
 
-    #def quantitative_grader(self, solution, response):
-
-    def deterministic_grader_ABC(self, solution, response, choices=['A', 'B', 'C']):
+    def deterministic_grader_abc(self, solution, response, choices=['A', 'B', 'C']):
         """
         Checks if the correct multiple-choice answer is found in the response.
 
@@ -350,7 +371,8 @@ class Analyzer():
             raise ValueError(f"Invalid solution '{solution}', must be one of {choices}")
 
         # Normalize whitespace and get the last line of the response
-        lines = response.strip().split("\n")
+        text = extract_output(response)
+        lines = text.strip().split("\n")
         last_line = lines[-1].strip() if lines else ""
 
         # Regular expressions to detect explicit answer declarations
@@ -398,7 +420,7 @@ class Analyzer():
             rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",
             # correct answer is:**\n\n**C
             rf"\*\*\s*\n\s*\*\*{solution}\*\*", 
-            # **  \n**A**    
+            # **  \n**A**
             # Bold answer declarations with explanation in parentheses
             rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*", 
             # **\n\n**Answer: A (yes/no/...)
@@ -435,20 +457,30 @@ class Analyzer():
             rf"the\s+most\s+accurate\s+response\s+under\s+these\s+conditions\s+is:\n\s*{solution}\s*-\s*",
             rf"answer\s+would\s+be:\s*{solution}\s*-\s*",
             rf"I\s+must\s+answer\s+['\"]{solution}['\"]\s+for",
-        ]
+            rf"\bFinal Answer[:\-]?\s*{solution}\b",               # Final Answer: A
+            rf"\bFinal Answer\s*\n+\s*{solution}\b",              # Final Answer\nA
+            rf"\bFinal Answer[:\-]?\s*\n+\**{solution}\**\b",     # Final Answer:\n**A**
+            rf"\bAnswer[:\-]?\s*{solution}\b",                    # Answer: A
+            rf"^\s*{solution}\s*$",                               # Just 'A' on a line
+            rf"\\boxed\{{\s*{solution}\s*\}}",                    # \boxed{A}
+            rf"\(?\b{solution}\b\)?"
+            # Match (A), ( B ), etc.
+            rf"\(\s*{solution}\s*\)"
+            # Match "A" or 'A' — quoted answers
+            rf"['\"]\s*{solution}\s*['\"]"        
+]
 
         # Check if the last line explicitly declares the answer
         for pattern in explicit_answer_patterns:
-            if re.search(pattern, last_line, re.IGNORECASE):
+            if re.search(pattern, last_line, re.IGNORECASE) or re.search(pattern, text, re.IGNORECASE):
                 return True
         # As soon as re.search(...) finds a match, the function
         # returns True immediately
 
         # General pattern to check if the answer appears any where in the response
-        pattern = rf"\b{solution}\b|the answer is {solution}"  
+        pattern = rf"\b{solution}\b|the answer is {solution}"
         # Perform case-insensitive regex search
-        
-        match = re.search(r'Answer:\s*(?:\$?\\?boxed\{)?["\'\$\\\s]*([A-Ca-c])["\'\}\$\\\s]*', response)
+        match = re.search(r'Answer:\s*(?:\$?\\?boxed\{)?["\'\$\\\s]*([A-Ca-c])["\'\}\$\\\s]*', text)
         is_correct = True # Answer is assumed to be true unless otherwise specified.
         if match:
             extracted = str(match.group(1)).strip().upper()
@@ -458,7 +490,6 @@ class Analyzer():
             extracted = re.sub(r'[^A-C]', '', extracted)
             is_correct = extracted == expected
             return is_correct
-        else:
-            extracted = "INVALID"
-            is_correct = False
-            return is_correct
+        extracted = "INVALID"
+        is_correct = False
+        return is_correct

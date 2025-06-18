@@ -70,7 +70,7 @@ def generate_benchmarks(path, exam_name, **kwargs):
         #     exam_idx=self.exam_idx
         # )
 
-    elif exam_name_wo_ci_method in ('SimpleInequality', 'SimpleInequalityWithMethod'):
+    elif exam_name_wo_ci_method in ('SimpleInequality', 'SimpleInequalityAgent', 'SimpleInequalityWithMethod'):
 
         # Generate all of the problems in the benchmark:
         problems = SimpleInequality(

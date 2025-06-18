@@ -97,6 +97,11 @@ def get_parser(script):
         action="store_true",
         help="Print to terminal"
     )
+    parser.add_argument(
+        "--agent",
+        action="store_true",
+        help="Invokes agent to run and analyze code"
+    )
     return parser
 
 def strip_after_second_underscore(s):
@@ -307,6 +312,7 @@ class SaveBenchmark():
         self.restart_idx = kwargs.get('restart_idx','unset')
         self.model = kwargs.get('model', 'no_model')
         self.exam_idx = kwargs.get('exam_idx') or 'unset' #,'unset')
+        self.agent = kwargs.get('agent',False)
         #self.responses = kwargs.get('model', 'no_model')
         self.save_npz_path = self.path
         #create_missing_directory(self.save_npz_path)
@@ -479,7 +485,13 @@ class SaveBenchmark():
             ]
             data = {key: getattr(self, key) for key in self.attributes_to_save}
             np.savez(self.npz_filename, **data)
-        elif self.exam_name_wo_ci_method in ('SimpleInequality', 'SimpleInequalityWithMethod', 'ComplexInequality', 'ComplexInequalityWithMethod'):
+        elif self.exam_name_wo_ci_method in (
+              'SimpleInequality',
+              'SimpleInequalityAgent', 
+              'SimpleInequalityWithMethod', 
+              'ComplexInequality', 
+              'ComplexInequalityWithMethod',
+              ):
             self.attributes_to_save = [
                 "question",
                 "solution",
