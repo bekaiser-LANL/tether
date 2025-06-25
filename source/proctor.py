@@ -3,11 +3,13 @@ import gc # for efficient RAM use
 import os
 import re
 import time
+import json
 import subprocess
 import requests
 import numpy as np
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from langchain_ollama import ChatOllama
+from langchain_core.exceptions import OutputParserException
 from langchain_openai import ChatOpenAI
 from langchain.agents import Tool, initialize_agent, AgentType
 from .utils import load_saved_benchmark, get_npz_filename
@@ -15,7 +17,7 @@ from .utils import create_missing_directory
 from .utils import get_after_second_underscore
 
 #make sure the models you want to run are listed here
-ollama_model_list = ["codellama","mistral","granite3.2","deepseek-r1:32b","phi4","qwen2-math"]
+ollama_model_list = ["llama3:8b","codellama:34b-python","granite3.2","deepseek-r1:32b","phi4","qwen2-math"]
 openai_reasoning_model_list = ['o3-mini','o1','o3','o4-mini']
 openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
@@ -53,7 +55,10 @@ class Proctor():
                     llm=langchain_llm,
                     agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                     verbose=True,
-                    handle_parsing_errors=True
+                    handle_parsing_errors=True,
+                    max_iterations=10,
+                    early_stopping_method='generate',
+                    return_intermediate_steps=True
                 )
             elif self.model in openai_all_model_list:
                 langchain_llm = ChatOpenAI(model=self.model)
@@ -63,7 +68,9 @@ class Proctor():
                     agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                     verbose=True,
                     handle_parsing_errors=True,
-                    max_iterations=1
+                    max_iterations=10,
+                    early_stopping_method='generate',
+                    return_intermediate_steps=True,
                 )
             else:
                 raise ValueError(f"Unsupported model '{self.model}' for agent mode.")
@@ -191,7 +198,43 @@ class Proctor():
                 print(prompt)
             if self.agent:
                 agent_prompt = self.build_agent_prompt(prompt)
-                response = self.agent.invoke(agent_prompt)
+                try:
+                    raw_response = self.agent.invoke(agent_prompt)
+                    response_text = raw_response["output"] if isinstance(raw_response, dict) else str(raw_response)
+                except OutputParserException as e:
+                    response_text = str(e)
+
+                # Attempt to extract Final Answer from plain text (e.g., "Final Answer: B")
+                fa_match = re.search(r"Answer\s*[:\-]?\s*\(?([A-Ca-c])\)?", response_text, re.IGNORECASE)
+                final_answer = fa_match.group(1).upper() if fa_match else None
+
+                # Try to find a full JSON block with or without triple backticks
+                json_match = re.search(r'\{[^{}]*"answer"\s*:\s*"([A-Ca-c])"[^{}]*\}', response_text)
+                parsed_json = None
+                json_error = None
+                json_answer = None
+                json_explanation = None
+
+                if json_match:
+                    try:
+                        parsed_json = json.loads(json_match.group(0))
+                        json_answer = parsed_json.get("answer", "").upper()
+                        json_explanation = parsed_json.get("explanation", None)
+                    except json.JSONDecodeError as e:
+                        json_error = f"JSON parse error: {e}"
+
+                response_to_save = {
+                    "output": response_text,
+                    "final_answer": json_answer or final_answer,
+                    "explanation": json_explanation,
+                    "intermediate_steps": response_text.splitlines(),
+                }
+
+                if json_error:
+                    response_to_save["json_error"] = json_error
+                elif not json_match and not (json_answer or final_answer):
+                    response_to_save["json_error"] = "No recognizable answer found"
+                response = response_to_save
                 print(response)
             else:
                 response = self.give_question_to_llm(prompt)
@@ -224,7 +267,7 @@ class Proctor():
                 response = request.json()["response"]
             else:
                 print("Error:", request.status_code, request.text)
-            return response
+                return response
         if self.model in openai_all_model_list:
             print("\n OpenAI model:", self.model)
             response = self.ask_openai(prompt,self.model)
@@ -249,7 +292,7 @@ class Proctor():
             generate_ids = self.model_instance.generate(
             inputs.input_ids,
             attention_mask=inputs.attention_mask,
-                max_length=max_length,
+            max_length=max_length,
             )
             response = self.tokenizer_instance.batch_decode(generate_ids,
                        skip_special_tokens=True,
@@ -292,6 +335,36 @@ class Proctor():
         question_start = task_prompt.find("Is it more probable")
         question = task_prompt[question_start:].strip()
 
+        # Instructions
+        instructions = (
+            "You are a Python reasoning assistant with access to the tool: run_code.\n"
+            "You MUST strictly follow the reasoning format below, step-by-step. Do not skip or rearrange steps.\n\n"
+            "To solve the task, you must:\n"
+            "1. Write Python code to compare the vectors\n"
+            "2. Execute it using run_code\n"
+            "3. Reflect on the output\n"
+            "4. Provide your Final Answer (A, B, or C)\n"
+            "5. Then output a JSON block on a new line summarizing your answer and reasoning\n\n"
+            " You MUST follow this exact format:\n"
+            "Thought: [reasoning]\n"
+            "Action: run_code\n"
+            "Action Input:\n"
+            "[START_CODE]\n"
+            "# your code here\n"
+            "[END_CODE]\n"
+            "Observation: [result of the code]\n"
+            "Thought: [reflect on what the result means]\n"
+            "Final Answer: [A, B, or C]\n\n"
+            "You must end your response with this JSON block. Do not include anything after it.\n"
+            "The `answer` field must match your Final Answer exactly.\n\n"
+            "```json\n"
+            "{\n"
+            '  "answer": "[A, B, or C]",\n'
+            '  "explanation": "Brief explanation based on your reasoning."\n'
+            "}\n"
+            "```"
+        )
+
         # Few-shot example
         few_shot = (
         "Example:\n"
@@ -316,33 +389,6 @@ class Proctor():
         '  "explanation": "The mean of vector1 is higher, indicating greater probability."\n'
         "}\n"
         "```"
-        )
-
-        # Instructions
-        instructions = (
-        "You are a Python reasoning assistant with access to the tool:run_code.\n"
-        "To solve the task, you must:\n"
-        "- Write Python code to compare the vectors\n"
-        "- Execute it using run_code\n"
-        "- Reflect on the output\n"
-        "- Provide your Final Answer (A, B, or C)\n"
-        "- Then output a JSON block summarizing your answer and reasoning.\n\n"
-        "Follow this exact format:\n"
-        "- Thought: [Your reasoning]\n"
-        "- Action: run_code\n"
-        "- Action Input: [START_CODE] #your code [END_CODE]\n"
-        "- Observation: [output from code execution]\n"
-        "- Thought: [what the result means]\n"
-        "- Final Answer: [A, B, or C]\n\n"
-        "- Then output this JSON block on a new line:\n"
-        "- The \"answer\" field must exactly match the letter in your Final Answer above.\n" 
-        "```json\n"
-        "{\n"
-        '  "answer": "[A, B, or C]",\n'
-        '  "explanation": "Brief explanation of why this answer is correct based on your reasoning."\n'
-        "}\n"
-        "```\n"
-        "Do not include anything else after the JSON."        
         )
 
         # Combine all parts
