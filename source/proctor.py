@@ -95,6 +95,7 @@ class Proctor():
                 self.exam_idx,
                 self.model
             )
+        print(self.model)
         # Checkpoint frequency if an integer, no checkpoint .npz output if a NaN:
         self.checkpoint_freq = kwargs.get('checkpoint_freq','unset')
         # Restart question number if an integer, start at question 1 if a NaN:
@@ -265,10 +266,11 @@ class Proctor():
                 # This is the standard HTTP status code for a successful request.
                 # Successful response from the Ollama API
                 response = request.json()["response"]
+                return response
             else:
                 print("Error:", request.status_code, request.text)
                 return response
-        if self.model in openai_all_model_list:
+        elif self.model in openai_all_model_list:
             print("\n OpenAI model:", self.model)
             response = self.ask_openai(prompt,self.model)
             return response
@@ -280,11 +282,11 @@ class Proctor():
             #         print("Error:", request.status_code, request.text)
             # except requests.exceptions.RequestException as e:
             #     print("Request failed:", e)
-        if self.model in anthropic_model_list:
+        elif self.model in anthropic_model_list:
             print("\n Anthropic model:", self.model)
             response = self.ask_anthropic(prompt,self.model)
             return response
-        if self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
+        elif self.model in local_models and os.path.isdir(os.path.join(self.modelpath, self.model)):
             inputs = self.tokenizer_instance(prompt, return_tensors="pt")
 
             # Generate response
@@ -299,7 +301,8 @@ class Proctor():
                        clean_up_tokenization_spaces=False)[0]
 
             return response
-        return '\n Model not available'
+        else:
+            return '\n Model not available'
 
     def parse_agent_response(self, text: str):
         """Parsing through the agent response for the  answer"""
