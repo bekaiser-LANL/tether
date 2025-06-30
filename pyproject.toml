@@ -1,0 +1,43 @@
+[project]
+name = "tether"
+dynamic = ["version"]
+dependencies = [
+    "transformers",
+    "torch",
+    "numpy",
+    "langchain",
+    "langchain-ollama",
+    "langchain-openai",
+    "langchain-anthropic",
+    "scipy",
+    "matplotlib",
+    "pandas",
+    "requests"
+]
+requires-python = "~=3.12"
+
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "setuptools_scm[toml]>=8.0"  # Required for editable installs with dynamic versioning
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["tether"]
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
+write_to = "tether/_version.py"
+
+[project.optional-dependencies]
+dev = [
+    "black==23.12.1",
+    "isort==5.13.2",
+    "pylint==3.0.3",
+    "pynvim==0.5.0"
+]
+test = [
+    "pytest==7.4.3"
+]
