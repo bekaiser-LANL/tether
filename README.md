@@ -17,6 +17,15 @@ The following benchmarks are available in this suite:
 
 # How to use this code
 
+## Installation
+Install using the provided Makefile. The makefile expects a python environment will be available. This repo is setup with the expectation that all users and containers
+will be using virtual environments to manage python dependencies. We do not enforce any specific virtual environment. Options include conda, venv, pyenv, etc.
+
+- To install, simply run `make install`
+- For a development environment, instead run `make dev_install`
+
+The makefile also provides testing, formatting and linting rules via `make test` `make format` and `make lint`. WARNING: Before running `make test` ensure that you have set the environement variables below.
+
 ## Set your path for benchmark data
 Prior to generating, running, or analyzing benchmarks (or running pytests) you need to set the path to your benchmarks directory. This is where folders will be created that will: store the tests with just questions in '../blank', store the completed tests with LLM responses in '../completed', and store the graded tests in '../graded'. Set the path in the terminal with:
 
