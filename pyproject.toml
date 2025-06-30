@@ -2,9 +2,13 @@
 name = "tether"
 dynamic = ["version"]
 dependencies = [
-    "setuptools_scm==8.0.4"
+    "setuptools_scm==8.0.4",
+    "transformers",
+    "torch",
+    "numpy",
+    "langchain"
 ]
-requires-python = "~=3.10"
+requires-python = "~=3.11"
 
 [build-system]
 requires = ["setuptools>=40.6.0"]
