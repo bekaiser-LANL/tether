@@ -51,7 +51,7 @@ For example:
 will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. An example figure:
 
 <p align="center">
-  <img src="example_142.png" alt="Example from the paper" width="400"/>
+  <img src="examples/example_142.png" alt="Example from the paper" width="400"/>
 </p>
 
 
@@ -95,7 +95,7 @@ You can use `grade_all.sh` to do `--grade_estimate` in serial over all of the be
 You can used `plot.py` to plot graded models.
 
 <p align="center">
-  <img src="SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="100%"/>
+  <img src="examples/SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="100%"/>
 </p>
 
 # Models
