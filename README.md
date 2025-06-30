@@ -66,7 +66,7 @@ will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMA
 
 ## Run a benchmark
 
-`python3 python3 -m tether.core.run BENCHMARK MODEL`
+`python3 -m tether.core.run BENCHMARK MODEL`
 
 Be sure to include the index of the benchmark in BENCHMARK. For example, MediatedCausality_tdist_0 for the first MediatedCausality_tdist benchmark (you can repeatedly generate more of the same benchmark).
 
