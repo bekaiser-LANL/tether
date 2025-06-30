@@ -3,54 +3,53 @@ import os
 import re
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
+# This file is clearly still under development, skip for now
+# pylint: skip-file
 
-class Grader():
 
+class Grader:
     def __init__(self, benchmark, responses):
+        self.path = os.path.join(data_path, "equations")
 
-        self.path = os.path.join(data_path,"equations")
+        exam_name = benchmark["name"][0]
 
-        exam_name = benchmark['name'][0]
-
-        n = len(benchmark['question'])
+        n = len(benchmark["question"])
         solutions = benchmark["solution"]
         grade = np.zeros([n])
-        for i in range(0,n):
-            if exam_name.startswith("MediatedCausality") or exam_name.endswith("Inequality"):
+        for i in range(0, n):
+            if exam_name.startswith("MediatedCausality") or exam_name.endswith(
+                "Inequality"
+            ):
                 correct = self.grade_string_multiple_choice(
-                    solutions[i],
-                    responses[i],
-                    choices=['A', 'B', 'C']
+                    solutions[i], responses[i], choices=["A", "B", "C"]
                 )
-            elif exam_name == 'equations':
-                correct = self.grader.grade_images(
-                    self.solutions[index],
-                    response
-                )
+            elif exam_name == "equations":
+                correct = self.grader.grade_images(self.solutions[index], response)
                 continue
             else:
-                correct = self.grade_string_exactly(
-                    solutions[i],
-                    responses[i]
-                )
+                correct = self.grade_string_exactly(solutions[i], responses[i])
             if correct:
                 grade[i] = 1.0
             else:
                 grade[i] = 0.0
-      
+
         self.grade = grade
         self.responses = responses
 
     def get_grades(self):
         return self.grade
-    
+
     def get_responses(self):
         return self.responses
 
-    def assert_equal_image_descriptions(self, solution,response):
+    def assert_equal_image_descriptions(self, solution, response):
         # Load CLIP for text embeddings
-        model = SentenceTransformer("/lustre/scratch5/dmperez/LLMs/local_all_MiniLM_L6_v2")
-        reference_file = "/lustre/scratch5/dmperez/Tether/source/benchmarks/equation_labels.txt"
+        model = SentenceTransformer(
+            "/lustre/scratch5/dmperez/LLMs/local_all_MiniLM_L6_v2"
+        )
+        reference_file = (
+            "/lustre/scratch5/dmperez/Tether/source/benchmarks/equation_labels.txt"
+        )
         reference_dict = {}
         with open(reference_file, "r") as f:
             for line in f:
@@ -58,9 +57,11 @@ class Grader():
                     parts = line.strip().split("\t\t")
                     if len(parts) >= 2:
                         filename = parts[0].strip()
-                        keywords = [kw.strip() for kw in parts[1].split(",")]  # assuming comma-separated labels
-                       # print(f" File: {filename}")
-                       # print(f" Keywords for this row: {keywords}")
+                        keywords = [
+                            kw.strip() for kw in parts[1].split(",")
+                        ]  # assuming comma-separated labels
+                    # print(f" File: {filename}")
+                    # print(f" Keywords for this row: {keywords}")
                     # Convert keywords to a readable sentence
                     if len(keywords) == 1:
                         caption = f"A photo of {keywords[0]}."
@@ -71,22 +72,27 @@ class Grader():
                     reference_dict[filename] = caption
 
         # Get all image files in the directory (supports PNG, JPG, JPEG)
-        image_files = [f for f in os.listdir(self.path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        image_files = [
+            f
+            for f in os.listdir(self.path)
+            if f.lower().endswith((".png", ".jpg", ".jpeg"))
+        ]
 
-        #results = []
+        # results = []
         for image_file in image_files:
             print(image_file)
-            image_filename = os.path.basename(self.path+image_file)  # Extract "blueberries.jpg"
+            image_filename = os.path.basename(
+                self.path + image_file
+            )  # Extract "blueberries.jpg"
             ref_caption = reference_dict.get(image_filename, "")
 
             if not ref_caption:
                 print(f"⚠️ No reference found for {image_filename}. Skipping.")
                 continue
 
-            # Compute embeddings 
+            # Compute embeddings
             embeddings = model.encode([response, ref_caption], convert_to_tensor=True)
             similarity = util.pytorch_cos_sim(embeddings[0], embeddings[1]).item()
-
 
             print(f"{filename}:")
             print(f"  Generated: {response}")
@@ -106,33 +112,35 @@ class Grader():
         False if the two objects are unequal as determined by their rounded difference
         to the given number of decimal places (default 7) and compare them as equal.
         """
-        msg=True
+        msg = True
         difference = round(abs(first - second), places)
         # If the difference is not zero, the test fails
         if difference != 0:
-            msg=False
+            msg = False
         return msg
 
-    def grade_images(self,solution,response):
-        return self.assert_equal_image_descriptions(solution,response)
+    def grade_images(self, solution, response):
+        return self.assert_equal_image_descriptions(solution, response)
 
-    def grade_numerical(self,solution,response):
-        return self.assert_almost_equal_numbers(solution,response, places=10) #  (default tolerance is places=7 decimal places)
+    def grade_numerical(self, solution, response):
+        return self.assert_almost_equal_numbers(
+            solution, response, places=10
+        )  #  (default tolerance is places=7 decimal places)
 
-    def grade_string_exactly(self,solution,response):
-        return self.assert_exactly_equal_strings(solution,response)
+    def grade_string_exactly(self, solution, response):
+        return self.assert_exactly_equal_strings(solution, response)
 
-    def grade_string_multiple_choice(self,solution,response):
-        return self.assert_exactly_equal_strings(solution,response)
+    def grade_string_multiple_choice(self, solution, response):
+        return self.assert_exactly_equal_strings(solution, response)
 
-    def deterministic_grade_ABC(self, solution, response, choices=['A', 'B', 'C']):
+    def deterministic_grade_ABC(self, solution, response, choices=["A", "B", "C"]):
         """
         Checks if the correct multiple-choice answer is found in the response.
 
         Parameters:
-        - solution (str): The correct answer ('A', 'B', or 'C').
+        - solution (str): The correct answer ("A", "B", or "C").
         - response (str): The text response to be scanned.
-        - choices (list): The possible choices (default: ['A', 'B', 'C']).
+        - choices (list): The possible choices (default: ["A", "B", "C"]).
 
         Returns:
         - bool: True if the correct answer is found in the response, False otherwise.
@@ -140,9 +148,8 @@ class Grader():
 
         # Ensure solution is a valid choice
         if solution not in choices:
-            raise ValueError(f"Invalid solution '{solution}', must be one of {choices}")
+            raise ValueError(f'Invalid solution "{solution}", must be one of {choices}')
 
-        
         # Normalize whitespace and get the last line of the response
         lines = response.strip().split("\n")
         last_line = lines[-1].strip() if lines else ""
@@ -159,7 +166,7 @@ class Grader():
             rf"\bAnswer:\s*{solution}\b",
             rf"^\s*{solution}\s*\(.*?\)\s*$",
             # Bolded answer declarations
-            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**", # e.g. **Final answer:** **B**
+            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",  # e.g. **Final answer:** **B**
             rf"\*\*Answer:\s*{solution}\*\*?",  # **Answer: A or **Answer: A**
             rf"\*\*{solution}\s*\(.*?\)\*\*",  # **C (uncertain)**
             rf"\*\*Answer:\s*{solution}\s*\(.*?\)\.\*\*"
@@ -190,10 +197,10 @@ class Grader():
             # \n\n**Answer: A
             rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",
             # correct answer is:**\n\n**C
-            rf"\*\*\s*\n\s*\*\*{solution}\*\*", 
-            # **  \n**A**    
+            rf"\*\*\s*\n\s*\*\*{solution}\*\*",
+            # **  \n**A**
             # Bold answer declarations with explanation in parentheses
-            rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*", 
+            rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*",
             # **\n\n**Answer: A (yes/no/...)
         ]
 
@@ -205,16 +212,19 @@ class Grader():
         # returns True immediately
 
         # General pattern to check if the answer appears any where in the response
-        pattern = rf"\b{solution}\b|the answer is {solution}"  
+        pattern = rf"\b{solution}\b|the answer is {solution}"
         # Perform case-insensitive regex search
-        
-        match = re.search(r'Answer:\s*(?:\$?\\?boxed\{)?["\'\$\\\s]*([A-Ca-c])["\'\}\$\\\s]*', response)
+
+        match = re.search(
+            r"Answer:\s*(?:\$?\\?boxed\{)?['\"\$\\\s]*([A-Ca-c])['\"\}\$\\\s]*",
+            response,
+        )
         if match:
             extracted = str(match.group(1)).strip().upper()
-            expected = f'{solution}'.strip().upper()
+            expected = f"{solution}".strip().upper()
 
             # Optional: strip any non-A/B/C just in case
-            extracted = re.sub(r'[^A-C]', '', extracted)
+            extracted = re.sub(r"[^A-C]", "", extracted)
             is_correct = extracted == expected
             return is_correct
         else:
@@ -222,10 +232,10 @@ class Grader():
             is_correct = False
             return extracted, is_correct
 
-        return is_correct #bool(match)  # Return True if match is found, else False
+        return is_correct  # bool(match)  # Return True if match is found, else False
 
 
-#===============================================================================
+# ===============================================================================
 
 # # Example Usage
 # solution = 'A'

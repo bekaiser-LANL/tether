@@ -1,14 +1,17 @@
 """ General purpose benchmark functions & classes """
-import os
 import argparse
+import os
+
 import numpy as np
 
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
+
 def get_model_and_indices(string):
-    """ Split up the filename of a completed benchmark """
-    parts = string.split('_')
+    """Split up the filename of a completed benchmark"""
+    parts = string.split("_")
     return parts
+
 
 def detect_duplicate_tables(table_data):
     n_rows = np.shape(table_data)[0]
@@ -24,199 +27,188 @@ def detect_duplicate_tables(table_data):
     has_duplicates = duplicate_pairs > 0
     return has_duplicates, duplicate_pairs, n_rows
 
+
 def get_parser(script):
-    parser = argparse.ArgumentParser(
-        description="Parse terminal input for tether"
-    )
+    parser = argparse.ArgumentParser(description="Parse terminal input for tether")
     parser.add_argument(
         "path",
         nargs="?",
         default=data_path,
-        help=f"Directory path to /benchmarks/ (default: {data_path})"
+        help=f"Directory path to /benchmarks/ (default: {data_path})",
     )
-    parser.add_argument(
-        "exam_name",
-        help="Name of the benchmark"
-    )
-    if script == 'run':
+    parser.add_argument("exam_name", help="Name of the benchmark")
+    if script == "run":
+        parser.add_argument("model", help="Name of LLM to use")
         parser.add_argument(
-            "model",
-            help="Name of LLM to use"
+            "--model_path", type=str, help="Optional path for locally downloaded model"
         )
-        parser.add_argument(
-            "--model_path",
-            type=str,
-            help="Optional path for locally downloaded model"
-        )
-    if script == 'analyze':
+    if script == "analyze":
         parser.add_argument(
             "--human_review",
             action="store_true",
-            help="Review and correct grades interactively"
+            help="Review and correct grades interactively",
         )
         parser.add_argument(
             "--grade_estimate",
             action="store_true",
-            help="Analyzer will estimate the grade"
+            help="Analyzer will estimate the grade",
         )
         parser.add_argument(
             "--print_vars",
             action="store_true",
-            help="Analyzer will print all variable keys"
+            help="Analyzer will print all variable keys",
         )
         parser.add_argument(
             "--print_responses",
             action="store_true",
-            help="Analyzer will print the completed benchmark"
-        )      
+            help="Analyzer will print the completed benchmark",
+        )
     parser.add_argument(
         "--n_problems",
         type=int,
         default=180,
-        help="Number of problems to generate for the benchmark"
+        help="Number of problems to generate for the benchmark",
     )
-    parser.add_argument(
-        "--make_plots",
-        action="store_true",
-        help="Enable plotting"
-    )
+    parser.add_argument("--make_plots", action="store_true", help="Enable plotting")
     parser.add_argument(
         "--n_numbers",
         type=int,
         default=10,
-        help="Number of integers for standard deviation benchmark"
+        help="Number of integers for standard deviation benchmark",
     )
     parser.add_argument(
         "--exam_idx",
         type=int,
         default=0,
-        help="Index for multiple benchmarks of the same type"
+        help="Index for multiple benchmarks of the same type",
     )
+    parser.add_argument("--verbose", action="store_true", help="Print to terminal")
     parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Print to terminal"
-    )
-    parser.add_argument(
-        "--agent",
-        action="store_true",
-        help="Invokes agent to run and analyze code"
+        "--agent", action="store_true", help="Invokes agent to run and analyze code"
     )
     return parser
 
+
 def strip_after_second_underscore(s):
-    """ Get the exam_name if it has exam_idx on the end.
+    """Get the exam_name if it has exam_idx on the end.
     For names like MediatedCausality_tdist_0 it will
-    extract the exam_name MediatedCausality_tdist """
+    extract the exam_name MediatedCausality_tdist"""
     parts = s.split("_")
     if len(parts) >= 2:
         return "_".join(parts[:2])
     return s
 
+
 def get_after_second_underscore(s):
-    """ Get the exam_idx if the exam_name has one.
+    """Get the exam_idx if the exam_name has one.
     For names like MediatedCausality_tdist_0 it will
-    extract the exam_name MediatedCausality_tdist """
+    extract the exam_name MediatedCausality_tdist"""
     parts = s.split("_")
     if len(parts) > 2:
         return "_".join(parts[2:])
     return ""
 
+
 def get_npz_filename_no_model(save_npz_path, exam_name, exam_idx):
-    """ Determine filename for blank benchmarks """
-    if exam_idx != 'unset':
+    """Determine filename for blank benchmarks"""
+    if exam_idx != "unset":
         filename = f"{exam_name}_{exam_idx}.npz"
     else:
         filename = f"{exam_name}.npz"
-    npz_filename = os.path.join(
-        save_npz_path,
-        filename
-    )
+    npz_filename = os.path.join(save_npz_path, filename)
     return npz_filename
 
+
 def get_npz_filename(save_npz_path, exam_name, exam_idx, model):
-    """ Determine filename for completed benchmarks """
-    if exam_idx != 'unset':
+    """Determine filename for completed benchmarks"""
+    if exam_idx != "unset":
         filename = f"{exam_name}_{model}_{exam_idx}.npz"
     else:
         filename = f"{exam_name}_{model}.npz"
-    npz_filename = os.path.join(
-        save_npz_path,
-        filename
-    )
+    npz_filename = os.path.join(save_npz_path, filename)
     return npz_filename
 
+
 def load_saved_benchmark(benchmark_path, exam_name, exam_idx):
-    """ read saved .npz file containing dict (benchmark) """
-    if exam_idx != 'unset':
+    """read saved .npz file containing dict (benchmark)"""
+    if exam_idx != "unset":
         filename = os.path.join(benchmark_path, f"{exam_name}_{exam_idx}.npz")
     else:
         filename = os.path.join(benchmark_path, f"{exam_name}.npz")
     data = np.load(filename, allow_pickle=True)
     return data
 
+
 def is_integer(value):
-    """ Is value an integer """
+    """Is value an integer"""
     return isinstance(value, int)
 
-def get_95_CI_tdist(proportion,n_samples):
-    """ t distribution to estimate standard error """
-    se = standard_error_for_proportion(proportion,n_samples)
-    return proportion+1.96*se,proportion-1.96*se
 
-def standard_error_for_proportion(P,N):
-    """ Standard error for proportion (probabilities from frequency tabel) """
+def get_95_CI_tdist(proportion, n_samples):
+    """t distribution to estimate standard error"""
+    se = standard_error_for_proportion(proportion, n_samples)
+    return proportion + 1.96 * se, proportion - 1.96 * se
+
+
+def standard_error_for_proportion(P, N):
+    """Standard error for proportion (probabilities from frequency tabel)"""
     # Reference:
     # Brayer, Edward F. "Calculating the standard error of a proportion."
     # Journal of the Royal Statistical Society Series C:
     # Applied Statistics 6.1 (1957): 67-68.
-    return np.sqrt((P*(1.-P))/N)
+    return np.sqrt((P * (1.0 - P)) / N)
+
 
 def check_probability(probability):
-    """ Verify probability range """
-    if probability > 1.:
-        print('\n ERROR: Probability > 1')
-    elif probability < 0.:
-        print('\n ERROR: Probability < 0')
+    """Verify probability range"""
+    if probability > 1.0:
+        print("\n ERROR: Probability > 1")
+    elif probability < 0.0:
+        print("\n ERROR: Probability < 0")
     return
 
+
 def enforce_probability_bounds(var):
-    """ Enforce probability range """
-    if var > 1.:
-        var = 1.
-    elif var < 0.:
-        var = 0.
+    """Enforce probability range"""
+    if var > 1.0:
+        var = 1.0
+    elif var < 0.0:
+        var = 0.0
     return var
 
+
 def create_missing_directory(directory_path):
-    """ Checks if a directory exists and makes it if not """
+    """Checks if a directory exists and makes it if not"""
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
+
 def is_divisible_by_9(number):
-    """ Checks if divisible by 9 """
+    """Checks if divisible by 9"""
     return number % 9 == 0
 
+
 def is_divisible_by_3(number):
-    """ Checks if divisible by 3 """
+    """Checks if divisible by 3"""
     return number % 3 == 0
 
+
 class QuestionBank:
-    """ Saves and counts questions/solutions for A,B,C multiple choice """
+    """Saves and counts questions/solutions for A,B,C multiple choice"""
 
     def __init__(self, target_per_bin=1):
         """
         Initialize a tracker for question generation.
 
         Parameters:
-            target_per_bin (int): How many questions 
+            target_per_bin (int): How many questions
             you want per (choice, difficulty) bin.
         """
         self.target_per_bin = target_per_bin
 
         self.data = {
-            choice: {difficulty: [] for difficulty in ['easy', 'medium', 'hard']}
-            for choice in ['A', 'B', 'C']
+            choice: {difficulty: [] for difficulty in ["easy", "medium", "hard"]}
+            for choice in ["A", "B", "C"]
         }
 
     def add_question(self, question_text, correct_choice, difficulty, metadata=None):
@@ -235,10 +227,10 @@ class QuestionBank:
             return False  # Optionally indicate it was rejected
 
         entry = {
-            'question': question_text,
-            'solution': correct_choice,
-            'difficulty': difficulty,
-            'metadata': metadata or {}
+            "question": question_text,
+            "solution": correct_choice,
+            "difficulty": difficulty,
+            "metadata": metadata or {},
         }
         bin_list.append(entry)
         return True
@@ -248,7 +240,7 @@ class QuestionBank:
         Extract all 'table' entries if available,
         fallback to searching through self.data if needed.
         """
-        if hasattr(self, 'table'):
+        if hasattr(self, "table"):
             return self.table
         else:
             # fallback: try to extract from data structure
@@ -256,13 +248,12 @@ class QuestionBank:
             for choice in self.data:
                 for difficulty in self.data[choice]:
                     for entry in self.data[choice][difficulty]:
-                        metadata = entry.get('metadata', {})
-                        if 'table' in metadata:
-                            tables.append(metadata['table'])
+                        metadata = entry.get("metadata", {})
+                        if "table" in metadata:
+                            tables.append(metadata["table"])
             if tables:
                 return np.array(tables)
             raise AttributeError("No tables found in metadata either.")
-
 
     def count(self):
         """
@@ -272,7 +263,8 @@ class QuestionBank:
             choice: {
                 difficulty: len(self.data[choice][difficulty])
                 for difficulty in self.data[choice]
-            } for choice in self.data
+            }
+            for choice in self.data
         }
 
     def is_full(self):
@@ -294,44 +286,43 @@ class QuestionBank:
             return None  # Not enough data yet
 
         all_qs = []
-        for choice in ['A', 'B', 'C']:
-            for difficulty in ['easy', 'medium', 'hard']:
+        for choice in ["A", "B", "C"]:
+            for difficulty in ["easy", "medium", "hard"]:
                 all_qs.extend(self.data[choice][difficulty])
         return all_qs
 
+
 # pylint: disable=too-many-instance-attributes
-class SaveBenchmark():
-    """ Saves the benchmark (blank or completed) as a .npz"""
+class SaveBenchmark:
+    """Saves the benchmark (blank or completed) as a .npz"""
 
     def __init__(self, path, exam_name, **kwargs):
-        self.path = path # path including /PATH/benchmark_results/blank/
+        self.path = path  # path including /PATH/benchmark_results/blank/
         # (for blank benchmark) or including /PATH/benchmark_results/completed/
         # (for benchmarked model results)
         self.exam_name = exam_name
-        self.checkpoint_freq = kwargs.get('checkpoint_freq','unset')
-        self.restart_idx = kwargs.get('restart_idx','unset')
-        self.model = kwargs.get('model', 'no_model')
-        self.exam_idx = kwargs.get('exam_idx') or 'unset' #,'unset')
-        self.agent = kwargs.get('agent',False)
-        #self.responses = kwargs.get('model', 'no_model')
+        self.checkpoint_freq = kwargs.get("checkpoint_freq", "unset")
+        self.restart_idx = kwargs.get("restart_idx", "unset")
+        self.model = kwargs.get("model", "no_model")
+        self.exam_idx = kwargs.get("exam_idx") or "unset"  # ,'unset')
+        self.agent = kwargs.get("agent", False)
+        # self.responses = kwargs.get('model', 'no_model')
         self.save_npz_path = self.path
-        #create_missing_directory(self.save_npz_path)
+        # create_missing_directory(self.save_npz_path)
         self.attributes_to_save = []
 
-        # Determine filename 
+        # Determine filename
         self.npz_filename = get_npz_filename_no_model(
-            self.save_npz_path,
-            self.exam_name,
-            self.exam_idx
+            self.save_npz_path, self.exam_name, self.exam_idx
         )
 
-        if '_' in self.exam_name:
-            self.ci_method = (self.exam_name).split('_')[1]
-            self.exam_name_wo_ci_method = (self.exam_name).split('_')[0]
+        if "_" in self.exam_name:
+            self.ci_method = (self.exam_name).split("_")[1]
+            self.exam_name_wo_ci_method = (self.exam_name).split("_")[0]
         else:
             self.exam_name_wo_ci_method = self.exam_name
 
-        # Necessary so that these attributes can be set on the instance 
+        # Necessary so that these attributes can be set on the instance
         # of the corresponding generated benchmarks:
         self.question = None
         self.solution = None
@@ -345,19 +336,19 @@ class SaveBenchmark():
         self.response = None
         self.grade = None
         self.unbiased_solution = None
-        self.biased_solution = None        
+        self.biased_solution = None
 
     @classmethod
     def from_simple_inequality(cls, source, path, exam_name, exam_idx):
-        """ Constructs a new instance from the class SaveBenchmark and then
-        set the source (SimpleInequality) attributes on the instance """
+        """Constructs a new instance from the class SaveBenchmark and then
+        set the source (SimpleInequality) attributes on the instance"""
         instance = cls(path, exam_name)
         instance.exam_idx = exam_idx
         instance.save_npz_path = path
         # Build filename
-        if exam_idx != 'unset':
+        if exam_idx != "unset":
             filename = f"{exam_name}_{exam_idx}.npz"
-        #elif exam_idx == None:
+        # elif exam_idx == None:
         #    filename = f"{exam_name}.npz"
         else:
             filename = f"{exam_name}.npz"
@@ -376,19 +367,19 @@ class SaveBenchmark():
         instance.ci_upper = np.array(source.ci_upper)[perm]
         instance.n_samples = np.array(source.n_samples)[perm]
         instance.name = np.array(source.name)[perm]
-        return instance        
+        return instance
 
     @classmethod
     def from_complex_inequality(cls, source, path, exam_name, exam_idx):
-        """ Constructs a new instance from the class SaveBenchmark and then
-        set the source (ComplexInequality) attributes on the instance """
+        """Constructs a new instance from the class SaveBenchmark and then
+        set the source (ComplexInequality) attributes on the instance"""
         instance = cls(path, exam_name)
         instance.exam_idx = exam_idx
         instance.save_npz_path = path
         # Build filename
-        if exam_idx != 'unset':
+        if exam_idx != "unset":
             filename = f"{exam_name}_{exam_idx}.npz"
-        #elif exam_idx == None:
+        # elif exam_idx == None:
         #    filename = f"{exam_name}.npz"
         else:
             filename = f"{exam_name}.npz"
@@ -407,17 +398,17 @@ class SaveBenchmark():
         instance.ci_upper = np.array(source.ci_upper)[perm]
         instance.n_samples = np.array(source.n_samples)[perm]
         instance.name = np.array(source.name)[perm]
-        return instance        
+        return instance
 
     @classmethod
     def from_standard_deviation(cls, source, path, exam_name, exam_idx):
-        """ Constructs a new instance from the class SaveBenchmark and then
-        set the source (StandardDeviation) attributes on the instance """
+        """Constructs a new instance from the class SaveBenchmark and then
+        set the source (StandardDeviation) attributes on the instance"""
         instance = cls(path, exam_name)
         instance.exam_idx = exam_idx
         instance.save_npz_path = path
         # Build filename
-        if exam_idx != 'unset':
+        if exam_idx != "unset":
             filename = f"{exam_name}_{exam_idx}.npz"
         else:
             filename = f"{exam_name}.npz"
@@ -432,17 +423,17 @@ class SaveBenchmark():
         instance.biased_solution = np.array(source.biased_solution)[perm]
         instance.unbiased_solution = np.array(source.unbiased_solution)[perm]
         instance.name = np.array(source.name)[perm]
-        return instance  
+        return instance
 
     @classmethod
     def from_mediated_causality(cls, source, path, exam_name, exam_idx):
-        """ Constructs a new instance from the class SaveBenchmark and then
-        set the source (MediatedCausality) attributes on the instance """
+        """Constructs a new instance from the class SaveBenchmark and then
+        set the source (MediatedCausality) attributes on the instance"""
         instance = cls(path, exam_name)
         instance.exam_idx = exam_idx
         instance.save_npz_path = path
         # Build filename
-        if exam_idx != 'unset':
+        if exam_idx != "unset":
             filename = f"{exam_name}_{exam_idx}.npz"
         else:
             filename = f"{exam_name}.npz"
@@ -462,16 +453,16 @@ class SaveBenchmark():
         instance.n_samples = np.array(source.n_samples)[perm]
         instance.table = np.array(source.table)[perm]
         instance.name = np.array(source.name)[perm]
-        return instance        
-    
-    #@classmethod
+        return instance
+
+    # @classmethod
     def save_attributes(self):
-        """ Save the data as a dict within an npz file"""
+        """Save the data as a dict within an npz file"""
         if self.exam_name_wo_ci_method in (
-            'MediatedCausalitySmoking', 
-            'MediatedCausality',
-            'MediatedCausalityWithMethod',
-            ):
+            "MediatedCausalitySmoking",
+            "MediatedCausality",
+            "MediatedCausalityWithMethod",
+        ):
             self.attributes_to_save = [
                 "question",
                 "solution",
@@ -481,17 +472,17 @@ class SaveBenchmark():
                 "p_diff_ci_upper",
                 "n_samples",
                 "table",
-                "name"
+                "name",
             ]
             data = {key: getattr(self, key) for key in self.attributes_to_save}
             np.savez(self.npz_filename, **data)
         elif self.exam_name_wo_ci_method in (
-              'SimpleInequality',
-              'SimpleInequalityAgent', 
-              'SimpleInequalityWithMethod', 
-              'ComplexInequality', 
-              'ComplexInequalityWithMethod',
-              ):
+            "SimpleInequality",
+            "SimpleInequalityAgent",
+            "SimpleInequalityWithMethod",
+            "ComplexInequality",
+            "ComplexInequalityWithMethod",
+        ):
             self.attributes_to_save = [
                 "question",
                 "solution",
@@ -500,19 +491,17 @@ class SaveBenchmark():
                 "ci_lower",
                 "ci_upper",
                 "n_samples",
-                "name"
+                "name",
             ]
-        elif self.exam_name_wo_ci_method in ('StandardDeviation'):
+        elif self.exam_name_wo_ci_method in ("StandardDeviation"):
             self.attributes_to_save = [
                 "question",
                 "biased_solution",
                 "unbiased_solution",
-                "name"
+                "name",
             ]
         else:
-            raise ValueError(
-                f"Unsupported benchmark: {self.exam_name_wo_ci_method}"
-            )
+            raise ValueError(f"Unsupported benchmark: {self.exam_name_wo_ci_method}")
         #    data = {key: getattr(self, key) for key in self.attributes_to_save}
         #    for key in self.attributes_to_save:
         #        value = getattr(self, key, None)
@@ -527,4 +516,3 @@ class SaveBenchmark():
             else:
                 data[key] = value
         np.savez(self.npz_filename, **data)
-

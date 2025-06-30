@@ -13,10 +13,7 @@ Intended for direct import via `from tether.core import Analyzer, Grader, Procto
 from tether.core.analyzer import Analyzer
 from tether.core.grader import Grader
 from tether.core.proctor import Proctor
-
-from tether.core.utils import (
-    QuestionBank,
-)
+from tether.core.utils import QuestionBank
 
 __all__ = [
     "Analyzer",

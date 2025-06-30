@@ -1,5 +1,6 @@
 """ Run a previously generated benchmark on an LLM """
 import os
+
 from tether.core import Proctor
 from tether.core.utils import get_parser
 
@@ -8,8 +9,9 @@ from tether.core.utils import get_parser
 # where ENTER_YOUR_PATH_HERE needs to be replaced with your path.
 data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
+
 def main():
-    """ Run the benchmark """
+    """Run the benchmark"""
     parser = get_parser(script="run")
     args = parser.parse_args()
     kwargs = vars(args)
@@ -20,8 +22,11 @@ def main():
 
     Proctor(benchmark, model, path_to_benchmarks, verbose=verbose, **kwargs)
 
-    print(f"\n Benchmark '{benchmark}' for model '{model}' "
-          f"completed at: {path_to_benchmarks}")
+    print(
+        f"\n Benchmark '{benchmark}' for model '{model}' "
+        f"completed at: {path_to_benchmarks}"
+    )
+
 
 if __name__ == "__main__":
     main()

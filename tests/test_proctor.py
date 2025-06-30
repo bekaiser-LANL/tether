@@ -1,30 +1,32 @@
 """ Tests for Proctor """
 from unittest import mock
-import pytest
+
 import numpy as np
+import pytest
+
 from tether.core import Proctor
+
 # pylint: disable=redefined-outer-name
+
 
 @pytest.fixture
 def sample_benchmark():
-    """ Sample benchmark """
+    """Sample benchmark"""
     return {
         "question": np.array(["What is 2+2?", "What is the capital of France?"]),
         "difficulty": np.array(["easy", "medium"]),
-        "name": np.array(["Math", "Geo"])
+        "name": np.array(["Math", "Geo"]),
     }
+
 
 @mock.patch("tether.core.proctor.create_missing_directory")
 @mock.patch("tether.core.proctor.load_saved_benchmark")
 @mock.patch("tether.core.proctor.Proctor.give_benchmark")
 @mock.patch("tether.core.proctor.np.savez")
 def test_proctor_init(
-    mock_savez,
-    mock_give_benchmark,
-    mock_load_benchmark,
-    sample_benchmark
-    ):
-    """ Test of Proctor initialization """
+    mock_savez, mock_give_benchmark, mock_load_benchmark, sample_benchmark
+):
+    """Test of Proctor initialization"""
     mock_load_benchmark.return_value = sample_benchmark
     mock_give_benchmark.return_value = np.array(["4", "Paris"])
 
@@ -33,6 +35,7 @@ def test_proctor_init(
     assert proctor.exam_name == "TestExam"
     assert proctor.model == "gpt-4o"
     assert mock_savez.called
+
 
 # requires openai API keys, etc:
 
