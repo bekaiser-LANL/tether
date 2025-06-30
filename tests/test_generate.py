@@ -2,8 +2,8 @@
 import os
 import pytest
 import numpy as np
-from source.benchmarks.mediated_causality import causality_from_table
-from source.generator import generate_benchmarks
+from tether.benchmarks.mediated_causality import causality_from_table
+from tether.core.generator import generate_benchmarks
 
 # Prior to running pytest, you need to set your path with:
 # export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE

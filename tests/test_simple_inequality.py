@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from scipy.integrate import trapezoid
-from source.benchmarks.simple_inequality import SimpleInequality  # Adjust path as needed
+from tether.benchmarks.simple_inequality import SimpleInequality  # Adjust path as needed
 
 @pytest.fixture
 def si_instance():

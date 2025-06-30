@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from scipy.integrate import trapezoid
-from source.benchmarks.complex_inequality import ComplexInequality  # adjust as needed
+from tether.benchmarks.complex_inequality import ComplexInequality  # adjust as needed
 
 @pytest.fixture
 def ci_instance():

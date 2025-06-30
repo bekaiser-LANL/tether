@@ -1,9 +1,9 @@
 """ Fast Tests for Mediated Causality """
 import numpy as np
 import pytest
-from source.benchmarks.mediated_causality import causality_from_table
-from source.benchmarks.mediated_causality import causality_from_frequency
-from source.benchmarks.mediated_causality import generate_dataset_by_difficulty
+from tether.benchmarks.mediated_causality import causality_from_table
+from tether.benchmarks.mediated_causality import causality_from_frequency
+from tether.benchmarks.mediated_causality import generate_dataset_by_difficulty
 
 # def causality_from_frequency(array):
 #     n000,n001,n010,n011,n100,n101,n110,n111 = array

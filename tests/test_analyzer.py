@@ -1,5 +1,5 @@
 """ Test the script that runs (calls Proctor) benchmarks on LLMs """
-from source.analyzer import truncate_response, extract_boolean_result_from_response
+from tether.core.analyzer import truncate_response, extract_boolean_result_from_response
 
 def test_truncate_response_short():
     text = "Line1\nLine2\nLine3"

@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from scipy.integrate import trapezoid
 from scipy.ndimage import gaussian_filter1d
 from scipy.stats import norm, mode, stats
-from source.utils import QuestionBank
-from source.utils import is_divisible_by_9
+from tether.core.utils import QuestionBank
+from tether.core.utils import is_divisible_by_9
 matplotlib.use('Agg')
 
 class ComplexInequality():

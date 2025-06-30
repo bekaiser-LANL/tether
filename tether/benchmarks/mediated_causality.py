@@ -1,9 +1,9 @@
 """ Mediated causality (front-door criterion) benchmarks """
 import numpy as np
 import pandas as pd
-from source.utils import is_divisible_by_9
-from source.utils import check_probability
-from source.utils import QuestionBank
+from tether.core.utils import is_divisible_by_9
+from tether.core.utils import check_probability
+from tether.core.utils import QuestionBank
 
 def duplicate_tables(table_data):
     """

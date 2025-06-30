@@ -2,7 +2,7 @@
 from unittest import mock
 import pytest
 import numpy as np
-from source.proctor import Proctor
+from tether.core import Proctor
 # pylint: disable=redefined-outer-name
 
 @pytest.fixture
@@ -14,10 +14,10 @@ def sample_benchmark():
         "name": np.array(["Math", "Geo"])
     }
 
-@mock.patch("source.proctor.create_missing_directory")
-@mock.patch("source.proctor.load_saved_benchmark")
-@mock.patch("source.proctor.Proctor.give_benchmark")
-@mock.patch("source.proctor.np.savez")
+@mock.patch("tether.core.proctor.create_missing_directory")
+@mock.patch("tether.core.proctor.load_saved_benchmark")
+@mock.patch("tether.core.proctor.Proctor.give_benchmark")
+@mock.patch("tether.core.proctor.np.savez")
 def test_proctor_init(
     mock_savez,
     mock_give_benchmark,

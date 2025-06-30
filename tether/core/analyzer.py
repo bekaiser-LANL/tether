@@ -5,14 +5,12 @@ import gc # for efficient RAM use
 import json
 import requests
 import numpy as np
-from source.utils import get_model_and_indices, create_missing_directory
-from source.utils import detect_duplicate_tables
+from tether.core.utils import get_model_and_indices, create_missing_directory
+from tether.core.utils import detect_duplicate_tables
 """ Analyze benchmark results """
 import os
-import argparse
-from source.analyzer import Analyzer
 #from source.utils import detect_duplicate_tables, load_saved_benchmark
-from source.utils import get_parser
+from tether.core.utils import get_parser
 
 DATA_PATH = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 AI_GRADER_MODEL = 'phi4' # 'granite3.2'

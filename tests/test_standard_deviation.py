@@ -1,6 +1,6 @@
 """ Tests for StandardDeviation """
 import numpy as np
-from source.benchmarks.standard_deviation import StandardDeviation
+from tether.benchmarks.standard_deviation import StandardDeviation
 
 def test_initialization_defaults():
     """ Test that default parameters are set correctly """

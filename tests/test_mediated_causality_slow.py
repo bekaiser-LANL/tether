@@ -2,9 +2,9 @@
 import re
 import pytest
 import numpy as np
-from source.benchmarks.mediated_causality import MediatedCausality
-from source.benchmarks.mediated_causality import causality_from_table
-from source.benchmarks.mediated_causality import get_table
+from tether.benchmarks.mediated_causality import MediatedCausality
+from tether.benchmarks.mediated_causality import causality_from_table
+from tether.benchmarks.mediated_causality import get_table
 
 exam_names = [
     "MediatedCausalitySmoking_tdist",

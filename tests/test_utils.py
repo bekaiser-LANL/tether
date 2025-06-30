@@ -2,7 +2,7 @@
 import os
 import tempfile
 import numpy as np
-from source import utils  # Adjust this if utils.py is elsewhere
+from tether.core import utils
 
 def test_strip_after_second_underscore():
     """ Test string manipulation """

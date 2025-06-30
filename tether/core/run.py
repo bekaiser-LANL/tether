@@ -1,7 +1,7 @@
 """ Run a previously generated benchmark on an LLM """
 import os
-from source.proctor import Proctor
-from source.utils import get_parser
+from tether.core import Proctor
+from tether.core.utils import get_parser
 
 # Prior to running pytest, you need to set your path with:
 # export PATH_TO_BENCHMARKS=ENTER_YOUR_PATH_HERE

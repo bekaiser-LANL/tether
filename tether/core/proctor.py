@@ -12,9 +12,9 @@ from langchain_ollama import ChatOllama
 from langchain_core.exceptions import OutputParserException
 from langchain_openai import ChatOpenAI
 from langchain.agents import Tool, initialize_agent, AgentType
-from .utils import load_saved_benchmark, get_npz_filename
-from .utils import create_missing_directory
-from .utils import get_after_second_underscore
+from tether.core.utils import load_saved_benchmark, get_npz_filename
+from tether.core.utils import create_missing_directory
+from tether.core.utils import get_after_second_underscore
 
 #make sure the models you want to run are listed here
 ollama_model_list = ["llama3:8b","codellama:34b-python","granite3.2","deepseek-r1:32b","phi4","qwen2-math"]

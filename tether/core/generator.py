@@ -1,12 +1,11 @@
 """ Randomly generates and saves benchmarks as .npz files """
 import os
-from .utils import create_missing_directory, SaveBenchmark
-from .benchmarks.mediated_causality import MediatedCausality
-from .benchmarks.standard_deviation import StandardDeviation
-from .benchmarks.simple_inequality import SimpleInequality
-from .benchmarks.complex_inequality import ComplexInequality
-from source.generator import generate_benchmarks
-from source.utils import get_parser
+from tether.core.utils import create_missing_directory, SaveBenchmark
+from tether.benchmarks.mediated_causality import MediatedCausality
+from tether.benchmarks.standard_deviation import StandardDeviation
+from tether.benchmarks.simple_inequality import SimpleInequality
+from tether.benchmarks.complex_inequality import ComplexInequality
+from tether.core.utils import get_parser
 
 DATA_PATH = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 

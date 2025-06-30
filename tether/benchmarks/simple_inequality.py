@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from scipy.stats import norm, t
-from source.utils import QuestionBank
-from source.utils import is_divisible_by_9
+from tether.core import QuestionBank
+from tether.core.utils import is_divisible_by_9
 
 class SimpleInequality():
     """Generates questions about the simple inequality case to be saved
