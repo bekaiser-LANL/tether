@@ -58,20 +58,11 @@ def generate_benchmarks(path, exam_name, **kwargs):
 
     saver = None
     
-    if exam_name_wo_ci_method == 'SignificantFigures':
+    # As far as I can tell this is never referenced anywhere 
+    # and no SignificantFigures object exists 
+    if exam_name_wo_ci_method == 'SignificantFigures': 
+        raise NotImplementedError("SignificantFigures not implemented")
 
-        # Generate all of the problems in the benchmark:
-        problems = SignificantFigures(
-            n_problems=n_problems
-        )
-
-        # # Save the benchmark as an .npz
-        # saver = SaveBenchmark.from_mediated_causality(
-        #     source=problems,
-        #     path=self.path,
-        #     exam_name=self.exam_name,
-        #     exam_idx=self.exam_idx
-        # )
 
     elif exam_name_wo_ci_method in ('SimpleInequality', 'SimpleInequalityAgent', 'SimpleInequalityWithMethod'):
 
