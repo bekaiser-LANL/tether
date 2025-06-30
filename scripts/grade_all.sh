@@ -24,7 +24,7 @@ declare -a TASKS=(
 for TASK in "${TASKS[@]}"; do
   FULL_TASK="${TASK}_${MODEL}_0"
   echo "Running $FULL_TASK..."
-  python3 analyze.py "$FULL_TASK" --grade_estimate --verbose
+  python3 -m tether.core.analyzer "$FULL_TASK" --grade_estimate --verbose
 done
 
 echo "All benchmarks completed."

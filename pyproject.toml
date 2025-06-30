@@ -8,6 +8,7 @@ dependencies = [
     "langchain",
     "langchain-ollama",
     "langchain-openai",
+    "langchain-anthropic",
     "scipy",
     "matplotlib",
     "pandas",

@@ -10,11 +10,11 @@ This module provides the main benchmarking engine components:
 Intended for direct import via `from tether.core import Analyzer, Grader, Proctor`.
 """
 
-from .analyzer import Analyzer
-from .grader import Grader
-from .proctor import Proctor
+from tether.core.analyzer import Analyzer
+from tether.core.grader import Grader
+from tether.core.proctor import Proctor
 
-from .utils import (
+from tether.core.utils import (
     QuestionBank,
 )
 

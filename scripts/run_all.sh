@@ -23,7 +23,7 @@ declare -a TASKS=(
 
 for TASK in "${TASKS[@]}"; do
   echo "Running $TASK with $MODEL..."
-  python3 run.py "$TASK" "$MODEL" --verbose
+  python3 -m tether.core.run "$TASK" "$MODEL" --verbose
 done
 
 echo "All benchmarks completed."

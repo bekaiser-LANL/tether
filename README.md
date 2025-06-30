@@ -44,7 +44,7 @@ and you can check if it works with:
 ## Generate a UQ benchmark
 To generate your blank tests (just questions), run the following command in the terminal:
 
-`python3 generate.py BENCHMARK`
+`python3 -m tether.core.generator BENCHMARK`
 
 The following command line arguments are available:
 `--n_problems` : specify the number of questions in the test (defaults to 18)
@@ -55,7 +55,7 @@ The following command line arguments are available:
 
 For example:
 
-`python3 generate.py SimpleInequality_tdist --make_plots`
+`python3 -m tether.core.generator SimpleInequality_tdist --make_plots`
 
 will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. An example figure:
 
@@ -66,7 +66,7 @@ will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMA
 
 ## Run a benchmark
 
-`python3 run.py BENCHMARK MODEL`
+`python3 python3 -m tether.core.run BENCHMARK MODEL`
 
 Be sure to include the index of the benchmark in BENCHMARK. For example, MediatedCausality_tdist_0 for the first MediatedCausality_tdist benchmark (you can repeatedly generate more of the same benchmark).
 
@@ -78,11 +78,11 @@ You can use `run_all.sh` to run all of the benchmarks listed in `run_all.sh` for
 
 The generic command for analyzing a benchmark is:
 
-`python3 analyze.py BENCHMARK_NPZ_FILENAME_WITHOUT_SUFFIX`
+`python3 -m tether.core.analyzer BENCHMARK_NPZ_FILENAME_WITHOUT_SUFFIX`
 
 Calling the command above just loads the completed benchmark .npz file, nothing more. In practice you will want to do analyses called with command line arguments. For example:
 
-`python3 analyze.py MediatedCausality_tdist_0_mistral_0 --grade_estimate --verbose`
+`python3 -m tether.core.analyzer MediatedCausality_tdist_0_mistral_0 --grade_estimate --verbose`
 
 This will estimate the grade of the completed benchmark saved in `MediatedCausality_tdist_0_mistral_0.npz` and will output to terminal the grades as it loops over all questions in the benchmark. 
 
