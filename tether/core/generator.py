@@ -5,6 +5,10 @@ from .benchmarks.mediated_causality import MediatedCausality
 from .benchmarks.standard_deviation import StandardDeviation
 from .benchmarks.simple_inequality import SimpleInequality
 from .benchmarks.complex_inequality import ComplexInequality
+from source.generator import generate_benchmarks
+from source.utils import get_parser
+
+DATA_PATH = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 
 def generate_benchmarks(path, exam_name, **kwargs):
     """ Randomly generates and saves benchmarks as .npz files """
@@ -148,3 +152,33 @@ def generate_benchmarks(path, exam_name, **kwargs):
         )
 
     saver.save_attributes()
+
+def main():
+    """ Generate benchmarks """
+    parser = get_parser(script="generate")
+    args = parser.parse_args()
+
+    generate_benchmarks(
+        path=args.path,
+        exam_name=args.exam_name,
+        n_problems=args.n_problems,
+        plot_flag=args.make_plots,
+        exam_idx=args.exam_idx,
+        n_numbers=args.n_numbers,
+        verbose=args.verbose
+    )
+
+    # # Model is not needed for generation (it's needed for run.py):
+    # model_path=args.model_path
+    # if model_path:
+    #     if not os.path.isdir(model_path):
+    #         print(f"The directory '{model_path}' does not exist.")
+    #     else:
+    #         print(f"Using locally downloaded model")
+    # else:
+    #     print("Using API.")
+
+    print(f"\n {args.exam_name} benchmark generated at {args.path}!\n")
+
+if __name__ == "__main__":
+    main()

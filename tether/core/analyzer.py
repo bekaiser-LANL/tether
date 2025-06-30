@@ -7,9 +7,14 @@ import requests
 import numpy as np
 from source.utils import get_model_and_indices, create_missing_directory
 from source.utils import detect_duplicate_tables
+""" Analyze benchmark results """
+import os
+import argparse
+from source.analyzer import Analyzer
+#from source.utils import detect_duplicate_tables, load_saved_benchmark
+from source.utils import get_parser
 
-data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
-
+DATA_PATH = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
 AI_GRADER_MODEL = 'phi4' # 'granite3.2'
 AI_GRADER_API = 'ollama' # 'openai'
 
@@ -82,13 +87,13 @@ class Analyzer():
         self.human_review = kwargs.get('human_review', False)
         self.print_vars = kwargs.get('print_vars', False)
         self.print_responses = kwargs.get('print_responses', False)
-        self.completed_path = os.path.join(data_path, 'completed')#,self.model)
+        self.completed_path = os.path.join(DATA_PATH, 'completed')#,self.model)
         self.npz_filepath = os.path.join(
               self.completed_path,
               npz_filename + '.npz'
         )
         self.npz_filename = npz_filename
-        self.graded_benchmark_path = os.path.join(data_path,'graded')
+        self.graded_benchmark_path = os.path.join(DATA_PATH,'graded')
         create_missing_directory(self.graded_benchmark_path)
         self.graded_benchmark_by_model_path = os.path.join(
             self.graded_benchmark_path,
@@ -493,3 +498,17 @@ class Analyzer():
         extracted = "INVALID"
         is_correct = False
         return is_correct
+
+
+def main():
+    """ Analyze the benchmark """
+    parser = get_parser(script="analyze")
+    args = parser.parse_args()
+    kwargs = vars(args)
+    npz_filename = kwargs.pop("exam_name")
+    verbose = kwargs.pop("verbose", False)
+
+    Analyzer(npz_filename, verbose=verbose, **kwargs)
+
+if __name__ == "__main__":
+    main()
