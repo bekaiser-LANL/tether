@@ -17,6 +17,15 @@ The following benchmarks are available in this suite:
 
 # How to use this code
 
+## Installation
+Install using the provided Makefile. The makefile expects a python environment will be available. This repo is setup with the expectation that all users and containers
+will be using virtual environments to manage python dependencies. We do not enforce any specific virtual environment. Options include conda, venv, pyenv, etc.
+
+- To install, simply run `make install`
+- For a development environment, instead run `make dev_install`
+
+The makefile also provides testing, formatting and linting rules via `make test` `make format` and `make lint`. WARNING: Before running `make test` ensure that you have set the environement variables below.
+
 ## Set your path for benchmark data
 Prior to generating, running, or analyzing benchmarks (or running pytests) you need to set the path to your benchmarks directory. This is where folders will be created that will: store the tests with just questions in '../blank', store the completed tests with LLM responses in '../completed', and store the graded tests in '../graded'. Set the path in the terminal with:
 
@@ -35,7 +44,7 @@ and you can check if it works with:
 ## Generate a UQ benchmark
 To generate your blank tests (just questions), run the following command in the terminal:
 
-`python3 generate.py BENCHMARK`
+`python3 -m tether.core.generator BENCHMARK`
 
 The following command line arguments are available:
 `--n_problems` : specify the number of questions in the test (defaults to 18)
@@ -46,18 +55,18 @@ The following command line arguments are available:
 
 For example:
 
-`python3 generate.py SimpleInequality_tdist --make_plots`
+`python3 -m tether.core.generator SimpleInequality_tdist --make_plots`
 
 will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. An example figure:
 
 <p align="center">
-  <img src="example_142.png" alt="Example from the paper" width="400"/>
+  <img src="examples/example_142.png" alt="Example from the paper" width="400"/>
 </p>
 
 
 ## Run a benchmark
 
-`python3 run.py BENCHMARK MODEL`
+`python3 -m tether.core.run BENCHMARK MODEL`
 
 Be sure to include the index of the benchmark in BENCHMARK. For example, MediatedCausality_tdist_0 for the first MediatedCausality_tdist benchmark (you can repeatedly generate more of the same benchmark).
 
@@ -69,11 +78,11 @@ You can use `run_all.sh` to run all of the benchmarks listed in `run_all.sh` for
 
 The generic command for analyzing a benchmark is:
 
-`python3 analyze.py BENCHMARK_NPZ_FILENAME_WITHOUT_SUFFIX`
+`python3 -m tether.core.analyzer BENCHMARK_NPZ_FILENAME_WITHOUT_SUFFIX`
 
 Calling the command above just loads the completed benchmark .npz file, nothing more. In practice you will want to do analyses called with command line arguments. For example:
 
-`python3 analyze.py MediatedCausality_tdist_0_mistral_0 --grade_estimate --verbose`
+`python3 -m tether.core.analyzer MediatedCausality_tdist_0_mistral_0 --grade_estimate --verbose`
 
 This will estimate the grade of the completed benchmark saved in `MediatedCausality_tdist_0_mistral_0.npz` and will output to terminal the grades as it loops over all questions in the benchmark. 
 
@@ -95,7 +104,7 @@ You can use `grade_all.sh` to do `--grade_estimate` in serial over all of the be
 You can used `plot.py` to plot graded models.
 
 <p align="center">
-  <img src="SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="100%"/>
+  <img src="examples/SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="100%"/>
 </p>
 
 # Models
