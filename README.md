@@ -23,7 +23,7 @@ scientific reasoning and common subjective methodological choice
 
 The estimation of empirical inequalities under uncertainty is fundamental to science, and
 many scientific breakthroughs have hinged on the estimation of empirical inequalities under uncertainty.
-Einstein's theory of general relativity superseded Newtonian theory when Eddington measured 1.98±0.16 arcsec deflection of starlight around the sun because the lower bound of Eddington's confidence interval is closer to the relativistic prediction of 1.75 arcsec (shown below) compared with Newtonian prediction of 0.875 arcsec. 
+Einstein's theory of general relativity superseded Newtonian theory when Eddington measured 1.98±0.16 arcsec deflection of starlight around the sun because the lower bound of Eddington's confidence interval is closer to the relativistic prediction of 1.75 arcsec (Δθ in the image shown below, from [Dittrich et al. 2024](https://baas.aas.org/pub/2024n9i040/release/1)) compared with Newtonian prediction of 0.875 arcsec. 
 
 ![Deflection of starlight](examples/deflection.png)
 
