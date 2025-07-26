@@ -18,7 +18,7 @@ While distinguishing between pattern-matching and true understanding is vexing f
 this distinction becomes less critical in quantitative domains like UQ because model outputs can be
 directly and objectively compared to human-generated results. Consider that human understanding
 is rarely judged by inspecting internal cognitive processes; instead, it is typically assessed through
-behavior [Gonzalez Barman et al. 2024](https://link.springer.com/article/10.1007/s11023-024-09657-1). The quantitative benchmarks we present do not adjudicate whether models understand UQ in a human-like sense, but rather the benchmarks evaluate how well model behavior aligns with
+behavior ([Gonzalez Barman et al. 2024](https://link.springer.com/article/10.1007/s11023-024-09657-1)). The quantitative benchmarks we present do not adjudicate whether models understand UQ in a human-like sense, but rather the benchmarks evaluate how well model behavior aligns with
 scientific reasoning and common subjective methodological choice
 
 
