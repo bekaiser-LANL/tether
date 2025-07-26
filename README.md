@@ -1,6 +1,27 @@
 # Uncertainty Quantification by LLMs
 
-While we refer to each examination as a benchmark, the goal is to characterize behavior (UQ approach, judgement) rather than to compare LLM results to ground truth. 
+Trustworthy UQ is a unique challenge for models and agents because it is inherently ambigu-
+ous—driven by a wide range of subjective methodological choices. This ambiguity complicates the
+task of determining whether a model’s approach to UQ is reliable or trustworthy. Therefore, it is
+critical to characterize both the subjective choices that models make autonomously and how well
+they perform when prompted to use specific UQ techniques.
+
+Tether is a model-agnostic suite of benchmarks for LLM-based agents and tools focused exclusively
+on, arguably, the most basic form of quantitative data analysis: the estimation of an empirical
+inequality under uncertainty. Before addressing complex, noisy, and ambiguous real-world problems,
+a large language model (LLM) or agent should demonstrate competence on simple uncertainty
+quantification (UQ) tasks. Strong performance at simple UQ problems is arguably a necessary,
+though not sufficient, criterion for establishing the trustworthiness of a LLM or agent at UQ.
+
+Models can perform UQ in trustworthy manner without any confirmation of UQ understanding.
+While distinguishing between pattern-matching and true understanding is vexing for qualitative tasks
+this distinction becomes less critical in quantitative domains like UQ because model outputs can be
+directly and objectively compared to human-generated results. Consider that human understanding
+is rarely judged by inspecting internal cognitive processes; instead, it is typically assessed through
+behavior [Gonzalez Barman et al. 2024](https://link.springer.com/article/10.1007/s11023-024-09657-1). The quantitative benchmarks we present do not adjudicate whether models understand UQ in a human-like sense, but rather the benchmarks evaluate how well model behavior aligns with
+scientific reasoning and common subjective methodological choice
+
+
 
 # Available benchmarks
 The following benchmarks are available in this suite:
