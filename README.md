@@ -21,20 +21,11 @@ is rarely judged by inspecting internal cognitive processes; instead, it is typi
 behavior ([Gonzalez Barman et al. 2024](https://link.springer.com/article/10.1007/s11023-024-09657-1)). The quantitative benchmarks we present do not adjudicate whether models understand UQ in a human-like sense, but rather the benchmarks evaluate how well model behavior aligns with
 scientific reasoning and common subjective methodological choice
 
+The estimation of empirical inequalities under uncertainty is fundamental to science, and
+many scientific breakthroughs have hinged on the estimation of empirical inequalities under uncertainty.
+Einstein's theory of general relativity superseded Newtonian theory when Eddington measured 1.98±0.16 arcsec deflection of starlight around the sun because the lower bound of Eddington's confidence interval is closer to the relativistic prediction of 1.75 arcsec (shown below) compared with Newtonian prediction of 0.875 arcsec. 
 
-
-# Available benchmarks
-The following benchmarks are available in this suite:
-1. **SimpleInequality_tdist** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2?" and generates the solutions to the questions using t-distribution 95% confidence intervals.
-2. **SimpleInequality_bootstrap** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2?" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
-3. **SimpleInequalityWithMethod_tdist** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2? Use the standard eror of proportion and t-distribution to calculate the 95% confidence interval" and generates the solutions to the questions using t-distribution 95% confidence intervals. 
-4. **SimpleInequalityWithMethod_bootstrap** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2? Use bootstrap resampling to calculate the 95% confidence interval" and generates the solutions to the questions using bootstrapped 95% confidence intervals. 
-5. **MediatedCausality_tdist** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Calculate the 95\% confidence level intervals. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using t-distribution 95% confidence intervals.
-6. **MediatedCausality_bootstrap** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Calculate 95\% confidence level by numerically estimating cumulative probabilities. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
-7. **MediatedCausalityWithMethod_tdist** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM " Use the front-door criterion to determine if smoking causes cancer from the provided data. Use the standard error of proportion and t distribution on the final front door probability difference to calculate the 95\% confidence level intervals. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using t-distribution 95% confidence intervals.
-8. **MediatedCausalityWithMethod_bootstrap** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Use the front-door criterion of causal inference and only the provided data. Bootstrap the final front door probability difference to calculate 95\% confidence level by numerically estimating cumulative probabilities. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
-9. **MediatedCausalitySmoking_tdist** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Does smoking cause cancer?" and generates the solutions to the questions using t-distribution 95% confidence intervals.
-10. **MediatedCausalitySmoking_bootstrap** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Does smoking cause cancer?" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
+![Deflection of starlight](examples/deflection.png)
 
 # How to use this code
 
@@ -62,7 +53,7 @@ and you can check if it works with:
 
 `echo $PATH_TO_BENCHMARKS`
 
-## Generate a UQ benchmark
+## Generate a benchmark
 To generate your blank tests (just questions), run the following command in the terminal:
 
 `python3 -m tether.core.generator BENCHMARK`
@@ -127,6 +118,20 @@ You can used `plot.py` to plot graded models.
 <p align="center">
   <img src="examples/SimpleInequality_tdist_ABC.png" alt="Example from the paper" width="100%"/>
 </p>
+
+## Available benchmarks
+The following benchmarks are available in this suite:
+1. **SimpleInequality_tdist** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2?" and generates the solutions to the questions using t-distribution 95% confidence intervals.
+2. **SimpleInequality_bootstrap** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2?" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
+3. **SimpleInequalityWithMethod_tdist** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2? Use the standard eror of proportion and t-distribution to calculate the 95% confidence interval" and generates the solutions to the questions using t-distribution 95% confidence intervals. 
+4. **SimpleInequalityWithMethod_bootstrap** Creates an exam with a specified length of questions with two vectors randomly sampled from a Gaussian distribution with target means and standard deviations and plugs them into the question "Is it more probable that a sample from Vector 1 is greater than a sample from Vector 2? Use bootstrap resampling to calculate the 95% confidence interval" and generates the solutions to the questions using bootstrapped 95% confidence intervals. 
+5. **MediatedCausality_tdist** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Calculate the 95\% confidence level intervals. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using t-distribution 95% confidence intervals.
+6. **MediatedCausality_bootstrap** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Calculate 95\% confidence level by numerically estimating cumulative probabilities. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
+7. **MediatedCausalityWithMethod_tdist** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM " Use the front-door criterion to determine if smoking causes cancer from the provided data. Use the standard error of proportion and t distribution on the final front door probability difference to calculate the 95\% confidence level intervals. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using t-distribution 95% confidence intervals.
+8. **MediatedCausalityWithMethod_bootstrap** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Use the front-door criterion of causal inference and only the provided data. Bootstrap the final front door probability difference to calculate 95\% confidence level by numerically estimating cumulative probabilities. Use the 95\% confidence levels to answer 'A' for yes, 'B' for no, or 'C' for uncertain" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
+9. **MediatedCausalitySmoking_tdist** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Does smoking cause cancer?" and generates the solutions to the questions using t-distribution 95% confidence intervals.
+10. **MediatedCausalitySmoking_bootstrap** Creates an exam with a specified length of questions using a randomly generated frequency table for 8 combinations of the cause, effect, and mediator then asks the LLM "Does smoking cause cancer?" and generates the solutions to the questions using bootstrapped 95% confidence intervals.
+
 
 # Models
 
