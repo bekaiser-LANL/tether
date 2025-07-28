@@ -22,7 +22,7 @@ behavior ([Gonzalez Barman et al. 2024](https://link.springer.com/article/10.100
 scientific reasoning and common subjective methodological choice
 
 ## Why is UQ a unique challenge?
-Quantitative analyses depend upon uncertainty quantification (UQ) because no measurement, simulation, nor observation is perfectly free of error or bias. Unlike formal mathematical proofs and deductive reasoning, UQ is an explicitly inductive task that accounts for the platonic imperfection of the real world. Thus, UQ requires problem-specific judgments related to the data at hand (e.g., outlier detection and treatment of outliers, knowledge of variable inter-dependencies, etc.), discipline-specific standards (e.g., 4-5σ levels of significance are typically required for the acceptance of a discovery in exoplanetary science), and/or may depend upon decision-making
+Quantitative analyses depend upon uncertainty quantification (UQ) because no measurement, simulation, nor observation is perfectly free of error or bias. Unlike formal mathematical proofs and deductive reasoning, UQ is an explicitly inductive task that accounts for the platonic imperfection of the real world. Thus, UQ requires problem-specific judgments related to the data at hand (e.g., outlier detection and treatment of outliers, knowledge of variable inter-dependencies, etc.), discipline-specific standards (e.g., [4-5σ levels of significance are typically required for the acceptance of a discovery in exoplanetary science](https://www.cam.ac.uk/stories/strongest-hints-of-biological-activity)), and/or may depend upon decision-making
 stakes. 
 
 ## Why is UQ important?
