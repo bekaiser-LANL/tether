@@ -75,7 +75,9 @@ For example:
 
 `python3 -m tether.core.generator SimpleInequality_tdist --make_plots`
 
-will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. An example figure:
+will generate a saved benchmark SimpleInequality_tdist_0.npz in /PATH_TO_BENCHMARKS/benchmarks/saved/ and figures from --make_plots for each problem in /PATH_TO_BENCHMARKS/benchmarks/saved/SimpleInequality_tdist_figures/. 
+
+An example figure that shows the data generated for one SimpleInequality_tdist problem:
 
 <p align="center">
   <img src="examples/example_142.png" alt="Example from the paper" width="600"/>
