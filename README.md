@@ -21,8 +21,14 @@ is rarely judged by inspecting internal cognitive processes; instead, it is typi
 behavior ([Gonzalez Barman et al. 2024](https://link.springer.com/article/10.1007/s11023-024-09657-1)). The quantitative benchmarks we present do not adjudicate whether models understand UQ in a human-like sense, but rather the benchmarks evaluate how well model behavior aligns with
 scientific reasoning and common subjective methodological choice
 
-The estimation of empirical inequalities under uncertainty is fundamental to science, and
-many scientific breakthroughs have hinged on the estimation of empirical inequalities under uncertainty.
+## Why is UQ a unique challenge?
+Quantitative analyses depend upon uncertainty quantification (UQ) because no measurement, simulation, nor observation is perfectly free of error or bias. Unlike formal mathematical proofs and deductive reasoning, UQ is an explicitly inductive task that accounts for the platonic imperfection of the real world. Thus, UQ requires problem-specific judgments related to the data at hand (e.g., outlier detection and treatment of outliers, knowledge of variable inter-dependencies, etc.), discipline-specific standards (e.g., 4-5σ levels of significance are typically required for the acceptance of a discovery in exoplanetary science), and/or may depend upon decision-making
+stakes. 
+
+## Why is UQ important?
+Quantitative analyses are essential for science.
+The basic UQ capabilities assessed by these benchmarks (the estimation of empirical inequalities under uncertainty) have played an essential role in
+many scientific breakthroughs.
 Einstein's theory of general relativity superseded Newtonian theory when Eddington measured 1.98±0.16 arcsec deflection of starlight around the sun because the lower bound of Eddington's confidence interval is closer to the relativistic prediction of 1.75 arcsec (Δθ in the image shown below, from [Dittrich et al. 2024](https://baas.aas.org/pub/2024n9i040/release/1)) compared with Newtonian prediction of 0.875 arcsec. 
 
 ![Deflection of starlight](examples/deflection.png)
