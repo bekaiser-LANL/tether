@@ -83,6 +83,9 @@ An example figure that shows the data generated for one SimpleInequality_tdist p
   <img src="examples/example_142.png" alt="Example from the paper" width="600"/>
 </p>
 
+### Prompt customization
+
+Benchmark prompts can be found in their respective files in /tether/benchmarks. (Note: The NeurIPS D&B paper submission refers to Complex Inequality benchmarks - these are the Mediated Causality benchmarks in this repository).
 
 ## Run a benchmark
 

@@ -2,18 +2,16 @@ import numpy as np
 import os
 import re
 
-NPZ_FILE_PATH_1 = "/Users/l281800/Desktop/benchmark_results_1/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_2 = "/Users/l281800/Desktop/benchmark_results_2/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_3 = "/Users/l281800/Desktop/benchmark_results_3/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_4 = "/Users/l281800/Desktop/benchmark_results_4/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_5 = "/Users/l281800/Desktop/benchmark_results_5/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_6 = "/Users/l281800/Desktop/benchmark_results_6/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_7 = "/Users/l281800/Desktop/benchmark_results_7/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_8 = "/Users/l281800/Desktop/benchmark_results_8/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_9 = "/Users/l281800/Desktop/benchmark_results_9/blank/SimpleInequality_tdist_0.npz" 
-NPZ_FILE_PATH_10 = "/Users/l281800/Desktop/benchmark_results_10/blank/SimpleInequality_tdist_0.npz" 
-
-# Need to get the vector pair, the answer, and the difficulty
+NPZ_FILE_PATH_1 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_1/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_2 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_2/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_3 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_3/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_4 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_4/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_5 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_5/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_6 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_6/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_7 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_7/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_8 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_8/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_9 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_9/blank/SimpleInequality_tdist_0.npz" 
+NPZ_FILE_PATH_10 = "/Users/l281800/Desktop/SimpleInequality/benchmark_results_10/blank/SimpleInequality_tdist_0.npz" 
 
 def get_vectors(text):
     # Extract using regex
@@ -114,48 +112,39 @@ class VectorPairCollector:
         }
 
 def get_diff_stats(filtered_data):
-    d_Aeasy = filtered_data["vector_pairs"][:,0,:]-filtered_data["vector_pairs"][:,1,:]
-    mu = np.mean(np.mean(d_Aeasy,axis=1),axis=0)
-    sig = np.nanstd(d_Aeasy,axis=(0,1))
+    d = filtered_data["vector_pairs"][:,0,:]-filtered_data["vector_pairs"][:,1,:] # n_benchmarks, n_categories
+    mu = np.mean(np.mean(d,axis=1),axis=0)
+    sig = np.nanstd(d,axis=(0,1))
     return mu,sig
 
 def get_all_stats( collector ):
 
     filtered_data = collector.filter_by_solution_and_difficulty("A", "easy")
     mu_Aeasy,sig_Aeasy = get_diff_stats(filtered_data)
-    #print(mu_Aeasy,sig_Aeasy)
 
     filtered_data = collector.filter_by_solution_and_difficulty("A", "medium")
     mu_Amed,sig_Amed = get_diff_stats(filtered_data)
-    #print(mu_Amed,sig_Amed)
 
     filtered_data = collector.filter_by_solution_and_difficulty("A", "hard")
     mu_Ahard,sig_Ahard = get_diff_stats(filtered_data)
-    #print(mu_Ahard,sig_Ahard)
 
     filtered_data = collector.filter_by_solution_and_difficulty("B", "easy")
     mu_Beasy,sig_Beasy = get_diff_stats(filtered_data)
-    #print(mu_Beasy,sig_Beasy)
 
     filtered_data = collector.filter_by_solution_and_difficulty("B", "medium")
     mu_Bmed,sig_Bmed = get_diff_stats(filtered_data)
-    #print(mu_Bmed,sig_Bmed)
 
     filtered_data = collector.filter_by_solution_and_difficulty("B", "hard")
     mu_Bhard,sig_Bhard = get_diff_stats(filtered_data)
-    #print(mu_Bhard,sig_Bhard)
 
     filtered_data = collector.filter_by_solution_and_difficulty("C", "easy")
     mu_Ceasy,sig_Ceasy = get_diff_stats(filtered_data)
-    #print(mu_Ceasy,sig_Ceasy)
 
     filtered_data = collector.filter_by_solution_and_difficulty("C", "medium")
     mu_Cmed,sig_Cmed = get_diff_stats(filtered_data)
-    #print(mu_Cmed,sig_Cmed)
 
     filtered_data = collector.filter_by_solution_and_difficulty("C", "hard")
     mu_Chard,sig_Chard = get_diff_stats(filtered_data)
-    #print(mu_Chard,sig_Chard)
 
     mu = np.array([mu_Aeasy,mu_Amed,mu_Ahard,mu_Beasy,mu_Bmed,mu_Bhard,mu_Ceasy,mu_Cmed,mu_Chard])
     sig = np.array([sig_Aeasy,sig_Amed,sig_Ahard,sig_Beasy,sig_Bmed,sig_Bhard,sig_Ceasy,sig_Cmed,sig_Chard])
@@ -164,8 +153,9 @@ def get_all_stats( collector ):
 def max_percent_diff(arr):
     a = arr[:, None]
     b = arr[None, :]
-    mean = (a + b) / 2
-    diff = 100 * np.abs(a - b) / mean
+    #mean = (a + b) / 2
+    #diff = 100 * np.abs(a - b) / mean
+    diff = abs(a - b) / ((a + b) / 2) # Symmetric Relative Difference
     return np.max(diff)
 
 if __name__ == "__main__":
@@ -206,12 +196,23 @@ if __name__ == "__main__":
     mu_10,sig_10 = get_all_stats( collector )
 
     # actually mu_i are 9 different values need to get a max percent difference for each
-    
-    mus = np.array([mu_1, mu_2, mu_3, mu_4, mu_5, mu_6, mu_7, mu_8, mu_9, mu_10])
-    sigs = np.array([sig_1, sig_2, sig_3, sig_4, sig_5, sig_6, sig_7, sig_8, sig_9, sig_10])
+    # A easy med hard 
+    # B easy med hard
+    # C easy med hard
 
-    max_mu_diff = max_percent_diff(mus)
-    max_sig_diff = max_percent_diff(sigs)
+    N_benchmarks = 10
+    N_categories = 9 # fixed
+    str_categories = np.array([ 'A easy','A med', 'A hard', 'B easy', 'B med', 'B hard', 'C easy','C med', 'C hard'])
+    MU = np.zeros([N_categories,N_benchmarks])
+    SIG = np.zeros([N_categories,N_benchmarks])
+    print('\n')
+    for j in range(0,N_categories):
+        MU[j,:] = np.abs(np.array([mu_1[j], mu_2[j], mu_3[j], mu_4[j], mu_5[j], mu_6[j], mu_7[j], mu_8[j], mu_9[j], mu_10[j]]))
+        SIG[j,:] = np.abs(np.array([sig_1[j], sig_2[j], sig_3[j], sig_4[j], sig_5[j], sig_6[j], sig_7[j], sig_8[j], sig_9[j], sig_10[j]]))
+        print(f" Problem type: {str_categories[j]}\n Max % difference between means for 10 different generated datasets: {max_percent_diff(MU[j,:]):.2f}%,\n Max % difference between std. devs for 10 different generated datasets: {max_percent_diff(SIG[j,:]):.2f}%")
+ 
+    MU = MU + 1.
+    SIG = SIG + 1.
+    print('\n')
 
-    print(f"Max % difference between mus: {max_mu_diff:.2f}%")
-    print(f"Max % difference between sigmas: {max_sig_diff:.2f}%")
+
