@@ -21,20 +21,25 @@ AI_GRADER_API = "ollama"  # "openai"
 
 def truncate_response(response, num_start=3, num_end=3):
     """
-    Prints the first `num_start` and last `num_end` lines of a long string.
+    Truncate a long string response for logging. If response is structured (dict),
+    return a compact summary instead.
     """
-    text = extract_output(response)
-    lines = text.strip().splitlines()
-    total = len(lines)
+    # If it's a dict (like a parsed JSON), don't truncate — return summary
+    if isinstance(response, dict):
+        return f'Answer: {response.get("answer")}, Explanation: {response.get("explanation", "")[:80]}...'
 
-    if total <= num_start + num_end:
-        return "\n".join(lines)  # Return full text if it"s already short
+    # If it's a string, truncate long responses
+    if isinstance(response, str):
+        lines = response.strip().splitlines()
+        total = len(lines)
+        if total <= num_start + num_end:
+            return '\n'.join(lines)
+        start = lines[:num_start]
+        end = lines[-num_end:]
+        return '\n'.join(start + ['... (omitted middle lines) ...'] + end)
 
-    start = lines[:num_start]
-    end = lines[-num_end:]
-
-    return "\n".join(start + ["... (omitted middle lines) ..."] + end)
-
+    # If it's something else, just stringify it
+    return str(response)
 
 def extract_output(response):
     """Safely extracts output text from agent response dicts."""
@@ -45,19 +50,19 @@ def extract_output(response):
 
 def extract_boolean_result_from_response(response: str) -> bool | None:
     """
-    Extracts the boolean value of "result" from a JSON block in the LLM response.
-    Returns True or False if found, or None if parsing fails.
+    Compares the 'answer' field in a response dict to the solution (A/B/C).
+    Returns True if they match, False if not, and None if 'answer' is missing.
     """
-    match = re.search(r"```json\s*(\{.*?\})\s*```", response, re.DOTALL)
-    if match:
-        try:
-            json_str = match.group(1)
-            data = json.loads(json_str)
-            return data.get("result")
-        except json.JSONDecodeError:
-            return None
-    return None
+    if not isinstance(response, dict):
+        return None  # not a valid JSON-style dict
 
+    answer = response.get("answer", "").strip().upper()
+    expected = solution.strip().upper()
+
+    if not answer:
+        return None  # no answer found
+
+    return answer == expected
 
 class Analyzer:
     """Tools for analyzing saved benchmarks"""
@@ -65,9 +70,7 @@ class Analyzer:
     def __init__(self, npz_filename, **kwargs):
         """The benchmark name is the full name of the .npz file
         without the suffix"""
-
-        self.ai_grader_api = AI_GRADER_API
-
+        self.agent_flag = False
         parts = get_model_and_indices(npz_filename)
         if len(parts) == 4:
             self.exam_name = get_model_and_indices(npz_filename)[0]
@@ -92,13 +95,29 @@ class Analyzer:
         self.print_vars = kwargs.get("print_vars", False)
         self.print_responses = kwargs.get("print_responses", False)
         self.completed_path = os.path.join(DATA_PATH, "completed")  # ,self.model)
-        self.npz_filepath = os.path.join(self.completed_path, npz_filename + ".npz")
+        self.completed_path = os.path.join(data_path, 'completed')#,self.model)
+        self.grader_llm = kwargs.get("grader_model", self.model)
+        self.grader_model = self.load_llm(self.grader_llm)
+        self.exam_name = self.exam_name
+        if self.agent_flag:
+            self.json_path = get_json_filename(
+                self.completed_path,
+                self.exam_name+ '_' + self.ci_method,
+                self.exam_idx,
+                self.model,
+                self.agent_flag
+            )
+        self.npz_filepath = os.path.join(
+              self.completed_path,
+              npz_filename + '.npz'
+        )
         self.npz_filename = npz_filename
-        self.graded_benchmark_path = os.path.join(DATA_PATH, "graded")
+        self.graded_benchmark_path = os.path.join(data_path,'graded')
         create_missing_directory(self.graded_benchmark_path)
         self.graded_benchmark_by_model_path = os.path.join(
-            self.graded_benchmark_path, self.model
-        )
+            self.graded_benchmark_path,
+            self.model
+        )        
         create_missing_directory(self.graded_benchmark_by_model_path)
 
         # list of ABC multiple choice benchmarks:
@@ -109,6 +128,11 @@ class Analyzer:
             "SimpleInequality",
             "SimpleInequalityWithMethod",
         ]
+
+
+        if self.agent_flag:
+            with open(self.json_path) as f:
+                self.json_responses = json.load(f)
 
         if self.print_vars:
             # --print_vars
@@ -288,6 +312,31 @@ class Analyzer:
             print("Error:", request.status_code, request.text)
         return response
 
+    def load_llm(self, model_name):
+        if model_name in openai_all_model_list:
+            from langchain_openai import ChatOpenAI
+            return ChatOpenAI(model=model_name, temperature=0)
+        elif model_name in ollama_model_list:
+            from langchain_ollama import ChatOllama
+            return ChatOllama(model=model_name)
+        elif model_name in anthropic_model_list:
+            from langchain_anthropic import ChatAnthropic
+            return ChatAnthropic(model=model_name)
+        else:
+            raise ValueError(f"Unsupported model: {model_name}")
+
+    def build_grading_chain(self):
+        return PromptTemplate.from_template(
+            "You are a grading assistant.\n"
+            "You will receive the correct answer and the AI's JSON output, which includes an 'answer' key.\n\n"
+            "Compare the AI's 'answer' value to the correct one. Ignore any missing 'explanation'.\n\n"
+            "Correct answer: {solution}\n"
+            "AI JSON: {ai_json}\n\n"
+            "Is the AI's answer correct?\n"
+            "Respond ONLY in this JSON format:\n"
+            '{{"result": true, "explanation": "Answers match."}}'
+        ) | self.grader_model
+
     def provisional_grade_with_ai(self):
         """Estimate the grade with openai and deterministic pattern"""
         broken_flag = False
@@ -295,42 +344,49 @@ class Analyzer:
         grade = np.full(n_problems, True)
         # assume correct until proven otherwise
         human_review = np.full(n_problems, False)
+
+        self.grading_chain = self.build_grading_chain()
+
         for j in range(0, n_problems):
             if self.contains_connection_error(self.data["responses"][j]):
                 broken_flag = True
             if self.exam_name in self.abc_multiple_choice_list:
-                # print("\n\n",self.data["responses"][j])
-                response = self.data["responses"][j]
-                text = (
-                    response.get("output", "")
-                    if isinstance(response, dict)
-                    else str(response)
-                )
-                truncated_response = truncate_response(text)
-                # truncated_response = truncate_response(self.data["responses"][j])
-                prompt = (
-                    f"The correct answer is {self.data['solution'][j]}, "
-                    f"is the following response correct: {truncated_response}? "
-                    "Please answer True or False, and scan the end of the response "
-                    "in particular. Output in the following format:\n"
-                    "```json\n"
-                    "{\n"
-                    '  "result": true,\n'
-                    '  "explanation": "Because the sample size is too small."\n'
-                    "}\n"
-                    "```"
-                )
-                if self.ai_grader_api == "ollama":
-                    json_response = self.ask_ollama(prompt, AI_GRADER_MODEL)
-                    ai_grader = extract_boolean_result_from_response(json_response)
-                    gc.collect()  # for efficient RAM use
-                else:
-                    from openai import OpenAI  # pylint: disable=import-outside-toplevel
 
-                    openai_api_key = os.getenv("OPENAI_API_KEY")
-                    client = OpenAI(api_key=openai_api_key)
-                    ai_grader = self.ask_openai(prompt, client, AI_GRADER_MODEL)
-                    print("\n OPENAI MODELS NEED JSON RESPONSE CONSTRAINT")
+              if self.agent_flag:
+                    response = self.json_responses[j]
+                else:
+                    response = self.data["responses"][j]
+
+                # Create structured input
+                solution = self.data["solution"][j]
+                grader_input = {
+                    "solution": solution,
+                    "ai_json": response
+                }
+
+                # Run LangChain grader
+                grading_response = self.grading_chain.invoke(grader_input)
+                grading_text = grading_response.content if hasattr(grading_response, "content") else str(grading_response)
+
+                # Parse result
+                try:
+                    if isinstance(grading_text, str):
+                        match = re.search(r'```json\s*(\{.*?\})\s*```', grading_text, re.DOTALL)
+                        grading_json_str = match.group(1) if match else grading_text.strip()
+                        parsed_response = json.loads(grading_json_str)
+                    else:
+                        parsed_response = grading_text  # already a dict
+
+                    result = parsed_response.get("result", None)
+                    ai_grader = bool(result) if result is not None else False
+                except Exception as e:
+                    print(f"Grader JSON parsing failed for question {j}: {e}")
+                    print("Raw grader output:", grading_text)
+                    ai_grader = False
+                    human_review[j] = True
+
+                gc.collect() # for efficient RAM use
+
                 deterministic_grader = self.deterministic_grader_abc(
                     self.data["solution"][j], self.data["responses"][j]
                 )
@@ -380,148 +436,37 @@ class Analyzer:
     def deterministic_grader_abc(self, solution, response, choices=["A", "B", "C"]):
         """
         Checks if the correct multiple-choice answer is found in the response.
-
-        Parameters:
-        - solution (str): The correct answer ("A", "B", or "C").
-        - response (str): The text response to be scanned.
-        - choices (list): The possible choices (default: ["A", "B", "C"]).
-
-        Returns:
-        - bool: True if the correct answer is found in the response, False otherwise.
+        Returns True if the correct answer is detected, False otherwise.
         """
-
-        # Ensure solution is a valid choice
         if solution not in choices:
-            raise ValueError(f'Invalid solution "{solution}", must be one of {choices}')
+            raise ValueError(f"Invalid solution '{solution}', must be one of {choices}")
 
-        # Normalize whitespace and get the last line of the response
+        # If structured JSON, extract directly
+        if isinstance(response, dict):
+            answer = response.get("answer", None)
+            if isinstance(answer, str):
+                return answer.strip().upper() == solution.strip().upper()
+            else:
+                return False
+
+        if not isinstance(response, str):
+            return False
+
+        # Fallback for unstructured text (legacy logic)
         text = extract_output(response)
-        lines = text.strip().split("\n")
-        last_line = lines[-1].strip() if lines else ""
+        last_line = text.strip().splitlines()[-1] if text.strip() else ""
 
-        # Regular expressions to detect explicit answer declarations
-        explicit_answer_patterns = [
-            rf"The answer would be\s*['\"]{solution}['\"]",
-            rf"^\s*\*\*{solution}\*\*\s*$",
-            rf"\\\[\s*\\boxed\{{\s*{solution}\s*\}}\s*\\\]",
-            rf"^\s*{solution}\s*$",
-            # Simple sentence-style answer declarations
-            rf"\bThe final answer is:?\s*{solution}\b",
-            rf"\bThe correct answer is:?\s*{solution}\b",
-            rf"\bThe answer is:?\s*{solution}\b",
-            rf"\bAnswer:\s*{solution}\b",
-            rf"^\s*{solution}\s*\(.*?\)\s*$",
-            # Bolded answer declarations
-            rf"\*\*?Final answer:?\*\*?\s*\**{solution}\**",  # e.g. **Final answer:** **B**
-            rf"\*\*Answer:\s*{solution}\*\*?",  # **Answer: A or **Answer: A**
-            rf"\*\*{solution}\s*\(.*?\)\*\*",  # **C (uncertain)**
-            rf"\*\*Answer:\s*{solution}\s*\(.*?\)\.\*\*"
-            # Bolded answers on a new line after bolded intro
-            rf"\*\*\s*\n+\s*\*\*{solution}\.",
-            # **\n\n**A.
-            rf"The answer is:\*\*\s*\n+\s*\*\*{solution}\.",
-            # The answer is:**\n\n**A.
-            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\b",
-            # Final Answer\n\n**C
-            rf"\bFinal Answer\s*\n+\s*\*\*{solution}\*\*",
-            # Final Answer\n\n**A**
-            rf"\*\*Final answer:\*\*\s*\n\s*{solution}\b",
-            # **Final answer:** \nC
-            rf"\n+\s*\*\*Final Answer:\s*{solution}\*\*",
-            # \n\n**Final Answer: A**
-            rf"\*\*Final answer:\*\*\s*\n\s*\*\*{solution}\*\*",
-            # **Final answer:**  \n**B**
-            rf"\*\*Final Answer:\*\*\s*\n\s*\*\*{solution}\*\*",
-            # **Final Answer:**  \n**B**
-            rf"\*\*Answer:\s*{solution}\*\*",
-            # **Answer: C**
-            rf"\banswer:\s*\n+\s*\*\*{solution}\b",
-            # answer:\n\n**A
-            rf"answer is:\*\*\s*\n+\s*\*\*{solution}\b",
-            # answer is:**\n\n**C
-            rf"\n+\s*\*\*Answer:\s*{solution}\b",
-            # \n\n**Answer: A
-            rf"correct answer is:\*\*\s*\n+\s*\*\*{solution}\b",
-            # correct answer is:**\n\n**C
-            rf"\*\*\s*\n\s*\*\*{solution}\*\*",
-            # **  \n**A**
-            # Bold answer declarations with explanation in parentheses
-            rf"\*\*\s*\n+\s*\*\*Answer:\s*{solution}.*\*\*",
-            # **\n\n**Answer: A (yes/no/...)
-            rf"^\s*{solution}\s—\s",
-            rf"we can conclude:\s*{solution}\b",
-            rf"the most appropriate answer under these conditions would be ['\"]{solution}['\"]",
-            rf"lean\s+towards\s+['\"]{solution}['\"]",
-            rf"tentatively\s+answer\s+['\"]{solution}['\"]",
-            rf"\s*{solution}\s+\(No\)\.\s*",
-            rf"\s*{solution}\s+\(Yes\)\.\s*",
-            rf"\s*{solution}\s+\(Uncertain\)\.\s*",
-            rf"{solution}\s*-\s*No\.\s*",
-            rf"{solution}\s*-\s*Yes\.\s*",
-            rf"{solution}\s*-\s*Uncertain\.\s*",
-            rf"{solution}\s*-\s*No\s*",
-            rf"{solution}\s*-\s*Yes\s*",
-            rf"{solution}\s*-\s*Uncertain\s*",
-            rf"is:\s*{solution}\s*-\s*No",
-            rf"is:\s*{solution}\s*-\s*Yes",
-            rf"is:\s*{solution}\s*-\s*Uncertain",
-            rf"based\s+on\s+this\s+information,\s+the\s+answer\s+is\s+['\"]{solution}['\"]\s*-\s*",
-            rf"it\s+would\s+be\s+most\s+appropriate\s+to\s+answer\s+['\"]{solution}['\"]",
-            rf"lean\s+towards\s+answering\s+['\"]{solution}['\"]",
-            rf"lean\s+towards\s+saying\s+['\"]{solution}['\"]",
-            rf"the\s+correct\s+answer\s+is\s+['\"]{solution}['\"]",
-            rf"the\s+answer\s+is\s+['\"]{solution}['\"]\s+for",
-            rf"our\s+answer\s+is\s+['\"]{solution}['\"]\s+for",
-            rf"I\s+would\s+have\s+to\s+respond\s+as\s+['\"]{solution}['\"]\s*-\s*",
-            rf"Therefore,\s+the\s+answer\s+is\s+['\"]{solution}['\"]\s*\(",
-            rf"the\s+most\s+accurate\s+response\s+would\s+be\s+['\"]{solution}['\"]\s+for",
-            rf"the\s+answer\s+would\s+be:\s*{solution}\s*-\s*",
-            rf"the\s+most\s+accurate\s+response\s+under\s+these\s+conditions\s+is:\s*{solution}\s*-\s*",
-            rf"the\s+most\s+accurate\s+response\s+under\s+these\s+conditions\s+is:\n\n\s*{solution}\s*-\s*(\w+)",
-            rf"the\s+most\s+accurate\s+response\s+under\s+these\s+conditions\s+is:\n\s*{solution}\s*-\s*",
-            rf"answer\s+would\s+be:\s*{solution}\s*-\s*",
-            rf"I\s+must\s+answer\s+['\"]{solution}['\"]\s+for",
-            rf"\bFinal Answer[:\-]?\s*{solution}\b",  # Final Answer: A
-            rf"\bFinal Answer\s*\n+\s*{solution}\b",  # Final Answer\nA
-            rf"\bFinal Answer[:\-]?\s*\n+\**{solution}\**\b",  # Final Answer:\n**A**
-            rf"\bAnswer[:\-]?\s*{solution}\b",  # Answer: A
-            rf"^\s*{solution}\s*$",  # Just "A" on a line
-            rf"\\boxed\{{\s*{solution}\s*\}}",  # \boxed{A}
-            rf"\(?\b{solution}\b\)?"
-            # Match (A), ( B ), etc.
-            rf"\(\s*{solution}\s*\)"
-            # Match "A" or "A" — quoted answers
-            rf"['\"]\s*{solution}\s*['\"]",
-        ]
-
-        # Check if the last line explicitly declares the answer
-        for pattern in explicit_answer_patterns:
-            if re.search(pattern, last_line, re.IGNORECASE) or re.search(
-                pattern, text, re.IGNORECASE
-            ):
-                return True
-        # As soon as re.search(...) finds a match, the function
-        # returns True immediately
-
-        # General pattern to check if the answer appears any where in the response
-        pattern = rf"\b{solution}\b|the answer is {solution}"
-        # Perform case-insensitive regex search
-        match = re.search(
-            r"Answer:\s*(?:\$?\\?boxed\{)?['\"\$\\\s]*([A-Ca-c])['\"\}\$\\\s]*", text
-        )
-        is_correct = True  # Answer is assumed to be true unless otherwise specified.
+        # Try to extract from "Answer: C" or "Answer: C,"
+        match = re.search(r"Answer:\s*([A-Ca-c])[,\.]?", text, re.IGNORECASE)
         if match:
-            extracted = str(match.group(1)).strip().upper()
-            expected = f"{solution}".strip().upper()
+            return match.group(1).upper() == solution.upper()
 
-            # Optional: strip any non-A/B/C just in case
-            extracted = re.sub(r"[^A-C]", "", extracted)
-            is_correct = extracted == expected
-            return is_correct
-        extracted = "INVALID"
-        is_correct = False
-        return is_correct
+        # Fallback: just try last standalone letter
+        match = re.search(r"\b([A-Ca-c])\b", last_line)
+        if match:
+            return match.group(1).upper() == solution.upper()
 
+        return False
 
 def main():
     """Analyze the benchmark"""

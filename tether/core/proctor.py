@@ -58,52 +58,6 @@ class Proctor:
             # self.exam_name = exam_name
             self.exam_idx = kwargs.get("exam_idx", "unset")
         self.exam_name = exam_name
-        self.model = model
-        self.agent = None
-        if kwargs.get("agent", False):
-            self.agent_flag = True
-            if self.model in ollama_model_list:
-                langchain_llm = ChatOllama(model=self.model)
-                self.agent = initialize_agent(
-                    tools=ToolRegistry.get_tools(),
-                    llm=langchain_llm,
-                    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-                    verbose=True,
-                    handle_parsing_errors=True,
-                    max_iterations=10,
-                    early_stopping_method="generate",
-                    return_intermediate_steps=True,
-                )
-            elif self.model in openai_all_model_list:
-                langchain_llm = ChatOpenAI(model=self.model)
-                self.agent = initialize_agent(
-                    tools=ToolRegistry.get_tools(),
-                    llm=langchain_llm,
-                    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-                    verbose=True,
-                    handle_parsing_errors=True,
-                    max_iterations=10,
-                    early_stopping_method="generate",
-                    return_intermediate_steps=True,
-                )
-            else:
-                raise ValueError(f"Unsupported model '{self.model}' for agent mode.")
-        else:
-            self.agent_flag = False
-        self.agent_flag = kwargs.get("agent", False)
-        self.verbose = kwargs.get("verbose", False)
-        self.modelpath = kwargs.get("model_path")
-        self.results_path = os.path.join(self.benchmark_path, "completed")
-        self.client = None
-        if self.agent:
-            self.npz_filename = get_npz_filename(
-                self.results_path, self.exam_name + "_agent", self.exam_idx, self.model
-            )
-        else:
-            self.npz_filename = get_npz_filename(
-                self.results_path, self.exam_name, self.exam_idx, self.model
-            )
-        print(self.model)
         # Checkpoint frequency if an integer, no checkpoint .npz output if a NaN:
         self.checkpoint_freq = kwargs.get("checkpoint_freq", "unset")
         # Restart question number if an integer, start at question 1 if a NaN:
@@ -118,6 +72,44 @@ class Proctor:
         self.exam_idx = kwargs.get("exam_idx", "unset")
         if self.exam_idx == "unset":
             self.exam_idx = 0
+        self.model = model
+        self.agent_flag = kwargs.get("agent", False)
+        exam_only = get_model_and_indices(self.exam_name)[0]
+        if self.agent_flag:
+            if self.model in ollama_model_list:
+                self.llm = ChatOllama(model=self.model)
+            elif self.model in openai_all_model_list:
+                self.llm = ChatOpenAI(model=self.model)
+            else:
+                raise ValueError(f"Unsupported model type.")
+            if exam_only == 'SimpleInequality' or exam_only == 'SimpleInequalityWithMethod':
+                self.code_writer_prompt = self.build_code_writer_prompt()
+                self.answer_extractor_prompt = self.build_answer_extractor_prompt()
+
+                self.code_writer_chain = self.build_code_writer_prompt() | self.llm
+                self.answer_extractor_chain = self.build_answer_extractor_prompt() | self.llm
+                self.code_executor = PythonAstREPLTool().run
+            else:
+                self.code_writer_prompt_causal = self.build_code_writer_prompt_causal()
+                self.answer_extractor_prompt = self.build_answer_extractor_prompt()
+
+                self.code_writer_chain_causal = self.code_writer_prompt_causal | self.llm
+                self.answer_extractor_chain = self.build_answer_extractor_prompt() | self.llm
+                self.code_executor = PythonAstREPLTool().run
+
+        else:
+            self.agent_flag = False
+        self.verbose = kwargs.get("verbose", False)
+        self.modelpath = kwargs.get("model_path")
+        self.results_path = os.path.join(self.benchmark_path, "completed")
+        self.client = None
+        self.npz_filename = get_npz_filename(
+            self.results_path,
+            self.exam_name ,
+            self.exam_idx,
+            self.model,
+            self.agent_flag
+        )
         create_missing_directory(self.results_path)
         create_missing_directory(self.saved_benchmark_path)
 
@@ -125,8 +117,26 @@ class Proctor:
             self.saved_benchmark_path, self.exam_name, self.exam_idx
         )
         self.questions = benchmark["question"]
-        responses = self.give_benchmark(benchmark)
-        np.savez(self.npz_filename, **benchmark, responses=responses)
+        # Load any existing file if restarting
+        self.json_path = get_json_filename(
+        self.results_path,
+        self.exam_name,
+        self.exam_idx,
+        self.model,
+        self.agent_flag
+        )
+
+        if os.path.exists(self.json_path):
+            with open(self.json_path) as f:
+                responses = json.load(f)
+        else:
+            responses = []
+        answers = self.give_benchmark(benchmark, responses=responses)
+        np.savez(self.npz_filename, **benchmark, responses=answers)
+        print(f"Saved completed benchmark output to npz: {self.npz_filename}")
+
+        print(f"Saved completed benchmark output to JSON: {self.json_path}")
+        
         self.record_txt = kwargs.get(
             "record_txt", False
         )  # save blank benchmark as .txt
@@ -208,66 +218,37 @@ class Proctor:
                     self.model_instance.config.eos_token_id
                 )
         n = len(benchmark["question"])
-        responses = []
-        for i in range(0, n):
+        if responses is None:
+            responses = []
+        model = get_model_and_indices(self.exam_name)[0]
+        for i in range(len(responses), n):#0,n):
+            if i < len(responses):
+                if self.verbose:
+                    print(f"Skipping question {i}, already saved.")
+                continue
             prompt = benchmark["question"][i]
             if self.verbose:
-                print("\n Question ", i)
+                print('\n Question ',i)
                 print(prompt)
-            if self.agent:
-                agent_prompt = self.build_agent_prompt(prompt)
-                try:
-                    raw_response = self.agent.invoke(agent_prompt)
-                    response_text = (
-                        raw_response["output"]
-                        if isinstance(raw_response, dict)
-                        else str(raw_response)
-                    )
-                except OutputParserException as e:
-                    response_text = str(e)
-
-                # Attempt to extract Final Answer from plain text (e.g., "Final Answer: B")
-                fa_match = re.search(
-                    r"Answer\s*[:\-]?\s*\(?([A-Ca-c])\)?", response_text, re.IGNORECASE
-                )
-                final_answer = fa_match.group(1).upper() if fa_match else None
-
-                # Try to find a full JSON block with or without triple backticks
-                json_match = re.search(
-                    r'\{[^{}]*"answer"\s*:\s*"([A-Ca-c])"[^{}]*\}', response_text
-                )
-                parsed_json = None
-                json_error = None
-                json_answer = None
-                json_explanation = None
-
-                if json_match:
-                    try:
-                        parsed_json = json.loads(json_match.group(0))
-                        json_answer = parsed_json.get("answer", "").upper()
-                        json_explanation = parsed_json.get("explanation", None)
-                    except json.JSONDecodeError as e:
-                        json_error = f"JSON parse error: {e}"
-
-                response_to_save = {
-                    "output": response_text,
-                    "final_answer": json_answer or final_answer,
-                    "explanation": json_explanation,
-                    "intermediate_steps": response_text.splitlines(),
-                }
-
-                if json_error:
-                    response_to_save["json_error"] = json_error
-                elif not json_match and not (json_answer or final_answer):
-                    response_to_save["json_error"] = "No recognizable answer found"
-                response = response_to_save
-                print(response)
+            if self.agent_flag:
+                if model == 'SimpleInequality' or model == 'SimpleInequalityWithMethod':
+                    print('in here')
+                    vector1, vector2, question = self.parse_vectors_and_question(prompt)
+                    response = self.run_and_extract_answer(vector1, vector2, question, i)
+                else:
+                    response = self.run_and_extract_answer_causal(prompt, i)
             else:
                 response = self.give_question_to_llm(prompt)
                 print(response)
             responses.append(response)
-        responses = np.array(responses)
+            if self.verbose:
+                print(f"Saved question {i} to {self.json_path}")
+
+            with open(self.json_path, "w") as f:
+                json.dump(responses, f, indent=2)
+
         return responses
+
 
     def give_question_to_llm(self, prompt):
         """Method for prompting & recording LLMs"""
@@ -328,111 +309,337 @@ class Proctor:
             return response
         else:
             return "\n Model not available"
-
-    def parse_agent_response(self, text: str):
-        """Parsing through the agent response for the  answer"""
-        code = output = answer = ""
-
-        code_match = re.search(r"Code:\s*```(?:python)?\n?(.*?)```", text, re.DOTALL)
-        if code_match:
-            code = code_match.group(1).strip()
-
-        output_match = re.search(r"Output:\s*(.*?)\n(?:Answer:|$)", text, re.DOTALL)
-        if output_match:
-            output = output_match.group(1).strip()
-
-        answer_match = re.search(r"Answer:\s*(.*)", text, re.DOTALL)
-        if answer_match:
-            answer = answer_match.group(1).strip()
-
-        return {"code": code, "output": output, "answer": answer}
-
-    def build_agent_prompt(self, task_prompt: str) -> str:
-        """Set up the prompt for the agent"""
-        # Extract vectors using regex
+    def parse_vectors_and_question(self, task_prompt: str):
+        """Extract vector1, vector2, and the question from the raw text."""
         vector1_match = re.search(r"Vector 1: ([\d\s\.\-Ee]+)", task_prompt)
         vector2_match = re.search(r"Vector 2: ([\d\s\.\-Ee]+)", task_prompt)
-
-        if not vector1_match or not vector2_match:
-            raise ValueError("Could not extract vectors from prompt.")
+        question_start = task_prompt.find("Is it more probable")
+        if not (vector1_match and vector2_match and question_start != -1):
+            raise ValueError("Failed to extract vectors or question.")
 
         vector1 = "[" + ", ".join(vector1_match.group(1).strip().split()) + "]"
         vector2 = "[" + ", ".join(vector2_match.group(1).strip().split()) + "]"
-
-        # Extract the actual question
-        question_start = task_prompt.find("Is it more probable")
         question = task_prompt[question_start:].strip()
+        return vector1, vector2, question
 
-        # Instructions
-        instructions = (
-            "You are a Python reasoning assistant with access to the tool: run_code.\n"
-            "You MUST strictly follow the reasoning format below, step-by-step. Do not skip or rearrange steps.\n\n"
-            "To solve the task, you must:\n"
-            "1. Write Python code to compare the vectors\n"
-            "2. Execute it using run_code\n"
-            "3. Reflect on the output\n"
-            "4. Provide your Final Answer (A, B, or C)\n"
-            "5. Then output a JSON block on a new line summarizing your answer and reasoning\n\n"
-            " You MUST follow this exact format:\n"
-            "Thought: [reasoning]\n"
-            "Action: run_code\n"
-            "Action Input:\n"
-            "[START_CODE]\n"
-            "# your code here\n"
-            "[END_CODE]\n"
-            "Observation: [result of the code]\n"
-            "Thought: [reflect on what the result means]\n"
-            "Final Answer: [A, B, or C]\n\n"
-            "You must end your response with this JSON block. Do not include anything after it.\n"
-            "The `answer` field must match your Final Answer exactly.\n\n"
-            "```json\n"
-            "{\n"
-            '  "answer": "[A, B, or C]",\n'
-            '  "explanation": "Brief explanation based on your reasoning."\n'
-            "}\n"
-            "```"
+    def run_and_extract_answer(self, vector1, vector2, question, i):
+        max_retries = 10
+        execution_success = False
+        execution_result = ""
+        code_string = ""
+        code_text = ""
+        code_response = None
+
+        for attempt in range(max_retries):
+            print(f"\n Attempt {attempt+1} — Generating code for question {i}...")
+
+            #Generate code with LLM
+            code_response = self.code_writer_chain.invoke({
+                "vector1": vector1,
+                "vector2": vector2,
+                "question": question
+            })
+
+            #Extract raw text
+            code_text = code_response.content if hasattr(code_response, "content") else str(code_response)
+
+            #Extract code block from tags
+            match = re.search(r"\[START_CODE\](.*?)\[END_CODE\]", code_text, re.DOTALL)
+            code_string = match.group(1).strip() if match else code_text
+
+            print("Generated code:\n", code_string)
+
+            #Attempt execution
+            execution_result = self.code_executor(code_string)
+            execution_output_str = str(execution_result)
+
+            print("Execution output:\n", execution_output_str)
+
+            #Check if execution succeeded
+            error_keywords = [
+                "Traceback", "NameError", "TypeError", "ValueError",
+                "IndexError", "ZeroDivisionError", "SyntaxError"
+            ]
+            if not any(err in execution_output_str for err in error_keywords):
+                execution_success = True
+                break
+            else:
+                print("Code execution failed. Retrying...")
+
+            valid_answers = {"A", "B", "C"}
+            if execution_output.strip() not in valid_answers:
+                print("Code did not return a valid answer. Retrying...")
+                retry()
+            else:
+                answer = execution_output.strip()
+        #Final fallback if all attempts fail
+        if not execution_success:
+            # Save last attempted code to file
+            fail_dir = os.path.join(self.results_path, "failed_code")
+            os.makedirs(fail_dir, exist_ok=True)
+
+            fail_path = os.path.join(fail_dir, f"q{i}_failed.py")
+            with open(fail_path, "w") as f:
+                f.write("# Failed code generation after retries\n")
+                f.write("# Vector 1:\n")
+                f.write(f"{vector1}\n")
+                f.write("# Vector 2:\n")
+                f.write(f"{vector2}\n\n")
+                f.write("# Last generated code:\n")
+                f.write(code_string)
+
+            print("All attempts failed. Skipping this question.")
+            return {
+                "code": code_string,
+                "execution_result": execution_result,
+                "final_answer": None,
+                "explanation": "Code failed to execute successfully after multiple generations."
+            }
+
+        #Extract final answer
+        extractor_input = {
+            "execution_output": execution_result,
+            "question": question
+        }
+        extracted_raw = self.answer_extractor_chain.invoke(extractor_input)
+        raw_text = extracted_raw.content if hasattr(extracted_raw, "content") else str(extracted_raw)
+
+        # Remove code block formatting if needed
+        raw_text = re.sub(r"```json|```", "", raw_text).strip()
+
+        # Extract JSON
+        match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+        json_str = match.group(0) if match else raw_text
+
+        #extracted_json = json.loads(json_str)
+        match = re.search(r'\{.*?\}', json_str, re.DOTALL)
+        if match:
+            try:
+                extracted_json = json.loads(match.group(0))
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode failed: {e}")
+                extracted_json = {"answer": None, "explanation": f"Bad JSON: {e}"}
+        else:
+           print("❌ No JSON object found in output.")
+           extracted_json = {"answer": None, "explanation": "No JSON found"}
+
+        print(extracted_json)
+        return extracted_json
+
+    def parse_causal_prompt(self, prompt: str):
+        """
+        Extracts X, Y, Z variable names, 8 numerical table values, and the question from a causal inference prompt.
+        """
+        # Extract the table counts (expect 8 of them)
+        count_pattern = r'is (\d+)\.|\b(\d+) samples'
+        counts = [int(m[0] or m[1]) for m in re.findall(count_pattern, prompt)]
+        if len(counts) != 8:
+            print(f"⚠️ Expected 8 counts, but found {len(counts)}")
+
+        # Extract X, Y, Z variable names
+        x_match = re.search(r"do not (\w+), do not", prompt)
+        y_match = re.search(r"do not \w+, do not (\w+),", prompt)
+        z_match = re.search(r"and do not (\w+)", prompt)
+
+        x_name = x_match.group(1) if x_match else None
+        y_name = y_match.group(1) if y_match else None
+        z_name = z_match.group(1) if z_match else None
+
+        # Extract the final causal question
+        question_match = re.search(r"Does (.*?)\?", prompt)
+        causal_question = question_match.group(0).strip() if question_match else None
+
+        return {
+             "x_name": x_name,
+             "y_name": y_name,
+             "z_name": z_name,
+             "counts": counts,
+             "question" : causal_question
+        }
+
+    def run_and_extract_answer_causal(self, question, i):
+        """
+        Agent-based causal inference pipeline:
+        1. Generate code to solve the causal question
+        2. Execute code and get result
+        3. Use an LLM to extract answer (A/B/C) and explanation from execution result
+        """
+        parsed = self.parse_causal_prompt(question)
+        flattened_input = {
+            "x_name": parsed["x_name"],
+            "y_name": parsed["y_name"],
+            "z_name": parsed["z_name"],
+            "question": parsed["question"],
+            "count0": parsed["counts"][0],
+            "count1": parsed["counts"][1],
+            "count2": parsed["counts"][2],
+            "count3": parsed["counts"][3],
+            "count4": parsed["counts"][4],
+            "count5": parsed["counts"][5],
+            "count6": parsed["counts"][6],
+            "count7": parsed["counts"][7]
+        }
+        execution_success = False
+        for attempt in range(10):
+            if self.verbose:
+                print(f"\n Attempt {attempt + 1} — Generating code for question {i}...")
+
+            try:
+                # Step 1: Generate Python code
+                code_response = self.code_writer_chain_causal.invoke(flattened_input)
+                code_string = code_response.content if hasattr(code_response, "content") else str(code_response)
+
+                if self.verbose:
+                    print("Generated code:\n", code_string)
+
+                match = re.search(r"\[START_CODE\](.*?)\[END_CODE\]", code_string, re.DOTALL)
+                if match:
+                    code_string = match.group(1).strip()
+                else:
+                    print("No [START_CODE] ... [END_CODE] block found.")
+                    code_string = ""  # or raise an error
+
+                # Step 2: Execute code
+                execution_result = self.code_executor(code_string)
+                output = execution_result.strip()
+
+                if self.verbose:
+                    print("Execution output:\n", execution_result)
+
+                # Step 3: Validate execution output (basic error filter)
+                error_keywords = ["Traceback", "NameError", "TypeError",
+                                  "ValueError", "ModuleNotFoundError",
+                                  "Exception", "SyntaxError"]
+                if any(err in execution_result for err in error_keywords):
+                    print("Code execution failed. Retrying...\n")
+                    continue
+
+                valid_answers = {"A", "B", "C"}
+                if output in valid_answers:
+                    execution_success = True
+                    break
+                else:
+                    print("Code did not return valid answer. Retrying...\n")
+                    continue
+
+            except Exception as e:
+                print(f"Exception during code generation or execution: {e}")
+        #Final fallback if all attempts fail
+        if not execution_success:
+            # Save last attempted code to file
+            fail_dir = os.path.join(self.results_path, "failed_code")
+            os.makedirs(fail_dir, exist_ok=True)
+
+            fail_path = os.path.join(fail_dir, f"q{i}_failed.py")
+            with open(fail_path, "w") as f:
+                f.write("# Failed code generation after retries\n")
+                f.write("# Last generated code:\n")
+                f.write(code_string)
+
+            print("All attempts failed. Skipping this question.")
+            return {
+                "code": code_string,
+                "execution_result": execution_result,
+                "final_answer": None,
+                "explanation": "Code failed to execute successfully after multiple generations."
+            }
+
+        # Step 4: Extract final answer using LLM
+        extractor_input = {
+            "execution_output": execution_result,
+            "question": parsed["question"]
+        }
+
+        try:
+            extracted_raw = self.answer_extractor_chain.invoke(extractor_input)
+            raw_text = extracted_raw.content if hasattr(extracted_raw, "content") else str(extracted_raw)
+
+            # Try parsing JSON
+            match = re.search(r"\{.*?\}", raw_text, re.DOTALL)
+            if match:
+                extracted_json = json.loads(match.group(0))
+            else:
+                extracted_json = {
+                    "answer": None,
+                    "explanation": "Could not find valid JSON block in response."
+                }
+
+        except Exception as e:
+            extracted_json = {
+                "answer": None,
+                "explanation": f"Exception during extraction: {e}"
+            }
+
+        print(extracted_json)
+        return extracted_json
+    def build_code_writer_prompt(self) -> PromptTemplate:
+        return PromptTemplate.from_template(
+            "You are a Python assistant. Given vector1, vector2, and a question, "
+            "output only Python code between [START_CODE] and [END_CODE] that answers the question.\n"
+            "You must extract and define `vector1` and `vector2` based on the text of the prompt.\n"
+            "Do not explain.\n\n"
+            "vector1 = {vector1}\n"
+            "vector2 = {vector2}\n"
+            "Question: {question}"
         )
 
-        # Few-shot example
-        few_shot = (
-            "Example:\n"
-            "vector1 = [10, 12, 14, 15]\n"
-            "vector2 = [5, 6, 7, 8]\n\n"
-            "Question: Is it more probable that a sample from vector1 is greater than one from vector2?\n\n"
-            "Thought: I will compare their means using Python.\n"
-            "Action: run_code\n"
-            "Action Input:\n"
-            "[START_CODE]\n"
-            "import numpy as np\n"
-            "vector1 = [10, 12, 14, 15]\n"
-            "vector2 = [5, 6, 7, 8]\n"
-            "print(np.mean(vector1) > np.mean(vector2))\n"
-            "[END_CODE]\n\n"
-            "Observation: True\n\n"
-            "Thought: Since the mean of vector1 is greater, it is more probable.\n"
-            "Final Answer: A\n\n"
-            "```json\n"
-            "{\n"
-            '  "answer": "A",\n'
-            '  "explanation": "The mean of vector1 is higher, indicating greater probability."\n'
-            "}\n"
-            "```"
+    def build_code_writer_prompt_causal(self) -> PromptTemplate:
+        return PromptTemplate(
+        input_variables=[
+            "x_name", "y_name", "z_name",
+            "count0", "count1", "count2", "count3",
+            "count4", "count5", "count6", "count7",
+            "question"
+        ],
+        template="""
+        You are a Python data scientist. Your task is to assess whether {x_name} causes {y_name} using a stratified observational dataset.
+
+        The data is stratified based on the binary variables {x_name}, {y_name}, and {z_name}, and is represented as 8 cell counts in the following format:
+
+        index | {x_name} | {y_name} | {z_name} | count
+        ------|----------|----------|----------|------
+          0   |    0     |    0     |    0     | {count0}
+          1   |    0     |    0     |    1     | {count1}
+          2   |    0     |    1     |    0     | {count2}
+          3   |    0     |    1     |    1     | {count3}
+          4   |    1     |    0     |    0     | {count4}
+          5   |    1     |    0     |    1     | {count5}
+          6   |    1     |    1     |    0     | {count6}
+          7   |    1     |    1     |    1     | {count7}
+
+        Use only built-in Python, numpy, or scipy to determine causality between {x_name} and {y_name} while controlling for {z_name}.
+
+        At the end, print:
+        - "A" if the data supports causality,
+        - "B" if it supports no effect,
+        - "C" if it's inconclusive.
+
+        Wrap your code in [START_CODE] and [END_CODE]. Do not print anything else.
+
+        Here is the question:
+        {question}
+        """
         )
 
-        # Combine all parts
-        return (
-            f"{few_shot}\n\n{instructions}"
-            f"vector1 = {vector1}\nvector2 = {vector2}\n\n"
-            f"Question: {question}"
+    def build_answer_extractor_prompt(self) -> PromptTemplate:
+        return PromptTemplate.from_template(
+            "You are a statistics assistant. You are given a multiple-choice question "
+            "and the output from a Python program that already chose an answer (A, B, or C).\n\n"
+            "You MUST return exactly the letter printed by the code as the `answer` field.\n\n"
+            "Do not reinterpret the result. Just reflect what the code printed.\n\n"
+            "Question:\n{question}\n\n"
+            "Output:\n{execution_output}\n\n"
+            "Respond ONLY in strict JSON format:\n"
+            '{{"answer": "C", "explanation": "Because the output of the code was C."}}'
         )
-
 
 class ToolRegistry:
     """Tools for agent use"""
-
     @staticmethod
     def run_code_func(code: str) -> str:
         """Execute the code the agent writes"""
+        print("Code received by run_code:")
+        print(code)
         try:
             # Extract content between [START_CODE] and [END_CODE]
             match = re.search(r"\[START_CODE\](.*?)\[END_CODE\]", code, re.DOTALL)
@@ -442,11 +649,23 @@ class ToolRegistry:
                 return "Error: Missing [START_CODE] and [END_CODE] tags."
 
             local_vars = {}
-            exec(code, {}, local_vars)  # pylint: disable=exec-used
-            return f"Success. Variables: {list(local_vars.keys())}"
-        except Exception:
-            import traceback  # pylint: disable=import-outside-toplevel
 
+            # Capture stdout
+            import io, contextlib
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                exec(code, local_vars, local_vars)
+
+            # Prefer result variable if it exists
+            if "result" in local_vars:
+                return str(local_vars["result"])
+
+            # Otherwise return captured print output
+            output = buffer.getvalue().strip()
+            return output if output else "Code executed successfully, no output."
+
+        except Exception:
+            import traceback
             return f"Error:\n{traceback.format_exc()}"
 
     @staticmethod
@@ -456,6 +675,6 @@ class ToolRegistry:
             Tool(
                 name="run_code",
                 func=ToolRegistry.run_code_func,
-                description="Executes Python code and returns variable names or errors.",
+                description="Executes Python code and returns the result or printed output."
             )
         ]
