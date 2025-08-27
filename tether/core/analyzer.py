@@ -23,6 +23,15 @@ openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
 openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
 anthropic_model_list = ["claude-3-7-sonnet-20250219"]
 
+def extract_boolean_result_from_response(response: dict, solution: str = "") -> bool | None:
+    """
+    Extracts a boolean grading decision from the JSON response.
+    Returns True/False if found, or None if missing.
+    """
+    if isinstance(response, dict):
+        return response.get("result", None)
+    return None
+
 def truncate_response(response, num_start=3, num_end=3):
     """
     Truncate a long string response for logging. If response is structured (dict),
