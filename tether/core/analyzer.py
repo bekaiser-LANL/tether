@@ -6,18 +6,22 @@ import re
 
 import numpy as np
 import requests
+from langchain_core.prompts import PromptTemplate
 
 from tether.core.utils import (
     create_missing_directory,
     detect_duplicate_tables,
+    get_json_filename,
     get_model_and_indices,
     get_parser,
 )
 
-DATA_PATH = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
-AI_GRADER_MODEL = "phi4"  # "granite3.2"
-AI_GRADER_API = "ollama"  # "openai"
-
+data_path = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
+ollama_model_list = ["phi4"]
+openai_reasoning_model_list = ["o3-mini","o1","o3","o4-mini"]
+openai_classic_model_list = ["gpt-4.5-preview", "gpt-4o", "gpt-4.1"]
+openai_all_model_list = openai_reasoning_model_list + openai_classic_model_list
+anthropic_model_list = ["claude-3-7-sonnet-20250219"]
 
 def truncate_response(response, num_start=3, num_end=3):
     """
@@ -26,17 +30,19 @@ def truncate_response(response, num_start=3, num_end=3):
     """
     # If it's a dict (like a parsed JSON), don't truncate — return summary
     if isinstance(response, dict):
-        return f'Answer: {response.get("answer")}, Explanation: {response.get("explanation", "")[:80]}...'
-
+        return (
+            f'Answer: {response.get("answer")},'
+            f'Explanation: {response.get("explanation", "")[:80]}...'
+    )
     # If it's a string, truncate long responses
     if isinstance(response, str):
         lines = response.strip().splitlines()
         total = len(lines)
         if total <= num_start + num_end:
-            return '\n'.join(lines)
+            return "\n".join(lines)
         start = lines[:num_start]
         end = lines[-num_end:]
-        return '\n'.join(start + ['... (omitted middle lines) ...'] + end)
+        return "\n".join(start + ["... (omitted middle lines) ..."] + end)
 
     # If it's something else, just stringify it
     return str(response)
@@ -46,23 +52,6 @@ def extract_output(response):
     if isinstance(response, dict):
         return response.get("output", "")
     return str(response) if response is not None else ""
-
-
-def extract_boolean_result_from_response(response: str) -> bool | None:
-    """
-    Compares the 'answer' field in a response dict to the solution (A/B/C).
-    Returns True if they match, False if not, and None if 'answer' is missing.
-    """
-    if not isinstance(response, dict):
-        return None  # not a valid JSON-style dict
-
-    answer = response.get("answer", "").strip().upper()
-    expected = solution.strip().upper()
-
-    if not answer:
-        return None  # no answer found
-
-    return answer == expected
 
 class Analyzer:
     """Tools for analyzing saved benchmarks"""
@@ -94,30 +83,29 @@ class Analyzer:
         self.human_review = kwargs.get("human_review", False)
         self.print_vars = kwargs.get("print_vars", False)
         self.print_responses = kwargs.get("print_responses", False)
-        self.completed_path = os.path.join(DATA_PATH, "completed")  # ,self.model)
-        self.completed_path = os.path.join(data_path, 'completed')#,self.model)
+        self.completed_path = os.path.join(data_path, "completed")#,self.model)
         self.grader_llm = kwargs.get("grader_model", self.model)
         self.grader_model = self.load_llm(self.grader_llm)
         self.exam_name = self.exam_name
         if self.agent_flag:
             self.json_path = get_json_filename(
                 self.completed_path,
-                self.exam_name+ '_' + self.ci_method,
+                self.exam_name+ "_" + self.ci_method,
                 self.exam_idx,
                 self.model,
                 self.agent_flag
             )
         self.npz_filepath = os.path.join(
               self.completed_path,
-              npz_filename + '.npz'
+              npz_filename + ".npz"
         )
         self.npz_filename = npz_filename
-        self.graded_benchmark_path = os.path.join(data_path,'graded')
+        self.graded_benchmark_path = os.path.join(data_path,"graded")
         create_missing_directory(self.graded_benchmark_path)
         self.graded_benchmark_by_model_path = os.path.join(
             self.graded_benchmark_path,
             self.model
-        )        
+        )
         create_missing_directory(self.graded_benchmark_by_model_path)
 
         # list of ABC multiple choice benchmarks:
@@ -242,7 +230,7 @@ class Analyzer:
             if has_duplicates:
                 print(f" {duplicate_pairs} duplicate pairs found")
         print(
-            f"\n Verify no duplicate problems needs to be implemented for {self.exam_name}"
+        f"\n Verify no duplicate problems needs to be implemented for {self.exam_name}"
         )
 
     def ask_openai(self, question, client, model_choice):
@@ -328,8 +316,10 @@ class Analyzer:
     def build_grading_chain(self):
         return PromptTemplate.from_template(
             "You are a grading assistant.\n"
-            "You will receive the correct answer and the AI's JSON output, which includes an 'answer' key.\n\n"
-            "Compare the AI's 'answer' value to the correct one. Ignore any missing 'explanation'.\n\n"
+            "You will receive the correct answer and the AI's JSON output,\n"
+            "which includes an 'answer' key.\n\n"
+            "Compare the AI's 'answer' value to the correct one.\n"
+            "Ignore any missing 'explanation'.\n\n"
             "Correct answer: {solution}\n"
             "AI JSON: {ai_json}\n\n"
             "Is the AI's answer correct?\n"
@@ -348,11 +338,14 @@ class Analyzer:
         self.grading_chain = self.build_grading_chain()
 
         for j in range(0, n_problems):
+            ai_grader = None
+            deterministic_grader = None
+
             if self.contains_connection_error(self.data["responses"][j]):
                 broken_flag = True
-            if self.exam_name in self.abc_multiple_choice_list:
 
-              if self.agent_flag:
+            if self.exam_name in self.abc_multiple_choice_list:
+                if self.agent_flag:
                     response = self.json_responses[j]
                 else:
                     response = self.data["responses"][j]
@@ -366,13 +359,22 @@ class Analyzer:
 
                 # Run LangChain grader
                 grading_response = self.grading_chain.invoke(grader_input)
-                grading_text = grading_response.content if hasattr(grading_response, "content") else str(grading_response)
-
+                grading_text = (
+                    grading_response.content
+                    if hasattr(grading_response, "content")
+                    else str(grading_response)
+                )
                 # Parse result
                 try:
                     if isinstance(grading_text, str):
-                        match = re.search(r'```json\s*(\{.*?\})\s*```', grading_text, re.DOTALL)
-                        grading_json_str = match.group(1) if match else grading_text.strip()
+                        match = re.search(
+                            r"```json\s*(\{.*?\})\s*```",
+                            grading_text,
+                            re.DOTALL
+                        )
+                        grading_json_str = (
+                            match.group(1) if match else grading_text.strip()
+                        )
                         parsed_response = json.loads(grading_json_str)
                     else:
                         parsed_response = grading_text  # already a dict
@@ -388,7 +390,7 @@ class Analyzer:
                 gc.collect() # for efficient RAM use
 
                 deterministic_grader = self.deterministic_grader_abc(
-                    self.data["solution"][j], self.data["responses"][j]
+                    self.data["solution"][j], response
                 )
             elif self.exam_name == "StandardDeviation":
                 print(" StandardDeviation needs to be set up with ")
@@ -399,12 +401,13 @@ class Analyzer:
                 grade[j] = deterministic_grader  # answer is correct or not
             else:
                 human_review[j] = True  # flag for human review
+                grade[j] = False
             if self.verbose:
                 print("\n\n**************************************************")
                 print("\n", self.exam_name)
                 print(" question: ", j)
                 # print(" llm response: ",self.data["responses"][j])
-                print(" truncated llm response: ", truncated_response)
+                print(" llm response: ", response)
                 print(" correct answer: ", self.data["solution"][j])
                 print(" AI grader: is it correct? ", ai_grader)
                 print(" deterministic grader: is it correct? ", deterministic_grader)

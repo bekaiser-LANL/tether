@@ -8,16 +8,18 @@ import time
 
 import numpy as np
 import requests
-from langchain.agents import AgentType, Tool, initialize_agent
-from langchain_core.exceptions import OutputParserException
 from langchain_ollama import ChatOllama
+from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain_experimental.tools.python.tool import PythonAstREPLTool
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from tether.core.utils import (
     create_missing_directory,
+    get_model_and_indices,
     get_after_second_underscore,
     get_npz_filename,
+    get_json_filename,
     load_saved_benchmark,
 )
 
@@ -81,20 +83,35 @@ class Proctor:
             elif self.model in openai_all_model_list:
                 self.llm = ChatOpenAI(model=self.model)
             else:
-                raise ValueError(f"Unsupported model type.")
-            if exam_only == 'SimpleInequality' or exam_only == 'SimpleInequalityWithMethod':
+                raise ValueError("Unsupported model type.")
+            if (
+                exam_only == "SimpleInequality"
+                or exam_only == "SimpleInequalityWithMethod"
+            ):
                 self.code_writer_prompt = self.build_code_writer_prompt()
                 self.answer_extractor_prompt = self.build_answer_extractor_prompt()
 
-                self.code_writer_chain = self.build_code_writer_prompt() | self.llm
-                self.answer_extractor_chain = self.build_answer_extractor_prompt() | self.llm
+                self.code_writer_chain = (
+                    self.build_code_writer_prompt()
+                    | self.llm
+                )
+                self.answer_extractor_chain = (
+                    self.build_answer_extractor_prompt()
+                    | self.llm
+                )
                 self.code_executor = PythonAstREPLTool().run
             else:
                 self.code_writer_prompt_causal = self.build_code_writer_prompt_causal()
                 self.answer_extractor_prompt = self.build_answer_extractor_prompt()
 
-                self.code_writer_chain_causal = self.code_writer_prompt_causal | self.llm
-                self.answer_extractor_chain = self.build_answer_extractor_prompt() | self.llm
+                self.code_writer_chain_causal = (
+                    self.code_writer_prompt_causal
+                    | self.llm
+                )
+                self.answer_extractor_chain = (
+                    self.build_answer_extractor_prompt()
+                    | self.llm
+                )
                 self.code_executor = PythonAstREPLTool().run
 
         else:
@@ -127,7 +144,7 @@ class Proctor:
         )
 
         if os.path.exists(self.json_path):
-            with open(self.json_path) as f:
+            with open(self.json_path, "r", encoding="utf-8") as f:
                 responses = json.load(f)
         else:
             responses = []
@@ -136,7 +153,7 @@ class Proctor:
         print(f"Saved completed benchmark output to npz: {self.npz_filename}")
 
         print(f"Saved completed benchmark output to JSON: {self.json_path}")
-        
+
         self.record_txt = kwargs.get(
             "record_txt", False
         )  # save blank benchmark as .txt
@@ -181,7 +198,7 @@ class Proctor:
                         {"role": "system", "content": "You are a helpful assistant."},
                         {"role": "user", "content": question},
                     ],
-                    reasoning_effort=self.reasoning_effort,  # Options: 'low', 'medium', 'high')
+                    reasoning_effort=self.reasoning_effort,
                 )
                 return response.choices[0].message.content.strip()
             except Exception as e:  # pylint: disable=broad-exception-caught
@@ -189,7 +206,7 @@ class Proctor:
         else:
             return print("\n Model choice not available ")
 
-    def give_benchmark(self, benchmark):
+    def give_benchmark(self, benchmark, responses=None):
         """Give all of the questions to the LLM"""
         local_models = os.listdir(self.modelpath)
         if self.model in openai_all_model_list:
@@ -228,13 +245,13 @@ class Proctor:
                 continue
             prompt = benchmark["question"][i]
             if self.verbose:
-                print('\n Question ',i)
+                print("\n Question ",i)
                 print(prompt)
             if self.agent_flag:
-                if model == 'SimpleInequality' or model == 'SimpleInequalityWithMethod':
-                    print('in here')
+                if model == "SimpleInequality" or model == "SimpleInequalityWithMethod":
                     vector1, vector2, question = self.parse_vectors_and_question(prompt)
-                    response = self.run_and_extract_answer(vector1, vector2, question, i)
+                    response = self.run_and_extract_answer(
+                        vector1, vector2, question, i)
                 else:
                     response = self.run_and_extract_answer_causal(prompt, i)
             else:
@@ -244,7 +261,7 @@ class Proctor:
             if self.verbose:
                 print(f"Saved question {i} to {self.json_path}")
 
-            with open(self.json_path, "w") as f:
+            with open(self.json_path, "w", encoding="utf-8") as f:
                 json.dump(responses, f, indent=2)
 
         return responses
@@ -341,8 +358,11 @@ class Proctor:
             })
 
             #Extract raw text
-            code_text = code_response.content if hasattr(code_response, "content") else str(code_response)
-
+            code_text = (
+                code_response.content
+                if hasattr(code_response, "content")
+                else str(code_response)
+            )
             #Extract code block from tags
             match = re.search(r"\[START_CODE\](.*?)\[END_CODE\]", code_text, re.DOTALL)
             code_string = match.group(1).strip() if match else code_text
@@ -367,11 +387,9 @@ class Proctor:
                 print("Code execution failed. Retrying...")
 
             valid_answers = {"A", "B", "C"}
-            if execution_output.strip() not in valid_answers:
+            if execution_output_str.strip() not in valid_answers:
                 print("Code did not return a valid answer. Retrying...")
-                retry()
-            else:
-                answer = execution_output.strip()
+                continue
         #Final fallback if all attempts fail
         if not execution_success:
             # Save last attempted code to file
@@ -379,7 +397,7 @@ class Proctor:
             os.makedirs(fail_dir, exist_ok=True)
 
             fail_path = os.path.join(fail_dir, f"q{i}_failed.py")
-            with open(fail_path, "w") as f:
+            with open(fail_path, "w", encoding="utf-8") as f:
                 f.write("# Failed code generation after retries\n")
                 f.write("# Vector 1:\n")
                 f.write(f"{vector1}\n")
@@ -393,7 +411,9 @@ class Proctor:
                 "code": code_string,
                 "execution_result": execution_result,
                 "final_answer": None,
-                "explanation": "Code failed to execute successfully after multiple generations."
+                "explanation": (
+                    "Code failed to execute successfully after multiple generations."
+                )
             }
 
         #Extract final answer
@@ -402,8 +422,11 @@ class Proctor:
             "question": question
         }
         extracted_raw = self.answer_extractor_chain.invoke(extractor_input)
-        raw_text = extracted_raw.content if hasattr(extracted_raw, "content") else str(extracted_raw)
-
+        raw_text = (
+            extracted_raw.content
+            if hasattr(extracted_raw, "content")
+            else str(extracted_raw)
+        )
         # Remove code block formatting if needed
         raw_text = re.sub(r"```json|```", "", raw_text).strip()
 
@@ -412,7 +435,7 @@ class Proctor:
         json_str = match.group(0) if match else raw_text
 
         #extracted_json = json.loads(json_str)
-        match = re.search(r'\{.*?\}', json_str, re.DOTALL)
+        match = re.search(r"\{.*?\}", json_str, re.DOTALL)
         if match:
             try:
                 extracted_json = json.loads(match.group(0))
@@ -420,18 +443,19 @@ class Proctor:
                 print(f"❌ JSON decode failed: {e}")
                 extracted_json = {"answer": None, "explanation": f"Bad JSON: {e}"}
         else:
-           print("❌ No JSON object found in output.")
-           extracted_json = {"answer": None, "explanation": "No JSON found"}
+            print("❌ No JSON object found in output.")
+            extracted_json = {"answer": None, "explanation": "No JSON found"}
 
         print(extracted_json)
         return extracted_json
 
     def parse_causal_prompt(self, prompt: str):
         """
-        Extracts X, Y, Z variable names, 8 numerical table values, and the question from a causal inference prompt.
+        Extracts X, Y, Z variable names, 8 numerical table values,
+        and the question from a causal inference prompt.
         """
         # Extract the table counts (expect 8 of them)
-        count_pattern = r'is (\d+)\.|\b(\d+) samples'
+        count_pattern = r"is (\d+)\.|\b(\d+) samples"
         counts = [int(m[0] or m[1]) for m in re.findall(count_pattern, prompt)]
         if len(counts) != 8:
             print(f"⚠️ Expected 8 counts, but found {len(counts)}")
@@ -487,12 +511,19 @@ class Proctor:
             try:
                 # Step 1: Generate Python code
                 code_response = self.code_writer_chain_causal.invoke(flattened_input)
-                code_string = code_response.content if hasattr(code_response, "content") else str(code_response)
-
+                code_string = (
+                    code_response.content
+                    if hasattr(code_response, "content")
+                    else str(code_response)
+                )
                 if self.verbose:
                     print("Generated code:\n", code_string)
 
-                match = re.search(r"\[START_CODE\](.*?)\[END_CODE\]", code_string, re.DOTALL)
+                match = re.search(
+                    r"\[START_CODE\](.*?)\[END_CODE\]",
+                    code_string,
+                    re.DOTALL
+                )
                 if match:
                     code_string = match.group(1).strip()
                 else:
@@ -531,7 +562,7 @@ class Proctor:
             os.makedirs(fail_dir, exist_ok=True)
 
             fail_path = os.path.join(fail_dir, f"q{i}_failed.py")
-            with open(fail_path, "w") as f:
+            with open(fail_path, "w", encoding="utf-8") as f:
                 f.write("# Failed code generation after retries\n")
                 f.write("# Last generated code:\n")
                 f.write(code_string)
@@ -541,7 +572,9 @@ class Proctor:
                 "code": code_string,
                 "execution_result": execution_result,
                 "final_answer": None,
-                "explanation": "Code failed to execute successfully after multiple generations."
+                "explanation": (
+                    "Code failed to execute successfully after multiple generations."
+                )
             }
 
         # Step 4: Extract final answer using LLM
@@ -552,8 +585,11 @@ class Proctor:
 
         try:
             extracted_raw = self.answer_extractor_chain.invoke(extractor_input)
-            raw_text = extracted_raw.content if hasattr(extracted_raw, "content") else str(extracted_raw)
-
+            raw_text = (
+                extracted_raw.content
+                if hasattr(extracted_raw, "content")
+                else str(extracted_raw)
+            )
             # Try parsing JSON
             match = re.search(r"\{.*?\}", raw_text, re.DOTALL)
             if match:
@@ -575,8 +611,10 @@ class Proctor:
     def build_code_writer_prompt(self) -> PromptTemplate:
         return PromptTemplate.from_template(
             "You are a Python assistant. Given vector1, vector2, and a question, "
-            "output only Python code between [START_CODE] and [END_CODE] that answers the question.\n"
-            "You must extract and define `vector1` and `vector2` based on the text of the prompt.\n"
+            "output only Python code between"
+            "[START_CODE] and [END_CODE] that answers the question.\n"
+            "You must extract and define `vector1` and `vector2` "
+            "based on the text of the prompt.\n"
             "Do not explain.\n\n"
             "vector1 = {vector1}\n"
             "vector2 = {vector2}\n"
@@ -592,9 +630,13 @@ class Proctor:
             "question"
         ],
         template="""
-        You are a Python data scientist. Your task is to assess whether {x_name} causes {y_name} using a stratified observational dataset.
+        You are a Python data scientist. 
+        Your task is to assess whether {x_name} causes {y_name} 
+        using a stratified observational dataset.
 
-        The data is stratified based on the binary variables {x_name}, {y_name}, and {z_name}, and is represented as 8 cell counts in the following format:
+        The data is stratified based on the binary variables {x_name}, 
+        {y_name}, and {z_name}, and is represented as 8 cell counts 
+        in the following format:
 
         index | {x_name} | {y_name} | {z_name} | count
         ------|----------|----------|----------|------
@@ -607,7 +649,8 @@ class Proctor:
           6   |    1     |    1     |    0     | {count6}
           7   |    1     |    1     |    1     | {count7}
 
-        Use only built-in Python, numpy, or scipy to determine causality between {x_name} and {y_name} while controlling for {z_name}.
+        Use only built-in Python, numpy, or scipy to determine causality 
+        between {x_name} and {y_name} while controlling for {z_name}.
 
         At the end, print:
         - "A" if the data supports causality,
@@ -624,57 +667,13 @@ class Proctor:
     def build_answer_extractor_prompt(self) -> PromptTemplate:
         return PromptTemplate.from_template(
             "You are a statistics assistant. You are given a multiple-choice question "
-            "and the output from a Python program that already chose an answer (A, B, or C).\n\n"
-            "You MUST return exactly the letter printed by the code as the `answer` field.\n\n"
+            "and the output from a Python program"
+            "that already chose an answer (A, B, or C).\n\n"
+            "You MUST return exactly the letter printed"
+            "by the code as the `answer` field.\n\n"
             "Do not reinterpret the result. Just reflect what the code printed.\n\n"
             "Question:\n{question}\n\n"
             "Output:\n{execution_output}\n\n"
             "Respond ONLY in strict JSON format:\n"
             '{{"answer": "C", "explanation": "Because the output of the code was C."}}'
         )
-
-class ToolRegistry:
-    """Tools for agent use"""
-    @staticmethod
-    def run_code_func(code: str) -> str:
-        """Execute the code the agent writes"""
-        print("Code received by run_code:")
-        print(code)
-        try:
-            # Extract content between [START_CODE] and [END_CODE]
-            match = re.search(r"\[START_CODE\](.*?)\[END_CODE\]", code, re.DOTALL)
-            if match:
-                code = match.group(1).strip()
-            else:
-                return "Error: Missing [START_CODE] and [END_CODE] tags."
-
-            local_vars = {}
-
-            # Capture stdout
-            import io, contextlib
-            buffer = io.StringIO()
-            with contextlib.redirect_stdout(buffer):
-                exec(code, local_vars, local_vars)
-
-            # Prefer result variable if it exists
-            if "result" in local_vars:
-                return str(local_vars["result"])
-
-            # Otherwise return captured print output
-            output = buffer.getvalue().strip()
-            return output if output else "Code executed successfully, no output."
-
-        except Exception:
-            import traceback
-            return f"Error:\n{traceback.format_exc()}"
-
-    @staticmethod
-    def get_tools():
-        """Defines the tool for running agent code"""
-        return [
-            Tool(
-                name="run_code",
-                func=ToolRegistry.run_code_func,
-                description="Executes Python code and returns the result or printed output."
-            )
-        ]
