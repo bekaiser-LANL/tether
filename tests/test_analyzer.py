@@ -14,27 +14,26 @@ def test_truncate_response_long():
     assert "Line0" in result and "Line9" in result
     assert "... (omitted middle lines) ..." in result
 
-
 def test_extract_boolean_result_from_response_valid_true():
-    response = """```json
-    {
-      "result": true,
+    response = {
+      "result": True,
       "explanation": "It matches the solution."
     }
-    ```"""
     assert extract_boolean_result_from_response(response) is True
 
-
 def test_extract_boolean_result_from_response_valid_false():
-    response = """```json
-    {
-      "result": false,
+    response = {
+      "result": False,
       "explanation": "Mismatch."
     }
-    ```"""
     assert extract_boolean_result_from_response(response) is False
 
+def test_extract_boolean_result_from_response_missing_key():
+    response = {
+        "explanation": "No result field provided."
+    }
+    assert extract_boolean_result_from_response(response) is None
 
-def test_extract_boolean_result_from_response_invalid():
-    response = "Not a json block"
+def test_extract_boolean_result_from_response_not_a_dict():
+    response = "```json\n{\"result\": true}\n```"
     assert extract_boolean_result_from_response(response) is None
