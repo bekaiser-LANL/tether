@@ -12,7 +12,8 @@ dependencies = [
     "scipy",
     "matplotlib",
     "pandas",
-    "requests"
+    "requests",
+    "langchain_experimental"
 ]
 requires-python = "~=3.12"
 
