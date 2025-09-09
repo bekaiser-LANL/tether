@@ -93,6 +93,12 @@ Benchmark prompts can be found in their respective files in /tether/benchmarks. 
 
 Be sure to include the index of the benchmark in BENCHMARK. For example, MediatedCausality_tdist_0 for the first MediatedCausality_tdist benchmark (you can repeatedly generate more of the same benchmark).
 
+## Run a benchmark on agents that write and execute code
+
+'python3 -m tether.core.run BENCHMARK MODEL --agent'
+
+The --agent flag activates a three-agent system that will write code, run the code, and extract answers for the analyzing step. The run code agent will force the write code agent to re-write code if non-executable code is not generated. 10 attempts are given the model to write executable code. This number can be modified in proctor.py. 
+
 ### Running a set of benchmarks in serial
 
 You can use `run_all.sh` to run all of the benchmarks listed in `run_all.sh` for the model specified at the top of `run_all.sh`.
@@ -110,6 +116,8 @@ Calling the command above just loads the completed benchmark .npz file, nothing 
 This will estimate the grade of the completed benchmark saved in `MediatedCausality_tdist_0_mistral_0.npz` and will output to terminal the grades as it loops over all questions in the benchmark. 
 
 The following command line arguments are available:
+`--grader_model` : allows you to choose which model you want to act as the grading agent. Model must be included in a model list at the top of the analyzer.py file.
+
 `--print_vars` : prints the variables saved in the .npz file to the terminal.
 
 `--print_responses` : prints every question, LLM response, and solution for the entire benchmark to terminal.

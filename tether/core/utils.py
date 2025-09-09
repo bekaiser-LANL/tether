@@ -44,6 +44,10 @@ def get_parser(script):
         )
     if script == "analyze":
         parser.add_argument(
+            "--grader_model",
+            help="Optional: model to use for grading (e.g. gpt-4, claude-3)"
+        )
+        parser.add_argument(
             "--human_review",
             action="store_true",
             help="Review and correct grades interactively",
@@ -118,15 +122,42 @@ def get_npz_filename_no_model(save_npz_path, exam_name, exam_idx):
     npz_filename = os.path.join(save_npz_path, filename)
     return npz_filename
 
-
-def get_npz_filename(save_npz_path, exam_name, exam_idx, model):
-    """Determine filename for completed benchmarks"""
+def get_npz_filename(save_npz_path, exam_name, exam_idx, model, agent=False):
+    """ Determine filename for completed benchmarks """
+    # Replace unsafe filename characters (like colon)
+    safe_model = model.replace(":", "-")
     if exam_idx != "unset":
-        filename = f"{exam_name}_{model}_{exam_idx}.npz"
+        filename = f"{exam_name}_{safe_model}_{exam_idx}.npz"
+        if agent:
+            filename = f"{exam_name}_{safe_model}_agent_{exam_idx}.npz"
     else:
-        filename = f"{exam_name}_{model}.npz"
-    npz_filename = os.path.join(save_npz_path, filename)
+        filename = f"{exam_name}_{safe_model}.npz"
+        if agent:
+            filename = f"{exam_name}_{safe_model}_agent.npz"
+    npz_filename = os.path.join(
+        save_npz_path,
+        filename
+    )
     return npz_filename
+
+def get_json_filename(save_json_path, exam_name, exam_idx, model, agent=False):
+    """Determine filename for saved JSON benchmark output"""
+    # Replace unsafe filename characters (like colon)
+    safe_model = model.replace(":", "-")
+
+    if exam_idx != "unset":
+        filename = f"{exam_name}_{safe_model}_{exam_idx}.json"
+        if agent:
+            filename = f"{exam_name}_{safe_model}_agent_{exam_idx}.json"
+    else:
+        filename = f"{exam_name}_{safe_model}.json"
+        if agent:
+            filename = f"{exam_name}_{safe_model}_agent.json"
+    json_filename = os.path.join(
+         save_json_path,
+         filename
+    )
+    return json_filename
 
 
 def load_saved_benchmark(benchmark_path, exam_name, exam_idx):

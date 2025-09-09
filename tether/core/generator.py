@@ -1,14 +1,10 @@
 """ Randomly generates and saves benchmarks as .npz files """
 import os
 
-from tether.benchmarks.complex_inequality import ComplexInequality
 from tether.benchmarks.mediated_causality import MediatedCausality
 from tether.benchmarks.simple_inequality import SimpleInequality
 from tether.benchmarks.standard_deviation import StandardDeviation
-from tether.core.utils import SaveBenchmark, create_missing_directory, get_parser
-
-DATA_PATH = os.environ.get("PATH_TO_BENCHMARKS", "/default/path")
-
+from tether.core.utils import SaveBenchmark, get_parser, create_missing_directory
 
 def generate_benchmarks(path, exam_name, **kwargs):
     """Randomly generates and saves benchmarks as .npz files"""
@@ -80,21 +76,6 @@ def generate_benchmarks(path, exam_name, **kwargs):
 
         # Save the benchmark as an .npz
         saver = SaveBenchmark.from_simple_inequality(
-            source=problems, path=save_path, exam_name=exam_name, exam_idx=exam_idx
-        )
-
-    elif exam_name_wo_ci_method in ("ComplexInequality", "ComplexInequalityWithMethod"):
-        # Generate all of the problems in the benchmark:
-        problems = ComplexInequality(
-            n_numbers=n_numbers,
-            plot_path=plot_path,
-            n_problems=n_problems,
-            plot_flag=plot_flag,
-            exam_name=exam_name,
-        )
-
-        # Save the benchmark as an .npz
-        saver = SaveBenchmark.from_complex_inequality(
             source=problems, path=save_path, exam_name=exam_name, exam_idx=exam_idx
         )
 
